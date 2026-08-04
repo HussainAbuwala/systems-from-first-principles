@@ -1,0 +1,24 @@
+{
+  "name": "systems-from-first-principles-animation",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "studio": "remotion studio src/index.jsx",
+    "audio:music": "python3 scripts/generate_music.py public/audio/music/ambient-bed.wav 780",
+    "audio:room-tone": "python3 scripts/generate_room_tone.py public/audio/room-tone.wav 780",
+    "audio:generate": "npm run audio:music && npm run audio:room-tone",
+    "render:review": "remotion render src/index.jsx FigmaHandDrawnFullEpisode out/figma-multiplayer-review.mp4 --codec=h264 --crf=20",
+    "render:voice": "npm run audio:room-tone && remotion render src/index.jsx FigmaHandDrawnNarrated out/figma-multiplayer-voice.mp4 --codec=h264 --crf=18",
+    "render:youtube": "npm run audio:generate && remotion render src/index.jsx FigmaHandDrawnNarratedMusic out/figma-multiplayer-youtube-1080p.mp4 --codec=h264 --scale=1.5 --video-bitrate=8M --audio-bitrate=320K --pixel-format=yuv420p --color-space=bt709 --image-format=png --x264-preset=slow --gop-size=12 --overwrite",
+    "render:system-map-outro": "remotion render src/index.jsx FigmaSystemMapOutro out/figma-system-map-outro.mp4 --codec=h264 --crf=20",
+    "render:short": "npm run audio:music && remotion render src/index.jsx FigmaMultiplayerShort out/figma-multiplayer-short.mp4 --codec=h264 --crf=18",
+    "check": "remotion compositions src/index.jsx"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.504",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "remotion": "4.0.504"
+  }
+}

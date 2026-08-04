@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    actor Alice
+    participant A as Alice client state
+    participant M as Multiplayer authority
+    participant B as Bob client state
+    actor Bob
+
+    Alice->>A: Move shape-7
+    Note over A: Apply position locally (pending)
+    A->>M: shape-7.position = (420, 180)
+    Bob->>B: Change shape-7 color
+    Note over B: Apply fill locally (pending)
+    B->>M: shape-7.fill = blue
+    M->>M: Validate and order updates
+    M-->>A: Accept position as sequence 41
+    M-->>B: Accept position as sequence 41
+    M-->>A: Accept fill as sequence 42
+    M-->>B: Accept fill as sequence 42
+    Note over A,B: Both clients converge with both properties

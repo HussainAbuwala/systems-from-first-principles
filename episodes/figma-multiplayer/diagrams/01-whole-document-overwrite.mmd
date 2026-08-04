@@ -1,0 +1,15 @@
+sequenceDiagram
+    autonumber
+    actor Alice
+    participant Store as Document store
+    actor Bob
+
+    Alice->>Store: Download document v1
+    Bob->>Store: Download document v1
+    Note over Alice: Move rectangle
+    Note over Bob: Change label
+    Alice->>Store: Replace with v2-A
+    Store-->>Alice: Saved
+    Bob->>Store: Replace with v2-B based on v1
+    Store-->>Bob: Saved
+    Note over Store: Alice's change is absent from v2-B

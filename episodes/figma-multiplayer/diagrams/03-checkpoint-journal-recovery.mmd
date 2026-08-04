@@ -1,0 +1,8 @@
+flowchart LR
+    C[Connected clients] -->|WebSocket edits| M[Authoritative Multiplayer instance]
+    M -->|Periodic complete snapshot<br/>at sequence 100| S[(S3 checkpoint)]
+    M -->|Frequent batched changes<br/>sequences 101–105| J[(Durable journal)]
+    M -. process crash .-> X[Instance unavailable]
+    S -->|Load checkpoint 100| R[Replacement instance]
+    J -->|Replay entries 101–105| R
+    R -->|Recovered state at 105| C2[Reconnected clients]

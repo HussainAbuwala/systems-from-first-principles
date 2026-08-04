@@ -1,0 +1,11 @@
+.DS_Store
+node_modules/
+dist/
+out/
+
+# Generated audio beds. Recreate with `npm run audio:generate` in animation/.
+animation/public/audio/music/ambient-bed.wav
+animation/public/audio/room-tone.wav
+.env
+.env.*
+!.env.example
