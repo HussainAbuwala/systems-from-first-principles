@@ -2,7 +2,7 @@ import { env } from "cloudflare:workers";
 import { NextResponse } from "next/server";
 
 export const runtime = "edge";
-type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold";
+type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
 type Experiment = { id: string; version: Version; available: number };
 type ExpiredReservation = { id: string; buyer: string };
 
@@ -71,6 +71,50 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   if (experiment.version === "expiring_hold") {
     await releaseExpiredHolds(id, Date.now());
+  }
+
+  if (experiment.version === "crash_gap") {
+    const update = await env.DB.prepare(
+      "UPDATE experiments SET available = available - 1 WHERE id = ? AND available > 0",
+    ).bind(id).run();
+    const accepted = Number(update.meta.changes ?? 0) === 1;
+    if (!accepted) {
+      await record(id, buyer, "reject", "atomic subtraction changes 0 rows");
+      return NextResponse.json({ buyer, accepted: false });
+    }
+
+    await record(id, buyer, "crash", "stock subtraction commits; simulated process crash occurs before hold insert");
+    return NextResponse.json(
+      { buyer, accepted: false, simulatedCrash: true, committed: "stock_only" },
+      { status: 503 },
+    );
+  }
+
+  if (experiment.version === "transactional_hold") {
+    const now = Date.now();
+    const reservationId = crypto.randomUUID();
+    const expiresAt = now + HOLD_DURATION_MS;
+    const [hold] = await env.DB.batch([
+      env.DB.prepare(
+        "INSERT INTO reservations (id, experiment_id, buyer, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available > 0",
+      ).bind(reservationId, buyer, expiresAt, now, id),
+      env.DB.prepare(
+        "UPDATE experiments SET available = available - 1 WHERE id = ? AND EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
+      ).bind(id, reservationId),
+      env.DB.prepare(
+        "INSERT INTO experiment_events (experiment_id, buyer, action, detail, created_at) SELECT ?, ?, 'transaction', ?, ? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
+      ).bind(id, buyer, "stock subtraction and hold commit in one transaction; response is lost afterward", now, reservationId),
+    ]);
+    const accepted = Number(hold.meta.changes ?? 0) === 1;
+    if (!accepted) {
+      await record(id, buyer, "reject", "transaction creates no hold because stock is unavailable");
+      return NextResponse.json({ buyer, accepted: false });
+    }
+
+    return NextResponse.json(
+      { buyer, accepted: false, simulatedCrash: true, committed: "stock_and_hold" },
+      { status: 503 },
+    );
   }
 
   const update = await env.DB.prepare(

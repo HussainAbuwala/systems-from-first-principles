@@ -22,12 +22,17 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
 
   const activeHolds = reservations.results.filter((reservation) => reservation.status === "held");
   const commitments = allocations.results.length + activeHolds.length;
-  const invariant = commitments <= Number(experiment.initialStock);
+  const accountedUnits = Number(experiment.available) + commitments;
+  const invariant = accountedUnits === Number(experiment.initialStock);
   const requirementMet = experiment.version === "permanent_hold"
     ? !activeHolds.some((reservation) => reservation.abandonedAt !== null)
     : experiment.version === "expiring_hold"
       ? reservations.results.some((reservation) => reservation.buyer === "Alice" && reservation.status === "expired")
         && activeHolds.some((reservation) => reservation.buyer === "Bob")
+      : experiment.version === "crash_gap"
+        ? invariant
+        : experiment.version === "transactional_hold"
+          ? invariant && activeHolds.some((reservation) => reservation.buyer === "Alice")
       : invariant;
 
   return NextResponse.json({
@@ -36,6 +41,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     reservations: reservations.results,
     events: events.results,
     invariant,
+    accountedUnits,
     requirementMet,
   });
 }

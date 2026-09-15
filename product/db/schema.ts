@@ -2,7 +2,7 @@ import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const experiments = sqliteTable("experiments", {
   id: text("id").primaryKey(),
-  version: text("version", { enum: ["naive", "atomic", "permanent_hold", "expiring_hold"] }).notNull(),
+  version: text("version", { enum: ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold"] }).notNull(),
   initialStock: integer("initial_stock").notNull(),
   available: integer("available").notNull(),
   createdAt: integer("created_at").notNull(),

@@ -2,16 +2,18 @@
 
 An interactive lab for building real software systems one requirement at a time.
 
-The first system is an inventory reservation service. It currently contains four executable stages:
+The first system is an inventory reservation service. It currently contains six executable stages:
 
 - `read → decide → write` reproducibly creates two promises from one unit;
 - an atomic conditional update permits exactly one promise;
 - a durable payment hold protects that unit while Alice pays, but strands it when she abandons checkout;
-- an expiring hold returns the abandoned unit so Bob can acquire it on retry.
+- an expiring hold returns the abandoned unit so Bob can acquire it on retry;
+- a controlled crash between two writes makes the stock disappear without a durable owner;
+- a D1 transaction commits the stock change and its hold together, even when the response is lost afterward.
 
 Every path executes against persistent database state and emits a database trace. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
 
-Run `npm run verify:experiments` while the local preview is available to execute all four stages and assert their expected database outcomes.
+Run `npm run verify:experiments` while the local preview is available to execute all six stages and assert their expected database outcomes.
 
 ## Local development
 

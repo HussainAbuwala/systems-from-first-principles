@@ -12,12 +12,26 @@ async function post(path, body) {
   return response.json();
 }
 
+async function postExpectedFailure(path, body) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 503, `${path} should expose the injected failure`);
+  assert.equal(payload.simulatedCrash, true, `${path} should identify the failure as deliberate`);
+  return payload;
+}
+
 async function run(version) {
   const started = await post("/api/experiments/start", { version });
   const purchase = (buyer) => post(`/api/experiments/${started.id}/purchase`, { buyer });
 
   if (version === "naive" || version === "atomic") {
     await Promise.all([purchase("Alice"), purchase("Bob")]);
+  } else if (version === "crash_gap" || version === "transactional_hold") {
+    await postExpectedFailure(`/api/experiments/${started.id}/purchase`, { buyer: "Alice" });
   } else {
     await purchase("Alice");
     await post(`/api/experiments/${started.id}/abandon`, { buyer: "Alice" });
@@ -53,4 +67,20 @@ assert.deepEqual(expiring.reservations.map(({ buyer, status }) => ({ buyer, stat
 ]);
 assert.equal(expiring.requirementMet, true);
 
-console.log("Verified naive race, atomic decision, permanent hold, and expiring hold.");
+const crashGap = await run("crash_gap");
+assert.equal(crashGap.experiment.available, 0);
+assert.equal(crashGap.reservations.length, 0);
+assert.equal(crashGap.accountedUnits, 0);
+assert.equal(crashGap.invariant, false);
+assert.equal(crashGap.requirementMet, false);
+
+const transactional = await run("transactional_hold");
+assert.equal(transactional.experiment.available, 0);
+assert.equal(transactional.reservations.length, 1);
+assert.equal(transactional.reservations[0].buyer, "Alice");
+assert.equal(transactional.reservations[0].status, "held");
+assert.equal(transactional.accountedUnits, 1);
+assert.equal(transactional.invariant, true);
+assert.equal(transactional.requirementMet, true);
+
+console.log("Verified all six stages: concurrency, payment lifecycle, and crash safety.");

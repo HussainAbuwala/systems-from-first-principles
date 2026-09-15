@@ -5,7 +5,7 @@ import { Check, CircleAlert, Clock3, Database, Play, RotateCcw } from "lucide-re
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold";
+type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
 type Event = { id: number; buyer: string; action: string; detail: string; createdAt: number };
 type Reservation = {
   id: string;
@@ -22,6 +22,7 @@ type Run = {
   reservations: Reservation[];
   events: Event[];
   invariant: boolean;
+  accountedUnits: number;
   requirementMet: boolean;
 };
 
@@ -114,6 +115,39 @@ const versions = {
       ["}", ""],
     ],
   },
+  crash_gap: {
+    label: "05 · Crash between writes",
+    requirement: "Requirement 04",
+    requirementTitle: "Every unavailable unit must have an owner.",
+    requirementDescription: "Alice's request subtracts the unit. We then inject a process crash before the hold is stored.",
+    eyebrow: "Failure injection",
+    question: "What happens if the process dies between two durable writes?",
+    explanation: "The stock update commits first. The controlled crash stops execution before the reservation insert, leaving no durable owner for the unavailable unit.",
+    finding: "Stock is 0, but no allocation or active hold accounts for the unit.",
+    code: [
+      ["await subtractIfAvailable(itemId);", "write"],
+      ["// process crashes here", "gap"],
+      ["await db.insertHold({ buyer });", "promise"],
+    ],
+  },
+  transactional_hold: {
+    label: "06 · Atomic hold creation",
+    requirement: "Requirement 04",
+    requirementTitle: "Every unavailable unit must have an owner.",
+    requirementDescription: "Alice's response is lost immediately after the database transaction commits.",
+    eyebrow: "Crash-safe commit",
+    question: "Can stock and its owner become durable together?",
+    explanation: "D1 executes the batched statements as one SQL transaction. The hold and subtraction both commit, or the whole batch rolls back.",
+    finding: "The response was lost, but Alice's durable hold still accounts for the unavailable unit. Next: make her retry idempotent.",
+    code: [
+      ["const [hold] = await db.batch([", "decision"],
+      ["  insertHoldIfAvailable(buyer),", "write"],
+      ["  subtractForHold(buyer),", "write"],
+      ["]);", ""],
+      ["// both commit, or neither does", "promise"],
+      ["return hold.changes === 1;", "decision"],
+    ],
+  },
 } as const;
 
 async function postStep(url: string, buyer: string) {
@@ -125,6 +159,18 @@ async function postStep(url: string, buyer: string) {
   if (!response.ok) {
     const payload = await response.json() as { error?: string };
     throw new Error(payload.error ?? `${buyer}'s request failed.`);
+  }
+}
+
+async function postExpectedFailure(url: string, buyer: string) {
+  const response = await fetch(url, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ buyer }),
+  });
+  const payload = await response.json() as { simulatedCrash?: boolean; error?: string };
+  if (response.status !== 503 || !payload.simulatedCrash) {
+    throw new Error(payload.error ?? "The controlled crash did not occur at the expected boundary.");
   }
 }
 
@@ -143,6 +189,11 @@ async function runOnServer(version: Version, report: (message: string) => void):
   if (version === "naive" || version === "atomic") {
     report("Alice and Bob are sending requests at the same time…");
     await Promise.all(["Alice", "Bob"].map((buyer) => postStep(`/api/experiments/${started.id}/purchase`, buyer)));
+  } else if (version === "crash_gap" || version === "transactional_hold") {
+    report(version === "crash_gap"
+      ? "Alice's request is crashing after stock is subtracted…"
+      : "Alice's response is being lost after the transaction commits…");
+    await postExpectedFailure(`/api/experiments/${started.id}/purchase`, "Alice");
   } else {
     report("Alice is starting payment and receiving a hold…");
     await postStep(`/api/experiments/${started.id}/purchase`, "Alice");
@@ -188,6 +239,7 @@ export function LabPreview() {
         version: result.experiment.version,
         available: result.experiment.available,
         commitments: result.allocations.length + result.reservations.filter((reservation) => reservation.status === "held").length,
+        accountedUnits: result.accountedUnits,
         invariantHeld: result.invariant,
         requirementMet: result.requirementMet,
       };
@@ -206,17 +258,17 @@ export function LabPreview() {
     void Promise.resolve(context.registerTool({
       name: "run_inventory_progression",
       title: "Run inventory progression",
-      description: "Run one stage of the inventory system—from the concurrency race through expiring payment holds—and display its database evidence.",
+      description: "Run one stage of the inventory system—from the concurrency race through crash-safe payment holds—and display its database evidence.",
       inputSchema: {
         type: "object",
-        properties: { version: { type: "string", enum: ["naive", "atomic", "permanent_hold", "expiring_hold"] } },
+        properties: { version: { type: "string", enum: ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold"] } },
         required: ["version"],
         additionalProperties: false,
       },
       annotations: { readOnlyHint: false, untrustedContentHint: false },
       execute(input) {
         const candidate = (input as { version?: unknown } | null)?.version;
-        if (candidate !== "naive" && candidate !== "atomic" && candidate !== "permanent_hold" && candidate !== "expiring_hold") {
+        if (candidate !== "naive" && candidate !== "atomic" && candidate !== "permanent_hold" && candidate !== "expiring_hold" && candidate !== "crash_gap" && candidate !== "transactional_hold") {
           throw new Error("Unknown experiment version.");
         }
         return execute(candidate);
@@ -229,7 +281,8 @@ export function LabPreview() {
   const elapsed = run?.events.length
     ? Math.max(...run.events.map((event) => event.createdAt)) - Math.min(...run.events.map((event) => event.createdAt))
     : 0;
-  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold";
+  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold" || version === "crash_gap" || version === "transactional_hold";
+  const isCrashVersion = version === "crash_gap" || version === "transactional_hold";
   const activeHolds = run?.reservations.filter((reservation) => reservation.status === "held") ?? [];
 
   return (
@@ -264,6 +317,11 @@ export function LabPreview() {
               <TabsTrigger value="permanent_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">03 · Hold during payment</TabsTrigger>
               <TabsTrigger value="expiring_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">04 · Expiring hold</TabsTrigger>
             </TabsList>
+            <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">Crash safety</p>
+            <TabsList className="h-auto w-full flex-col items-stretch gap-0 rounded-none border-l border-cyan-300/30 bg-transparent p-0">
+              <TabsTrigger value="crash_gap" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">05 · Crash between writes</TabsTrigger>
+              <TabsTrigger value="transactional_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">06 · Atomic hold creation</TabsTrigger>
+            </TabsList>
           </Tabs>
 
           <div className="mt-7 border-t border-white/10 pt-5">
@@ -276,10 +334,10 @@ export function LabPreview() {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
             <div>
               <p className="eyebrow">Real experiment · {current.eyebrow}</p>
-              <h2 className="mt-1 text-lg font-medium">{isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
+              <h2 className="mt-1 text-lg font-medium">{isCrashVersion ? "One request, one injected crash" : isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
             </div>
             <Button disabled={status === "running"} onClick={() => void execute()} className="rounded-none bg-cyan-300 text-slate-950 hover:bg-cyan-200">
-              <Play className="size-4" /> {status === "running" ? "Running…" : isHoldVersion ? "Run checkout lifecycle" : "Run two buyers"}
+              <Play className="size-4" /> {status === "running" ? "Running…" : isCrashVersion ? "Inject failure" : isHoldVersion ? "Run checkout lifecycle" : "Run two buyers"}
             </Button>
           </div>
 
@@ -303,7 +361,7 @@ export function LabPreview() {
                 <div className="grid grid-cols-3 gap-px border border-white/10 bg-white/10">
                   <Metric label="Stock left" value={String(run.experiment.available)} />
                   <Metric label={isHoldVersion ? "Active holds" : "Promises"} value={String(isHoldVersion ? activeHolds.length : run.allocations.length)} tone={run.requirementMet ? "good" : "bad"} />
-                  <Metric label="Trace span" value={`${elapsed}ms`} />
+                  <Metric label={isCrashVersion ? "Accounted units" : "Trace span"} value={isCrashVersion ? `${run.accountedUnits}/${run.experiment.initialStock}` : `${elapsed}ms`} tone={isCrashVersion ? (run.invariant ? "good" : "bad") : undefined} />
                 </div>
 
                 <div className={`mt-5 flex items-start gap-3 border px-4 py-3 ${run.requirementMet ? "border-emerald-300/20 bg-emerald-300/[0.05] text-emerald-200" : "border-rose-300/20 bg-rose-300/[0.05] text-rose-200"}`}>
@@ -315,6 +373,10 @@ export function LabPreview() {
                         ? "Alice abandoned payment, but her hold still owns the only unit."
                         : version === "expiring_hold"
                           ? "Alice's stale hold expired; Bob acquired the released unit."
+                          : version === "crash_gap"
+                            ? "Stock is 0, but no allocation or hold owns the unit."
+                            : version === "transactional_hold"
+                              ? "The response was lost after commit; Alice's durable hold still owns the unit."
                           : `Promises (${run.allocations.length}) must never exceed initial stock (${run.experiment.initialStock}).`}
                     </p>
                   </div>
@@ -324,6 +386,9 @@ export function LabPreview() {
                   <div className="mt-6">
                     <div className="mb-3 flex items-center justify-between"><p className="eyebrow">Reservation records</p><span className="flex items-center gap-1.5 font-mono text-[11px] text-slate-600"><Clock3 className="size-3" /> stored in DB</span></div>
                     <div className="grid gap-2 sm:grid-cols-2">
+                      {run.reservations.length === 0 ? (
+                        <div className="border border-rose-300/20 bg-rose-300/[0.04] px-4 py-3 text-sm text-rose-200">No reservation was stored.</div>
+                      ) : null}
                       {run.reservations.map((reservation) => (
                         <div key={reservation.id} className="border border-white/10 bg-white/[0.025] px-4 py-3">
                           <div className="flex items-center justify-between gap-3"><span className={reservation.buyer === "Alice" ? "font-mono text-sm text-cyan-200" : "font-mono text-sm text-amber-200"}>{reservation.buyer}</span><span className={reservation.status === "expired" ? "text-xs uppercase text-slate-500" : "text-xs uppercase text-emerald-300"}>{reservation.status}</span></div>
@@ -367,7 +432,7 @@ export function LabPreview() {
           </section>
           <section className="border border-white/10 bg-white/[0.025] p-5">
             <p className="eyebrow">What is real here</p>
-            <p className="mt-3 text-sm leading-6 text-slate-400">The requests, writes, allocations, holds, expiry timestamps and event trace come from the running service and its persistent database. Timers only drive the experiment; the database decides who owns the unit.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">The requests, writes, allocations, holds, expiry timestamps and event trace come from the running service and its persistent database. Stage 05 injects a controlled failure at a precise boundary so its effect is repeatable. Stage 06 uses a real D1 database transaction.</p>
           </section>
         </aside>
       </section>
