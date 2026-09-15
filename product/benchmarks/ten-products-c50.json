@@ -1,0 +1,712 @@
+{
+  "measuredAt": "2026-09-15T20:40:23.413Z",
+  "target": "https://systems-from-first-principles-benchmark.hussainabuwala-1997.workers.dev",
+  "note": "Client-observed end-to-end timings from one load-generator process.",
+  "runs": [
+    {
+      "run": 1,
+      "experimentIds": [
+        "d7f49894-4bb4-498f-b580-20b04f5ee445",
+        "ef0a5bca-45e2-47f8-9446-2c4d6bcd4599",
+        "79883862-d341-43ac-9fa6-af420a0b56fb",
+        "b7f1aa7e-38aa-4e10-b3f8-0ceb2bbd60a1",
+        "e3e6a35c-1666-4629-b836-975900ff82f4",
+        "ca82143a-35c2-4646-bb1a-437833fa1582",
+        "2a0635fa-cc14-4b81-adea-ea124aded43a",
+        "e78105b3-20b7-4b47-883d-d9654eda0d7b",
+        "be3cc62a-6acd-42a7-825d-a0d9bce18f98",
+        "688f376b-2a4a-4ba7-af73-62ebd5a49b4a"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 50,
+        "products": 10,
+        "productStocks": [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 2529.8,
+        "throughputRequestsPerSecond": 39.5,
+        "p50Ms": 338.6,
+        "p95Ms": 688.7,
+        "p99Ms": 2480.2,
+        "minimumMs": 93.5,
+        "maximumMs": 2487.6,
+        "serverP50Ms": 239,
+        "serverP95Ms": 508,
+        "acceptedServerP95Ms": 287,
+        "rejectedServerP95Ms": 2213,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "d7f49894-4bb4-498f-b580-20b04f5ee445",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817119
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "ef0a5bca-45e2-47f8-9446-2c4d6bcd4599",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817187
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "79883862-d341-43ac-9fa6-af420a0b56fb",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817254
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "b7f1aa7e-38aa-4e10-b3f8-0ceb2bbd60a1",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817316
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "e3e6a35c-1666-4629-b836-975900ff82f4",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817375
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "ca82143a-35c2-4646-bb1a-437833fa1582",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817433
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "2a0635fa-cc14-4b81-adea-ea124aded43a",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817490
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "e78105b3-20b7-4b47-883d-d9654eda0d7b",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817561
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "be3cc62a-6acd-42a7-825d-a0d9bce18f98",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817617
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "688f376b-2a4a-4ba7-af73-62ebd5a49b4a",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504817671
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 2,
+      "experimentIds": [
+        "1cde50da-24f9-496b-9a9a-4b3a3ffc2374",
+        "9a2f6a13-7617-4210-a34d-f0e25477d20f",
+        "32afec05-1e59-451c-96a0-ddc26a404ea4",
+        "8f753493-91b3-4eda-a916-33bcf9b61c1d",
+        "f557f65f-17f6-4e74-ad94-533726942c71",
+        "87a6b6c4-495d-4fad-9a66-0a66f9669455",
+        "c75cc0ac-58bc-4aff-a22a-ea128768fa76",
+        "7d6947f1-b3aa-40bc-bd1a-0def57e6f6ec",
+        "31a727da-7563-405e-8868-a898f2c0d7c2",
+        "b8f90b92-7e9c-4ff8-9a38-05983d68c152"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 50,
+        "products": 10,
+        "productStocks": [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 791.4,
+        "throughputRequestsPerSecond": 126.4,
+        "p50Ms": 342.7,
+        "p95Ms": 454.5,
+        "p99Ms": 459.9,
+        "minimumMs": 246.7,
+        "maximumMs": 463.5,
+        "serverP50Ms": 287,
+        "serverP95Ms": 408,
+        "acceptedServerP95Ms": 283,
+        "rejectedServerP95Ms": 423,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "1cde50da-24f9-496b-9a9a-4b3a3ffc2374",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820401
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "9a2f6a13-7617-4210-a34d-f0e25477d20f",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820459
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "32afec05-1e59-451c-96a0-ddc26a404ea4",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820514
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "8f753493-91b3-4eda-a916-33bcf9b61c1d",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820570
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "f557f65f-17f6-4e74-ad94-533726942c71",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820635
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "87a6b6c4-495d-4fad-9a66-0a66f9669455",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820699
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "c75cc0ac-58bc-4aff-a22a-ea128768fa76",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820762
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "7d6947f1-b3aa-40bc-bd1a-0def57e6f6ec",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820819
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "31a727da-7563-405e-8868-a898f2c0d7c2",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820880
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "b8f90b92-7e9c-4ff8-9a38-05983d68c152",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504820941
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 3,
+      "experimentIds": [
+        "912e4ed9-e9c9-49a3-999a-d1a233de7eb4",
+        "59f64a9d-dee0-46d5-823c-97f4c14574b7",
+        "319b2b07-f80e-46de-9a13-4e425a0ca9d3",
+        "f8400620-7f09-41c7-bbc2-e252152919ec",
+        "bb783ab6-beb0-4fa0-8e1a-a61b5e11fbdb",
+        "607b9962-b9e3-43d0-ad97-721f54208621",
+        "1184eb6d-2615-4b4f-8265-0cf8e0bbebb1",
+        "cdb2ef43-51dc-4dfb-8389-0b02eb1b7d93",
+        "5d610801-5067-4c99-940a-962676793761",
+        "2def989e-1cd2-4683-9278-fdeb06c12301"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 50,
+        "products": 10,
+        "productStocks": [
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5,
+          5
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 743.6,
+        "throughputRequestsPerSecond": 134.5,
+        "p50Ms": 341.9,
+        "p95Ms": 393.7,
+        "p99Ms": 402.6,
+        "minimumMs": 260.9,
+        "maximumMs": 405.6,
+        "serverP50Ms": 245,
+        "serverP95Ms": 349,
+        "acceptedServerP95Ms": 242,
+        "rejectedServerP95Ms": 351,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "912e4ed9-e9c9-49a3-999a-d1a233de7eb4",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504821957
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "59f64a9d-dee0-46d5-823c-97f4c14574b7",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822019
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "319b2b07-f80e-46de-9a13-4e425a0ca9d3",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822081
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "f8400620-7f09-41c7-bbc2-e252152919ec",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822137
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "bb783ab6-beb0-4fa0-8e1a-a61b5e11fbdb",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822207
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "607b9962-b9e3-43d0-ad97-721f54208621",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822265
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "1184eb6d-2615-4b4f-8265-0cf8e0bbebb1",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822332
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "cdb2ef43-51dc-4dfb-8389-0b02eb1b7d93",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822385
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "5d610801-5067-4c99-940a-962676793761",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822446
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          },
+          {
+            "experiment": {
+              "id": "2def989e-1cd2-4683-9278-fdeb06c12301",
+              "version": "transactional_hold",
+              "initialStock": 5,
+              "available": 0,
+              "createdAt": 1789504822502
+            },
+            "committedRequests": 5,
+            "allocatedUnits": 0,
+            "activeHolds": 5,
+            "heldUnits": 5,
+            "committedUnits": 5,
+            "accountedUnits": 5,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    }
+  ]
+}

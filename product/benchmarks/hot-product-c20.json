@@ -1,0 +1,226 @@
+{
+  "measuredAt": "2026-09-15T20:39:57.097Z",
+  "target": "https://systems-from-first-principles-benchmark.hussainabuwala-1997.workers.dev",
+  "note": "Client-observed end-to-end timings from one load-generator process.",
+  "runs": [
+    {
+      "run": 1,
+      "experimentIds": [
+        "bd2a99aa-da71-4743-9e19-4c4f77a09c84"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          50
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 1508.9,
+        "throughputRequestsPerSecond": 66.3,
+        "p50Ms": 264,
+        "p95Ms": 601.6,
+        "p99Ms": 619.6,
+        "minimumMs": 86.4,
+        "maximumMs": 627.2,
+        "serverP50Ms": 185,
+        "serverP95Ms": 549,
+        "acceptedServerP95Ms": 203,
+        "rejectedServerP95Ms": 570,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "bd2a99aa-da71-4743-9e19-4c4f77a09c84",
+              "version": "transactional_hold",
+              "initialStock": 50,
+              "available": 0,
+              "createdAt": 1789504792988
+            },
+            "committedRequests": 50,
+            "allocatedUnits": 0,
+            "activeHolds": 50,
+            "heldUnits": 50,
+            "committedUnits": 50,
+            "accountedUnits": 50,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 2,
+      "experimentIds": [
+        "452ff978-35c4-4649-a7ff-5eeea64bd2a3"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          50
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 1050.7,
+        "throughputRequestsPerSecond": 95.2,
+        "p50Ms": 198.4,
+        "p95Ms": 273.2,
+        "p99Ms": 284.1,
+        "minimumMs": 92.8,
+        "maximumMs": 288.8,
+        "serverP50Ms": 151,
+        "serverP95Ms": 231,
+        "acceptedServerP95Ms": 168,
+        "rejectedServerP95Ms": 245,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "452ff978-35c4-4649-a7ff-5eeea64bd2a3",
+              "version": "transactional_hold",
+              "initialStock": 50,
+              "available": 0,
+              "createdAt": 1789504794653
+            },
+            "committedRequests": 50,
+            "allocatedUnits": 0,
+            "activeHolds": 50,
+            "heldUnits": 50,
+            "committedUnits": 50,
+            "accountedUnits": 50,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 3,
+      "experimentIds": [
+        "eec5cdbe-8ad2-4104-946c-9f0cafd48b07"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 50,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          50
+        ],
+        "maxQuantity": 1,
+        "requestedUnits": 100
+      },
+      "performance": {
+        "durationMs": 1125.9,
+        "throughputRequestsPerSecond": 88.8,
+        "p50Ms": 186.1,
+        "p95Ms": 318.3,
+        "p99Ms": 353.2,
+        "minimumMs": 95.6,
+        "maximumMs": 356.7,
+        "serverP50Ms": 151,
+        "serverP95Ms": 282,
+        "acceptedServerP95Ms": 199,
+        "rejectedServerP95Ms": 312,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 50,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "eec5cdbe-8ad2-4104-946c-9f0cafd48b07",
+              "version": "transactional_hold",
+              "initialStock": 50,
+              "available": 0,
+              "createdAt": 1789504795851
+            },
+            "committedRequests": 50,
+            "allocatedUnits": 0,
+            "activeHolds": 50,
+            "heldUnits": 50,
+            "committedUnits": 50,
+            "accountedUnits": 50,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 50,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 50,
+        "accountedUnits": 50,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    }
+  ]
+}

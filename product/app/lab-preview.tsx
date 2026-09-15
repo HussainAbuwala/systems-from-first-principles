@@ -1,15 +1,21 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, CircleAlert, Clock3, Database, Play, RotateCcw } from "lucide-react";
+import { Check, CircleAlert, Clock3, Database, Gauge, Play, RotateCcw, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import concurrency5 from "@/benchmarks/hot-product-c5.json";
+import concurrency20 from "@/benchmarks/hot-product-c20.json";
+import concurrency50 from "@/benchmarks/hot-product-c50.json";
+import mixedQuantity from "@/benchmarks/mixed-quantity-c20.json";
+import tenProducts from "@/benchmarks/ten-products-c50.json";
 
 type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
 type Event = { id: number; buyer: string; action: string; detail: string; createdAt: number };
 type Reservation = {
   id: string;
   buyer: string;
+  quantity: number;
   status: "held" | "expired" | "confirmed";
   expiresAt: number | null;
   abandonedAt: number | null;
@@ -18,13 +24,61 @@ type Reservation = {
 };
 type Run = {
   experiment: { id: string; version: Version; initialStock: number; available: number; createdAt: number };
-  allocations: Array<{ id: string; buyer: string; createdAt: number }>;
+  allocations: Array<{ id: string; buyer: string; quantity: number; createdAt: number }>;
   reservations: Reservation[];
   events: Event[];
   invariant: boolean;
   accountedUnits: number;
   requirementMet: boolean;
 };
+
+type BenchmarkRun = {
+  performance: {
+    throughputRequestsPerSecond: number;
+    p50Ms: number;
+    p95Ms: number;
+    serverP50Ms: number;
+    serverP95Ms: number;
+    acceptedServerP95Ms?: number;
+    rejectedServerP95Ms?: number;
+    serverTimingSamples?: number;
+  };
+  responses: { accepted: number; rejected: number; errors: number; acceptedUnits: number };
+  checks: { inventoryConserved: boolean };
+};
+
+function middle(values: number[]) {
+  return [...values].sort((left, right) => left - right)[Math.floor(values.length / 2)];
+}
+
+function summarizeBenchmark(concurrency: number, runs: BenchmarkRun[]) {
+  return {
+    concurrency,
+    throughput: middle(runs.map((run) => run.performance.throughputRequestsPerSecond)),
+    p50: middle(runs.map((run) => run.performance.p50Ms)),
+    p95: middle(runs.map((run) => run.performance.p95Ms)),
+    serverP50: middle(runs.map((run) => run.performance.serverP50Ms)),
+    serverP95: middle(runs.map((run) => run.performance.serverP95Ms)),
+    acceptedServerP95: middle(runs.map((run) => run.performance.acceptedServerP95Ms ?? run.performance.serverP95Ms)),
+    rejectedServerP95: middle(runs.map((run) => run.performance.rejectedServerP95Ms ?? run.performance.serverP95Ms)),
+    serverTimingSamples: middle(runs.map((run) => run.performance.serverTimingSamples ?? run.responses.accepted)),
+    accepted: middle(runs.map((run) => run.responses.accepted)),
+    rejected: middle(runs.map((run) => run.responses.rejected)),
+    errors: runs.reduce((total, run) => total + run.responses.errors, 0),
+    invariantHeld: runs.every((run) => run.checks.inventoryConserved),
+  };
+}
+
+const benchmarkScenarios = [
+  summarizeBenchmark(5, concurrency5.runs),
+  summarizeBenchmark(20, concurrency20.runs),
+  summarizeBenchmark(50, concurrency50.runs),
+];
+const mixedQuantitySummary = summarizeBenchmark(20, mixedQuantity.runs);
+const hotProductComparison = summarizeBenchmark(50, concurrency50.runs);
+const tenProductComparison = summarizeBenchmark(50, tenProducts.runs);
+const distributedThroughputGain = Math.round((tenProductComparison.throughput / hotProductComparison.throughput - 1) * 100);
+const distributedP95Reduction = Math.round((1 - tenProductComparison.p95 / hotProductComparison.p95) * 100);
 
 declare global {
   interface Document {
@@ -238,7 +292,8 @@ export function LabPreview() {
       return {
         version: result.experiment.version,
         available: result.experiment.available,
-        commitments: result.allocations.length + result.reservations.filter((reservation) => reservation.status === "held").length,
+        commitments: result.allocations.reduce((total, allocation) => total + allocation.quantity, 0)
+          + result.reservations.filter((reservation) => reservation.status === "held").reduce((total, reservation) => total + reservation.quantity, 0),
         accountedUnits: result.accountedUnits,
         invariantHeld: result.invariant,
         requirementMet: result.requirementMet,
@@ -436,7 +491,110 @@ export function LabPreview() {
           </section>
         </aside>
       </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 pb-8 lg:px-8" id="performance">
+        <div className="border border-white/10 bg-[#0b1118]">
+          <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
+            <div className="max-w-3xl">
+              <p className="eyebrow">07 · Hosted load test · observed baseline</p>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">More concurrency moves more requests—and makes each buyer wait longer.</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">One hot product, 50 units, 100 buyers, one unit per request, using the crash-safe transaction from Stage 06. Each concurrency level ran three times against an isolated Cloudflare Worker and D1 database. Every metric below is the median of its three measurements.</p>
+            </div>
+            <div className="flex items-center gap-2 border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 font-mono text-[11px] text-cyan-200"><Gauge className="size-3.5" /> CLIENT + SERVER TIMING</div>
+          </div>
+
+          <div className="grid gap-px bg-white/10 lg:grid-cols-3">
+            {benchmarkScenarios.map((scenario) => (
+              <article className="bg-[#0b1118] p-5 sm:p-6" key={scenario.concurrency}>
+                <div className="flex items-center justify-between gap-3">
+                  <span className="flex items-center gap-2 font-mono text-sm text-cyan-200"><Users className="size-4" /> {scenario.concurrency} concurrent</span>
+                  <span className="font-mono text-[11px] text-emerald-300">{scenario.errors} errors</span>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-5">
+                  <div><p className="eyebrow">Throughput</p><p className="mt-2 font-mono text-2xl text-slate-100">{scenario.throughput}<span className="ml-1 text-xs text-slate-500">req/s</span></p></div>
+                  <div><p className="eyebrow">Client p95</p><p className="mt-2 font-mono text-2xl text-slate-100">{scenario.p95}<span className="ml-1 text-xs text-slate-500">ms</span></p></div>
+                </div>
+                <div className="mt-5 h-1.5 bg-white/5"><div className="h-full bg-cyan-300/70" style={{ width: `${Math.min(100, scenario.throughput / 1.2)}%` }} /></div>
+                <p className="mt-3 font-mono text-[11px] text-slate-500">server p95 {scenario.serverP95} ms · client p50 {scenario.p50} ms</p>
+                <p className="mt-1 font-mono text-[10px] text-slate-600">accepted p95 {scenario.acceptedServerP95} · rejected p95 {scenario.rejectedServerP95} · {scenario.serverTimingSamples}/100 timed</p>
+                <p className="mt-2 text-xs text-emerald-300">{scenario.invariantHeld ? "Inventory conserved in all three runs" : "Inventory invariant failed"}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 lg:grid-cols-2">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Multiple units</p>
+              <h3 className="mt-2 text-xl font-medium">300 units requested. Only 150 existed.</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">One hundred buyers requested quantities cycling from 1 to 5. Across all three runs, the conditional update allocated exactly 150 units, returned zero errors, and never made stock negative.</p>
+              <pre className="mt-5 overflow-x-auto border border-white/10 bg-black/20 p-4 font-mono text-xs leading-6 text-slate-300"><code>UPDATE experiments{"\n"}SET available = available - ?{"\n"}WHERE id = ? AND available &gt;= ?</code></pre>
+              <p className="mt-3 font-mono text-[11px] text-emerald-300">{mixedQuantitySummary.invariantHeld ? "✓ UNIT-LEVEL INVARIANT HELD" : "× INVARIANT FAILED"} · {mixedQuantitySummary.errors} ERRORS</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">What the test motivates</p>
+              <h3 className="mt-2 text-xl font-medium">From 20 to 50 concurrent: throughput rose 23%; client p95 rose 76%.</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Concurrency 50 finished more requests each second, but individual buyers waited much longer. The server p95 also rose from 282 ms to 523 ms, so much of the extra wait occurred inside the request path. Higher throughput did not mean a uniformly faster experience.</p>
+              <div className="mt-5 border-l-2 border-amber-200/70 bg-amber-200/[0.04] px-4 py-3">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber-200">Next controlled experiment</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">Keep 100 buyers, 50 units and concurrency 50. Change only the key distribution: one product with 50 units versus ten products with 5 units each.</p>
+              </div>
+              <p className="mt-4 text-xs leading-5 text-slate-600">Exploratory measurements from one Toronto client on September 15, 2026. We will repeat larger runs before publishing a final performance claim.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 pb-8 lg:px-8" id="key-distribution">
+        <div className="border border-white/10 bg-[#0b1118]">
+          <div className="border-b border-white/10 p-5 sm:p-7">
+            <p className="eyebrow">08 · Key distribution · controlled comparison</p>
+            <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Is the traffic volume expensive—or is one hot product expensive?</h2>
+            <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-400">Both workloads send 100 one-unit requests at concurrency 50, contain 50 total units, and use the same Worker and D1 database. Only the destination changes. The first workload targets one inventory record; the second distributes requests evenly across ten records.</p>
+          </div>
+
+          <div className="grid gap-px bg-white/10 md:grid-cols-2">
+            <ComparisonCard label="One hot product" detail="100 requests → 1 product · 50 units" summary={hotProductComparison} />
+            <ComparisonCard label="Ten products" detail="10 requests each → 10 products · 5 units each" summary={tenProductComparison} accent />
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">What we observed</p>
+              <h3 className="mt-2 text-xl font-medium">The ten-product median handled {distributedThroughputGain}% more requests per second and lowered client p95 by {distributedP95Reduction}%.</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">That points toward hot-key contention contributing to the wait. It is still a clue: one ten-product run was dramatically slower than the other two, and both workloads share one database. Three short runs are too noisy for a capacity claim.</p>
+              <div className="mt-5 grid grid-cols-2 gap-px bg-white/10">
+                <Metric label="Hot server p95" value={`${hotProductComparison.serverP95}ms`} />
+                <Metric label="Distributed server p95" value={`${tenProductComparison.serverP95}ms`} tone="good" />
+              </div>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">What the measurement taught us</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">A database row is not the only possible queue. The shared database, its indexes, request routing and network can still affect every product. Before choosing Redis, sharding or another coordinator, we need longer alternating runs and operation-level timing.</p>
+              <div className="mt-5 border-l-2 border-amber-200/70 bg-amber-200/[0.04] px-4 py-3">
+                <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber-200">Current conclusion</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">Distribution helped the median, but the experiment has not isolated the exact queue. The next design change must be earned by stronger evidence.</p>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function ComparisonCard({ label, detail, summary, accent = false }: { label: string; detail: string; summary: ReturnType<typeof summarizeBenchmark>; accent?: boolean }) {
+  return (
+    <article className={`bg-[#0b1118] p-5 sm:p-7 ${accent ? "shadow-[inset_0_2px_0_rgba(103,232,249,0.55)]" : ""}`}>
+      <p className="font-mono text-sm text-cyan-200">{label}</p>
+      <p className="mt-2 text-xs text-slate-500">{detail}</p>
+      <div className="mt-6 grid grid-cols-3 gap-4">
+        <div><p className="eyebrow">Throughput</p><p className="mt-2 font-mono text-xl">{summary.throughput}<span className="ml-1 text-[10px] text-slate-500">req/s</span></p></div>
+        <div><p className="eyebrow">Client p95</p><p className="mt-2 font-mono text-xl">{summary.p95}<span className="ml-1 text-[10px] text-slate-500">ms</span></p></div>
+        <div><p className="eyebrow">Server p95</p><p className="mt-2 font-mono text-xl">{summary.serverP95}<span className="ml-1 text-[10px] text-slate-500">ms</span></p></div>
+      </div>
+      <p className="mt-5 font-mono text-[10px] text-slate-600">{summary.accepted} accepted · {summary.rejected} rejected · {summary.serverTimingSamples}/100 server timings</p>
+      <p className="mt-2 text-xs text-emerald-300">{summary.invariantHeld ? "Inventory conserved in every run" : "Inventory invariant failed"}</p>
+    </article>
   );
 }
 

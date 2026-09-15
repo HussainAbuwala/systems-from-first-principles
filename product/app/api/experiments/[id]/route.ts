@@ -13,15 +13,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   if (!experiment) return NextResponse.json({ error: "Experiment not found." }, { status: 404 });
 
   const [allocations, reservations, events] = await Promise.all([
-    env.DB.prepare("SELECT id, buyer, created_at AS createdAt FROM allocations WHERE experiment_id = ? ORDER BY created_at, buyer").bind(id).all(),
+    env.DB.prepare("SELECT id, buyer, quantity, created_at AS createdAt FROM allocations WHERE experiment_id = ? ORDER BY created_at, buyer").bind(id).all(),
     env.DB.prepare(
-      "SELECT id, buyer, status, expires_at AS expiresAt, abandoned_at AS abandonedAt, created_at AS createdAt, resolved_at AS resolvedAt FROM reservations WHERE experiment_id = ? ORDER BY created_at, buyer",
+      "SELECT id, buyer, quantity, status, expires_at AS expiresAt, abandoned_at AS abandonedAt, created_at AS createdAt, resolved_at AS resolvedAt FROM reservations WHERE experiment_id = ? ORDER BY created_at, buyer",
     ).bind(id).all(),
     env.DB.prepare("SELECT id, buyer, action, detail, created_at AS createdAt FROM experiment_events WHERE experiment_id = ? ORDER BY id").bind(id).all(),
   ]);
 
   const activeHolds = reservations.results.filter((reservation) => reservation.status === "held");
-  const commitments = allocations.results.length + activeHolds.length;
+  const commitments = allocations.results.reduce((total, allocation) => total + Number(allocation.quantity), 0)
+    + activeHolds.reduce((total, reservation) => total + Number(reservation.quantity), 0);
   const accountedUnits = Number(experiment.available) + commitments;
   const invariant = accountedUnits === Number(experiment.initialStock);
   const requirementMet = experiment.version === "permanent_hold"

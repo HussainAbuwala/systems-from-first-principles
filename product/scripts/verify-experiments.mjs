@@ -83,4 +83,17 @@ assert.equal(transactional.accountedUnits, 1);
 assert.equal(transactional.invariant, true);
 assert.equal(transactional.requirementMet, true);
 
-console.log("Verified all six stages: concurrency, payment lifecycle, and crash safety.");
+const multiUnit = await post("/api/experiments/start", { version: "atomic", initialStock: 10 });
+const multiUnitResults = await Promise.all([
+  post(`/api/experiments/${multiUnit.id}/purchase`, { buyer: "Alice", quantity: 6 }),
+  post(`/api/experiments/${multiUnit.id}/purchase`, { buyer: "Bob", quantity: 6 }),
+]);
+assert.equal(multiUnitResults.filter(({ accepted }) => accepted).length, 1);
+const multiUnitSummaryResponse = await fetch(`${baseUrl}/api/experiments/${multiUnit.id}/summary`);
+assert.equal(multiUnitSummaryResponse.ok, true);
+const multiUnitSummary = await multiUnitSummaryResponse.json();
+assert.equal(multiUnitSummary.experiment.available, 4);
+assert.equal(multiUnitSummary.allocatedUnits, 6);
+assert.equal(multiUnitSummary.invariant, true);
+
+console.log("Verified all six stages plus concurrent multi-unit allocation.");

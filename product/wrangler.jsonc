@@ -21,5 +21,19 @@
   "observability": {
     "enabled": true,
     "head_sampling_rate": 1
+  },
+  "env": {
+    "benchmark": {
+      "name": "systems-from-first-principles-benchmark",
+      "workers_dev": true,
+      "d1_databases": [
+        {
+          "binding": "DB",
+          "database_name": "systems-from-first-principles-benchmark-db",
+          "database_id": "15cb46e4-d86d-48b6-ad08-c7e662471116",
+          "migrations_dir": "./drizzle"
+        }
+      ]
+    }
   }
 }

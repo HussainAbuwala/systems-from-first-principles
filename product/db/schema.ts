@@ -12,6 +12,7 @@ export const allocations = sqliteTable("allocations", {
   id: text("id").primaryKey(),
   experimentId: text("experiment_id").notNull(),
   buyer: text("buyer").notNull(),
+  quantity: integer("quantity").notNull().default(1),
   createdAt: integer("created_at").notNull(),
 }, (table) => [index("idx_allocations_experiment_id").on(table.experimentId)]);
 
@@ -19,6 +20,7 @@ export const reservations = sqliteTable("reservations", {
   id: text("id").primaryKey(),
   experimentId: text("experiment_id").notNull(),
   buyer: text("buyer").notNull(),
+  quantity: integer("quantity").notNull().default(1),
   status: text("status", { enum: ["held", "expired", "confirmed"] }).notNull(),
   expiresAt: integer("expires_at"),
   abandonedAt: integer("abandoned_at"),

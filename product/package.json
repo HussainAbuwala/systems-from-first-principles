@@ -11,10 +11,13 @@
     "build": "node scripts/run-framework.mjs build",
     "start": "wrangler dev --config dist/server/wrangler.json --local --persist-to .wrangler/state --ip 127.0.0.1 --inspector-port 0",
     "deploy": "npm run db:migrate:remote && vinext-cloudflare deploy",
+    "deploy:benchmark": "npm run db:migrate:benchmark && vinext-cloudflare deploy --env benchmark",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next --ignore-pattern worker-configuration.d.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate:remote": "wrangler d1 migrations apply DB --remote",
-    "verify:experiments": "node scripts/verify-experiments.mjs"
+    "db:migrate:benchmark": "wrangler d1 migrations apply DB --remote --env benchmark",
+    "verify:experiments": "node scripts/verify-experiments.mjs",
+    "benchmark:load": "node scripts/run-load-experiment.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.7.0",

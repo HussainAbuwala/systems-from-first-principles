@@ -1,0 +1,226 @@
+{
+  "measuredAt": "2026-09-15T20:42:23.607Z",
+  "target": "https://systems-from-first-principles-benchmark.hussainabuwala-1997.workers.dev",
+  "note": "Client-observed end-to-end timings from one load-generator process.",
+  "runs": [
+    {
+      "run": 1,
+      "experimentIds": [
+        "89037bf0-b140-42b2-9aa5-420a400636fc"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 150,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          150
+        ],
+        "maxQuantity": 5,
+        "requestedUnits": 300
+      },
+      "performance": {
+        "durationMs": 1094.1,
+        "throughputRequestsPerSecond": 91.4,
+        "p50Ms": 205.6,
+        "p95Ms": 259.4,
+        "p99Ms": 261.7,
+        "minimumMs": 132.4,
+        "maximumMs": 262,
+        "serverP50Ms": 156,
+        "serverP95Ms": 188,
+        "acceptedServerP95Ms": 182,
+        "rejectedServerP95Ms": 192,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 51,
+        "rejected": 49,
+        "errors": 0,
+        "acceptedUnits": 150,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "89037bf0-b140-42b2-9aa5-420a400636fc",
+              "version": "transactional_hold",
+              "initialStock": 150,
+              "available": 0,
+              "createdAt": 1789504939588
+            },
+            "committedRequests": 51,
+            "allocatedUnits": 0,
+            "activeHolds": 51,
+            "heldUnits": 150,
+            "committedUnits": 150,
+            "accountedUnits": 150,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 150,
+        "totalAvailable": 0,
+        "committedRequests": 51,
+        "committedUnits": 150,
+        "accountedUnits": 150,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 2,
+      "experimentIds": [
+        "acc2949b-cac8-4bcc-a1f5-a5156d966d87"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 150,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          150
+        ],
+        "maxQuantity": 5,
+        "requestedUnits": 300
+      },
+      "performance": {
+        "durationMs": 1016.3,
+        "throughputRequestsPerSecond": 98.4,
+        "p50Ms": 185.6,
+        "p95Ms": 238.6,
+        "p99Ms": 249.6,
+        "minimumMs": 101.6,
+        "maximumMs": 250.1,
+        "serverP50Ms": 148,
+        "serverP95Ms": 201,
+        "acceptedServerP95Ms": 155,
+        "rejectedServerP95Ms": 208,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 52,
+        "rejected": 48,
+        "errors": 0,
+        "acceptedUnits": 150,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "acc2949b-cac8-4bcc-a1f5-a5156d966d87",
+              "version": "transactional_hold",
+              "initialStock": 150,
+              "available": 0,
+              "createdAt": 1789504941320
+            },
+            "committedRequests": 52,
+            "allocatedUnits": 0,
+            "activeHolds": 52,
+            "heldUnits": 150,
+            "committedUnits": 150,
+            "accountedUnits": 150,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 150,
+        "totalAvailable": 0,
+        "committedRequests": 52,
+        "committedUnits": 150,
+        "accountedUnits": 150,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    },
+    {
+      "run": 3,
+      "experimentIds": [
+        "93f3bcac-ab34-451b-bb5a-68ea376cdc5b"
+      ],
+      "workload": {
+        "version": "transactional_hold",
+        "stock": 150,
+        "buyers": 100,
+        "concurrency": 20,
+        "products": 1,
+        "productStocks": [
+          150
+        ],
+        "maxQuantity": 5,
+        "requestedUnits": 300
+      },
+      "performance": {
+        "durationMs": 965.2,
+        "throughputRequestsPerSecond": 103.6,
+        "p50Ms": 176,
+        "p95Ms": 239.6,
+        "p99Ms": 265.8,
+        "minimumMs": 89.4,
+        "maximumMs": 279.6,
+        "serverP50Ms": 140,
+        "serverP95Ms": 199,
+        "acceptedServerP95Ms": 152,
+        "rejectedServerP95Ms": 222,
+        "serverTimingSamples": 100
+      },
+      "responses": {
+        "accepted": 50,
+        "rejected": 50,
+        "errors": 0,
+        "acceptedUnits": 150,
+        "statuses": {
+          "200": 100
+        }
+      },
+      "database": {
+        "products": [
+          {
+            "experiment": {
+              "id": "93f3bcac-ab34-451b-bb5a-68ea376cdc5b",
+              "version": "transactional_hold",
+              "initialStock": 150,
+              "available": 0,
+              "createdAt": 1789504942535
+            },
+            "committedRequests": 50,
+            "allocatedUnits": 0,
+            "activeHolds": 50,
+            "heldUnits": 150,
+            "committedUnits": 150,
+            "accountedUnits": 150,
+            "invariant": true
+          }
+        ],
+        "totalInitialStock": 150,
+        "totalAvailable": 0,
+        "committedRequests": 50,
+        "committedUnits": 150,
+        "accountedUnits": 150,
+        "invariant": true
+      },
+      "checks": {
+        "inventoryConserved": true,
+        "responsesMatchDatabase": true,
+        "noNegativeStock": true,
+        "serverTimingsComplete": true
+      }
+    }
+  ]
+}
