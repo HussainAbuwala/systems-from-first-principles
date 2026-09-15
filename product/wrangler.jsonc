@@ -32,6 +32,24 @@
           "database_name": "systems-from-first-principles-benchmark-db",
           "database_id": "15cb46e4-d86d-48b6-ad08-c7e662471116",
           "migrations_dir": "./drizzle"
+        },
+        {
+          "binding": "DB_SHARD_1",
+          "database_name": "systems-from-first-principles-benchmark-shard-1",
+          "database_id": "c0fbe135-2a81-437f-bc08-e6fab7c1571d",
+          "migrations_dir": "./drizzle"
+        },
+        {
+          "binding": "DB_SHARD_2",
+          "database_name": "systems-from-first-principles-benchmark-shard-2",
+          "database_id": "d61180eb-7d6a-4871-b6af-68b6594cbf2b",
+          "migrations_dir": "./drizzle"
+        },
+        {
+          "binding": "DB_SHARD_3",
+          "database_name": "systems-from-first-principles-benchmark-shard-3",
+          "database_id": "18d0b212-c836-4d47-a95b-2a11541244ac",
+          "migrations_dir": "./drizzle"
         }
       ]
     }

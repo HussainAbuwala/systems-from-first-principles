@@ -1,0 +1,54 @@
+{
+  "measuredAt": "2026-09-15T21:28:01.947Z",
+  "workload": {
+    "buyersPerScenario": 1000,
+    "stockPerScenario": 1000,
+    "products": 10,
+    "concurrency": 50,
+    "pairs": 10,
+    "baselineDatabases": 1,
+    "comparisonDatabases": 4,
+    "outcome": "all accepted",
+    "traceWrites": false
+  },
+  "scenarioMedians": {
+    "oneDatabase": {
+      "throughputRequestsPerSecond": 187.0,
+      "clientP95Ms": 408.0,
+      "serverP95Ms": 367.5,
+      "transactionP95Ms": 192.5
+    },
+    "fourDatabases": {
+      "throughputRequestsPerSecond": 278.7,
+      "clientP95Ms": 299.6,
+      "serverP95Ms": 271.0,
+      "transactionP95Ms": 132.5
+    }
+  },
+  "pairedSummary": {
+    "throughput": {
+      "medianChangePercent": 48.5,
+      "meanChangePercent": 48.6,
+      "confidenceInterval95ForMean": [42.7, 54.0],
+      "comparisonWins": 10
+    },
+    "clientP95": {
+      "medianChangePercent": -24.6,
+      "meanChangePercent": -25.1,
+      "confidenceInterval95ForMean": [-33.0, -17.6],
+      "comparisonWins": 10
+    },
+    "serverP95": {
+      "medianChangePercent": -23.2,
+      "meanChangePercent": -24.8,
+      "confidenceInterval95ForMean": [-34.0, -16.1],
+      "comparisonWins": 10
+    },
+    "transactionP95": {
+      "medianChangePercent": -29.1,
+      "meanChangePercent": -30.5,
+      "confidenceInterval95ForMean": [-40.2, -19.5],
+      "comparisonWins": 9
+    }
+  }
+}

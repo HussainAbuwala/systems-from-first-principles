@@ -9,6 +9,8 @@ const defaults = {
   concurrency: 25,
   products: 1,
   compareProducts: null,
+  databaseShards: 1,
+  compareDatabaseShards: null,
   maxQuantity: 1,
   runs: 3,
   output: process.env.LOAD_OUTPUT ?? null,
@@ -25,6 +27,8 @@ function parseArgs(argv) {
     ["--concurrency", "concurrency"],
     ["--products", "products"],
     ["--compare-products", "compareProducts"],
+    ["--database-shards", "databaseShards"],
+    ["--compare-database-shards", "compareDatabaseShards"],
     ["--max-quantity", "maxQuantity"],
     ["--runs", "runs"],
     ["--output", "output"],
@@ -45,7 +49,7 @@ function parseArgs(argv) {
         : Number(value);
   }
 
-  for (const key of ["stock", "buyers", "concurrency", "products", "maxQuantity", "runs"]) {
+  for (const key of ["stock", "buyers", "concurrency", "products", "databaseShards", "maxQuantity", "runs"]) {
     if (!Number.isInteger(config[key]) || config[key] < 1) throw new Error(`${key} must be a positive integer.`);
   }
   if (config.stock > 10_000) throw new Error("stock cannot exceed 10,000.");
@@ -61,6 +65,18 @@ function parseArgs(argv) {
       throw new Error("compareProducts cannot exceed stock; every product needs at least one unit.");
     }
     if (config.compareProducts === config.products) throw new Error("compareProducts must differ from products.");
+  }
+  if (config.databaseShards > 4) throw new Error("databaseShards cannot exceed the four configured benchmark databases.");
+  if (config.compareDatabaseShards !== null) {
+    if (!Number.isInteger(config.compareDatabaseShards) || config.compareDatabaseShards < 1 || config.compareDatabaseShards > 4) {
+      throw new Error("compareDatabaseShards must be an integer from 1 to 4.");
+    }
+    if (config.compareDatabaseShards === config.databaseShards) {
+      throw new Error("compareDatabaseShards must differ from databaseShards.");
+    }
+  }
+  if (config.compareProducts !== null && config.compareDatabaseShards !== null) {
+    throw new Error("Compare either products or database shards in one run, not both.");
   }
   if (config.maxQuantity > 1_000) throw new Error("maxQuantity cannot exceed 1,000.");
   if (config.runs > 10) throw new Error("runs cannot exceed 10.");
@@ -130,10 +146,11 @@ async function executeRun(config, runNumber) {
     (_, index) => baseStock + (index < extraUnits ? 1 : 0),
   );
   const experiments = [];
-  for (const initialStock of productStocks) {
+  for (const [productIndex, initialStock] of productStocks.entries()) {
     const started = await postJson(`${config.baseUrl}/api/experiments/start`, {
       version: config.version,
       initialStock,
+      databaseShard: productIndex % config.databaseShards,
     });
     assert.equal(started.response.ok, true, `start returned ${started.response.status}`);
     experiments.push({ id: started.payload.id, initialStock });
@@ -240,6 +257,7 @@ async function executeRun(config, runNumber) {
       buyers: config.buyers,
       concurrency: config.concurrency,
       products: config.products,
+      databaseShards: config.databaseShards,
       productStocks,
       maxQuantity: config.maxQuantity,
       requestedUnits: results.reduce((total, result) => total + result.quantity, 0),
@@ -296,7 +314,13 @@ const config = parseArgs(process.argv.slice(2));
 const allRuns = [];
 let output;
 
-if (config.compareProducts === null) {
+const comparisonDimension = config.compareProducts !== null
+  ? "products"
+  : config.compareDatabaseShards !== null
+    ? "databaseShards"
+    : null;
+
+if (comparisonDimension === null) {
   const runs = [];
   for (let runNumber = 1; runNumber <= config.runs; runNumber += 1) {
     const result = await executeRun(config, runNumber);
@@ -313,22 +337,24 @@ if (config.compareProducts === null) {
     runs,
   };
 } else {
+  const baselineValue = config[comparisonDimension];
+  const comparisonValue = comparisonDimension === "products" ? config.compareProducts : config.compareDatabaseShards;
   const pairs = [];
   for (let pair = 1; pair <= config.runs; pair += 1) {
     const order = pair % 2 === 1
-      ? [config.products, config.compareProducts]
-      : [config.compareProducts, config.products];
+      ? [baselineValue, comparisonValue]
+      : [comparisonValue, baselineValue];
     const scenarios = {};
-    for (const products of order) {
-      const result = await executeRun({ ...config, products }, pair);
-      scenarios[String(products)] = result;
+    for (const value of order) {
+      const result = await executeRun({ ...config, [comparisonDimension]: value }, pair);
+      scenarios[String(value)] = result;
       allRuns.push(result);
       console.error(
-        `Pair ${pair}, ${products} product(s): ${result.performance.throughputRequestsPerSecond} req/s, client p95 ${result.performance.p95Ms} ms, transaction p95 ${result.performance.transactionP95Ms} ms`,
+        `Pair ${pair}, ${value} ${comparisonDimension}: ${result.performance.throughputRequestsPerSecond} req/s, client p95 ${result.performance.p95Ms} ms, transaction p95 ${result.performance.transactionP95Ms} ms`,
       );
     }
-    const baseline = scenarios[String(config.products)];
-    const comparison = scenarios[String(config.compareProducts)];
+    const baseline = scenarios[String(baselineValue)];
+    const comparison = scenarios[String(comparisonValue)];
     pairs.push({
       pair,
       order,
@@ -358,7 +384,7 @@ if (config.compareProducts === null) {
     measuredAt: new Date().toISOString(),
     target: config.baseUrl,
     note: "Paired, alternating-order comparison from one load-generator process. Educational trace writes were disabled.",
-    comparison: { baselineProducts: config.products, comparisonProducts: config.compareProducts },
+    comparison: { dimension: comparisonDimension, baseline: baselineValue, comparison: comparisonValue },
     pairs,
     pairedSummary,
   };

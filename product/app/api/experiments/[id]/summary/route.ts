@@ -1,5 +1,5 @@
-import { env } from "cloudflare:workers";
 import { NextResponse } from "next/server";
+import { databaseForExperiment } from "@/lib/experiment-database";
 
 export const runtime = "edge";
 
@@ -16,18 +16,19 @@ type HoldSummary = { activeHolds: number; heldUnits: number };
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  if (!env.DB) return NextResponse.json({ error: "The experiment database is unavailable." }, { status: 503 });
+  const database = databaseForExperiment(id);
+  if (!database) return NextResponse.json({ error: "The experiment database is unavailable." }, { status: 503 });
 
-  const experiment = await env.DB.prepare(
+  const experiment = await database.prepare(
     "SELECT id, version, initial_stock AS initialStock, available, created_at AS createdAt FROM experiments WHERE id = ?",
   ).bind(id).first<Experiment>();
   if (!experiment) return NextResponse.json({ error: "Experiment not found." }, { status: 404 });
 
   const [allocations, holds] = await Promise.all([
-    env.DB.prepare(
+    database.prepare(
       "SELECT COUNT(*) AS acceptedRequests, COALESCE(SUM(quantity), 0) AS allocatedUnits FROM allocations WHERE experiment_id = ?",
     ).bind(id).first<AllocationSummary>(),
-    env.DB.prepare(
+    database.prepare(
       "SELECT COUNT(*) AS activeHolds, COALESCE(SUM(quantity), 0) AS heldUnits FROM reservations WHERE experiment_id = ? AND status = 'held'",
     ).bind(id).first<HoldSummary>(),
   ]);

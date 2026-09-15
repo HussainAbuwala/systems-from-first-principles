@@ -27,6 +27,10 @@ Use `--compare-products 10` to run a paired comparison. The runner alternates sc
 
 `npm run benchmark:load -- --base-url <benchmark-url> --stock 1000 --buyers 1000 --concurrency 50 --products 1 --compare-products 10 --runs 10 --expected accepted --output benchmarks/strong-success-c50.json`
 
+The benchmark deployment binds four independent D1 databases. Use `--database-shards 1 --compare-database-shards 4` to keep the product workload fixed while testing whether independent database queues change performance:
+
+`npm run benchmark:load -- --base-url <benchmark-url> --stock 1000 --buyers 1000 --concurrency 50 --products 10 --database-shards 1 --compare-database-shards 4 --runs 10 --expected accepted --output benchmarks/strong-database-shards-c50.json`
+
 The raw exploratory results and methodology are checked into `benchmarks/` so the numbers shown by the website can be audited and regenerated.
 
 ## Local development
@@ -39,7 +43,7 @@ The repository at `HussainAbuwala/systems-from-first-principles` is the canonica
 
 The checked-in `wrangler.jsonc` contains non-secret resource identifiers and production runtime configuration. Run `npm run deploy` from `product/` to apply pending D1 migrations and deploy the Worker. This keeps production independent from whichever ChatGPT account performs the next development session.
 
-The `benchmark` Wrangler environment is a separate Worker and D1 database. Run `npm run deploy:benchmark` before collecting measurements so load experiments cannot change the public demonstration's data or consume its write capacity.
+The `benchmark` Wrangler environment is a separate Worker with four D1 database bindings. Run `npm run deploy:benchmark` before collecting measurements so load experiments cannot change the public demonstration's data or consume its write capacity.
 
 ## Product rule
 

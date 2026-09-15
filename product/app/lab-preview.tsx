@@ -10,6 +10,7 @@ import concurrency50 from "@/benchmarks/hot-product-c50.json";
 import mixedQuantity from "@/benchmarks/mixed-quantity-c20.json";
 import tenProducts from "@/benchmarks/ten-products-c50.json";
 import strongComparison from "@/benchmarks/strong-success-c50-summary.json";
+import databaseShardComparison from "@/benchmarks/strong-database-shards-c50-summary.json";
 
 type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
 type Event = { id: number; buyer: string; action: string; detail: string; createdAt: number };
@@ -82,6 +83,8 @@ const distributedThroughputGain = Math.round((tenProductComparison.throughput / 
 const distributedP95Reduction = Math.round((1 - tenProductComparison.p95 / hotProductComparison.p95) * 100);
 const strongHot = strongComparison.scenarioMedians.oneProduct;
 const strongDistributed = strongComparison.scenarioMedians.tenProducts;
+const oneDatabase = databaseShardComparison.scenarioMedians.oneDatabase;
+const fourDatabases = databaseShardComparison.scenarioMedians.fourDatabases;
 
 declare global {
   interface Document {
@@ -633,6 +636,62 @@ export function LabPreview() {
                 <p className="mt-2 text-sm leading-6 text-slate-400">The next experiment must remove the shared database queue—for example, by partitioning products across independent D1 databases or per-product coordinators—and rerun the same paired workload.</p>
               </div>
               <p className="mt-4 text-xs leading-5 text-slate-600">This result is specific to one Worker, one D1 database, one Toronto load generator and the measured workload. It is evidence about this design, not a universal capacity claim.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 pb-16 lg:px-8" id="database-partitioning">
+        <div className="border border-white/10 bg-[#0b1118]">
+          <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
+            <div className="max-w-4xl">
+              <p className="eyebrow">10 · Database partitioning · controlled intervention</p>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Removing the shared database queue produces a repeatable improvement.</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Both scenarios use ten products, 1,000 buyers, 1,000 units, concurrency 50 and the same reservation transaction. In the first, every product uses one D1 database. In the second, the same ten products are routed round-robin across four independent D1 databases. Ten alternating pairs produced 20,000 measured purchases.</p>
+            </div>
+            <div className="border border-emerald-300/20 bg-emerald-300/[0.04] px-3 py-2 font-mono text-[11px] text-emerald-300">20/20 RUNS CORRECT · 0 ERRORS</div>
+          </div>
+
+          <div className="grid gap-px bg-white/10 md:grid-cols-2">
+            <StrongComparisonCard label="One database" detail="10 products → one shared D1 queue" metrics={oneDatabase} />
+            <StrongComparisonCard label="Four databases" detail="10 products → four independent D1 queues" metrics={fourDatabases} />
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 xl:grid-cols-3">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Throughput · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-emerald-300">+48.6%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change with four databases. The 95% interval was +42.7% to +54.0%, and four databases won all 10 pairs.</p>
+              <p className="mt-3 text-xs leading-5 text-emerald-300">The entire interval is above zero: the improvement was repeatable.</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Client p95 · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-emerald-300">−25.1%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change with four databases. The 95% interval was −33.0% to −17.6%, and four databases won all 10 pairs.</p>
+              <p className="mt-3 text-xs leading-5 text-emerald-300">Buyers waited less even while the system completed more requests.</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Transaction p95 · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-emerald-300">−30.5%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change inside the D1 transaction. The 95% interval was −40.2% to −19.5%; four databases won 9 of 10 pairs.</p>
+              <p className="mt-3 text-xs leading-5 text-emerald-300">The clearest improvement appears inside the database path.</p>
+            </article>
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">What this proves for our system</p>
+              <h3 className="mt-2 text-xl font-medium">Independent database queues let independent products make progress in parallel.</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Stage 09 changed rows but kept one database and found no reliable throughput gain. Here we kept the ten products and changed the number of databases. Throughput rose from a median 187.0 to 278.7 requests per second. That isolates the shared D1 database as a material bottleneck in this workload.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Four databases did not make the system four times faster. Worker execution, network time and uneven work across four queues still remain.</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">New complexity we just earned</p>
+              <div className="mt-3 border-l-2 border-amber-200/70 bg-amber-200/[0.04] px-4 py-3">
+                <p className="font-medium text-amber-100">Every product needs a stable route to its database.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">The service must know which shard owns a product, keep that mapping stable and decide what happens when a request spans products stored in different databases.</p>
+              </div>
+              <p className="mt-4 text-xs leading-5 text-slate-600">Measured from one Toronto load generator on September 15, 2026. This supports a conclusion about this workload and deployment; it is not a universal D1 capacity number.</p>
             </article>
           </div>
         </div>

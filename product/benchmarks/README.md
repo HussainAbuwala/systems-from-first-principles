@@ -34,4 +34,17 @@ The paired mean throughput change for ten products was +0.8%, with a bootstrap 9
 
 All 20 runs returned zero errors, recorded timing for every request and conserved all 20,000 inventory units. The stronger result does not reproduce the first attempt's throughput improvement. Distributing records inside one D1 database does not create a reliable increase in write capacity for this workload.
 
-These are exploratory, client-observed measurements. They show that the test harness works and motivate the next controlled experiment. They are not a general capacity claim for Cloudflare Workers or D1.
+## Database partitioning experiment
+
+`strong-database-shards-c50.json` keeps the stronger experiment's ten products, 1,000 buyers, 1,000 units, concurrency 50, successful transaction path and trace-free measurement. It changes one architectural variable: all ten products share one D1 database, or the same products are routed round-robin across four independent D1 databases. Ten alternating pairs produced another 20,000 measured requests.
+
+| Databases | Median throughput | Median client p95 | Median server p95 | Median transaction p95 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 187.0 req/s | 408.0 ms | 367.5 ms | 192.5 ms |
+| 4 | 278.7 req/s | 299.6 ms | 271.0 ms | 132.5 ms |
+
+Four databases increased paired mean throughput by 48.6%, with a bootstrap 95% interval from +42.7% to +54.0%, and won all 10 throughput pairs. Client p95 fell by 25.1% on average (95% interval −33.0% to −17.6%) and improved in all 10 pairs. Transaction p95 fell by 30.5% on average (95% interval −40.2% to −19.5%) and improved in 9 of 10 pairs.
+
+All 20 runs returned zero errors, captured timing for every request and conserved all 20,000 units. Combined with the one-database row-distribution result, this shows that the shared D1 database was a material bottleneck for this workload. Partitioning also introduces product-to-database routing and makes operations spanning several shards more complex.
+
+These are exploratory, client-observed measurements from this deployment and workload. They are not a general capacity claim for Cloudflare Workers or D1.
