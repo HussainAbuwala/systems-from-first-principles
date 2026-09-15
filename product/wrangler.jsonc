@@ -1,0 +1,25 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "systems-from-first-principles",
+  "account_id": "5dd59002ed34ce9100fa34582487e753",
+  "main": "vinext/server/fetch-handler",
+  "compatibility_date": "2026-09-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist/client",
+    "not_found_handling": "none",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "systems-from-first-principles-db",
+      "database_id": "489fb2ae-c438-47af-8c64-8155e7fdb162",
+      "migrations_dir": "./drizzle"
+    }
+  ],
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  }
+}

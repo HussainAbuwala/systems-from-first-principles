@@ -1,9 +1,10 @@
 # Video production guide
 
-Use this as the short preflight for future **Systems from First Principles** episodes.
+Use this as the short preflight for future **Systems from First Principles** episodes. Pick and approve the topic first with the [episode selection criteria](episode-selection.md).
 
 ## Story
 
+- Never start with the answer. Build the system from scratch, piece by piece, and add each component only because the previous design visibly failed. Weave in the company's documented failures as the build reaches them.
 - Start with the real user-visible problem and show it happening.
 - Build in this order: **simple solution → visible failure → smallest useful fix**.
 - Define a term only when the audience has seen why it is needed. Always explain what it is for and when it matters.
