@@ -19,6 +19,19 @@ The key-distribution comparison keeps 50 units, 100 buyers, concurrency 50, the 
 | 1 | 109.4 req/s | 559.4 ms | 523.0 ms |
 | 10 | 126.4 req/s | 454.5 ms | 408.0 ms |
 
-The ten-product median improved, but one of its three runs was substantially slower than the other two. The result is directional evidence that key distribution matters, not proof that one inventory row is the only bottleneck.
+The ten-product median improved, but one of its three runs was substantially slower than the other two. That first attempt was too short and mixed accepted transactions, rejected requests, and educational trace writes, so it generated a hypothesis rather than a capacity conclusion.
+
+## Stronger paired experiment
+
+`strong-success-c50.json` contains the follow-up experiment. Each scenario has 1,000 buyers, 1,000 units and concurrency 50, so all 1,000 requests execute the same successful reservation transaction. Performance requests disable the educational event-trace writes. Ten one-product/ten-product pairs were run, reversing their order every pair. This produced 20,000 measured requests and 20,000 operation-level timing samples.
+
+| Products | Median throughput | Median client p95 | Median server p95 | Median transaction p95 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 160.4 req/s | 511.0 ms | 461.5 ms | 291.5 ms |
+| 10 | 159.6 req/s | 483.7 ms | 455.0 ms | 273.0 ms |
+
+The paired mean throughput change for ten products was +0.8%, with a bootstrap 95% interval from −4.1% to +6.0%; ten products won only 3 of 10 throughput pairs. Client p95 moved in a promising direction, winning 8 of 10 pairs, but its interval also crossed zero (−11.6% to +3.5%). The transaction p95 interval was much wider (−20.1% to +20.1%).
+
+All 20 runs returned zero errors, recorded timing for every request and conserved all 20,000 inventory units. The stronger result does not reproduce the first attempt's throughput improvement. Distributing records inside one D1 database does not create a reliable increase in write capacity for this workload.
 
 These are exploratory, client-observed measurements. They show that the test harness works and motivate the next controlled experiment. They are not a general capacity claim for Cloudflare Workers or D1.

@@ -11,7 +11,7 @@ The first system is an inventory reservation service. It currently contains six 
 - a controlled crash between two writes makes the stock disappear without a durable owner;
 - a D1 transaction commits the stock change and its hold together, even when the response is lost afterward.
 
-Every path executes against persistent database state and emits a database trace. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
+Every interactive teaching path executes against persistent database state and emits a database trace. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
 
 Run `npm run verify:experiments` while the local preview is available to execute all six stages and assert their expected database outcomes.
 
@@ -22,6 +22,10 @@ The purchase API accepts a positive integer `quantity`, and experiment creation 
 Run `npm run benchmark:load -- --base-url <deployed-url> --stock 100 --buyers 500 --concurrency 50 --products 1 --max-quantity 5 --runs 3` from `product/` to generate a deterministic hot-product workload. The runner reports client-observed throughput, p50/p95/p99 latency, server latency for accepted and rejected purchases, response errors, and database conservation checks. Use a dedicated benchmark deployment for published measurements.
 
 The `--products` option divides the same total stock across independent inventory records and sends buyers to them round-robin. Comparing `--products 1` with `--products 10` keeps the total buyers, stock, concurrency, Worker and database fixed while changing only the key distribution.
+
+Use `--compare-products 10` to run a paired comparison. The runner alternates scenario order for each pair, disables educational trace writes, verifies the expected outcome with `--expected accepted|mixed|rejected`, and reports lookup and transaction timing separately. For example:
+
+`npm run benchmark:load -- --base-url <benchmark-url> --stock 1000 --buyers 1000 --concurrency 50 --products 1 --compare-products 10 --runs 10 --expected accepted --output benchmarks/strong-success-c50.json`
 
 The raw exploratory results and methodology are checked into `benchmarks/` so the numbers shown by the website can be audited and regenerated.
 

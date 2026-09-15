@@ -42,6 +42,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     buyer?: unknown;
     quantity?: unknown;
     simulateResponseLoss?: unknown;
+    captureTrace?: unknown;
   } | null;
   const buyer = typeof body?.buyer === "string" ? body.buyer.trim().slice(0, 24) : "";
   if (!buyer) return NextResponse.json({ error: "Buyer is required." }, { status: 400 });
@@ -51,9 +52,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   }
   if (!env.DB) return NextResponse.json({ error: "The experiment database is unavailable." }, { status: 503 });
 
+  const requestParsedAt = performance.now();
+  const lookupStartedAt = performance.now();
   const experiment = await env.DB.prepare(
     "SELECT id, version, available FROM experiments WHERE id = ?",
   ).bind(id).first<Experiment>();
+  const lookupFinishedAt = performance.now();
   if (!experiment) return NextResponse.json({ error: "Experiment not found." }, { status: 404 });
 
   if (experiment.version === "naive") {
@@ -103,34 +107,60 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const now = Date.now();
     const reservationId = crypto.randomUUID();
     const expiresAt = now + HOLD_DURATION_MS;
-    const [hold] = await env.DB.batch([
+    const captureTrace = body?.captureTrace !== false;
+    const statements = [
       env.DB.prepare(
         "INSERT INTO reservations (id, experiment_id, buyer, quantity, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?",
       ).bind(reservationId, buyer, quantity, expiresAt, now, id, quantity),
       env.DB.prepare(
         "UPDATE experiments SET available = available - ? WHERE id = ? AND EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
       ).bind(quantity, id, reservationId),
-      env.DB.prepare(
+    ];
+    if (captureTrace) {
+      statements.push(env.DB.prepare(
         "INSERT INTO experiment_events (experiment_id, buyer, action, detail, created_at) SELECT ?, ?, 'transaction', ?, ? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
-      ).bind(id, buyer, "stock subtraction and hold commit in one transaction; response is lost afterward", now, reservationId),
-    ]);
+      ).bind(id, buyer, "stock subtraction and hold commit in one transaction; response is lost afterward", now, reservationId));
+    }
+
+    const transactionStartedAt = performance.now();
+    const [hold] = await env.DB.batch(statements);
+    const transactionFinishedAt = performance.now();
     const accepted = Number(hold.meta.changes ?? 0) === 1;
+    let traceDurationMs = 0;
     if (!accepted) {
-      await record(id, buyer, "reject", "transaction creates no hold because stock is unavailable");
+      if (captureTrace) {
+        const traceStartedAt = performance.now();
+        await record(id, buyer, "reject", "transaction creates no hold because stock is unavailable");
+        traceDurationMs = performance.now() - traceStartedAt;
+      }
+      const responseStartedAt = performance.now();
       return NextResponse.json({
         buyer,
         quantity,
         accepted: false,
-        serverDurationMs: Number((performance.now() - requestStartedAt).toFixed(2)),
+        serverDurationMs: Number((responseStartedAt - requestStartedAt).toFixed(2)),
+        serverTimings: {
+          parseMs: Number((requestParsedAt - requestStartedAt).toFixed(2)),
+          lookupMs: Number((lookupFinishedAt - lookupStartedAt).toFixed(2)),
+          transactionMs: Number((transactionFinishedAt - transactionStartedAt).toFixed(2)),
+          traceMs: Number(traceDurationMs.toFixed(2)),
+        },
       });
     }
 
     if (body?.simulateResponseLoss === false) {
+      const responseStartedAt = performance.now();
       return NextResponse.json({
         buyer,
         quantity,
         accepted: true,
-        serverDurationMs: Number((performance.now() - requestStartedAt).toFixed(2)),
+        serverDurationMs: Number((responseStartedAt - requestStartedAt).toFixed(2)),
+        serverTimings: {
+          parseMs: Number((requestParsedAt - requestStartedAt).toFixed(2)),
+          lookupMs: Number((lookupFinishedAt - lookupStartedAt).toFixed(2)),
+          transactionMs: Number((transactionFinishedAt - transactionStartedAt).toFixed(2)),
+          traceMs: 0,
+        },
       });
     }
 

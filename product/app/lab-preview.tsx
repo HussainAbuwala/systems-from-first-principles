@@ -9,6 +9,7 @@ import concurrency20 from "@/benchmarks/hot-product-c20.json";
 import concurrency50 from "@/benchmarks/hot-product-c50.json";
 import mixedQuantity from "@/benchmarks/mixed-quantity-c20.json";
 import tenProducts from "@/benchmarks/ten-products-c50.json";
+import strongComparison from "@/benchmarks/strong-success-c50-summary.json";
 
 type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
 type Event = { id: number; buyer: string; action: string; detail: string; createdAt: number };
@@ -79,6 +80,8 @@ const hotProductComparison = summarizeBenchmark(50, concurrency50.runs);
 const tenProductComparison = summarizeBenchmark(50, tenProducts.runs);
 const distributedThroughputGain = Math.round((tenProductComparison.throughput / hotProductComparison.throughput - 1) * 100);
 const distributedP95Reduction = Math.round((1 - tenProductComparison.p95 / hotProductComparison.p95) * 100);
+const strongHot = strongComparison.scenarioMedians.oneProduct;
+const strongDistributed = strongComparison.scenarioMedians.tenProducts;
 
 declare global {
   interface Document {
@@ -547,7 +550,7 @@ export function LabPreview() {
       <section className="mx-auto max-w-[1500px] px-5 pb-8 lg:px-8" id="key-distribution">
         <div className="border border-white/10 bg-[#0b1118]">
           <div className="border-b border-white/10 p-5 sm:p-7">
-            <p className="eyebrow">08 · Key distribution · controlled comparison</p>
+            <p className="eyebrow">08 · Key distribution · first attempt</p>
             <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Is the traffic volume expensive—or is one hot product expensive?</h2>
             <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-400">Both workloads send 100 one-unit requests at concurrency 50, contain 50 total units, and use the same Worker and D1 database. Only the destination changes. The first workload targets one inventory record; the second distributes requests evenly across ten records.</p>
           </div>
@@ -561,7 +564,7 @@ export function LabPreview() {
             <article className="bg-[#0b1118] p-5 sm:p-7">
               <p className="eyebrow">What we observed</p>
               <h3 className="mt-2 text-xl font-medium">The ten-product median handled {distributedThroughputGain}% more requests per second and lowered client p95 by {distributedP95Reduction}%.</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-400">That points toward hot-key contention contributing to the wait. It is still a clue: one ten-product run was dramatically slower than the other two, and both workloads share one database. Three short runs are too noisy for a capacity claim.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">This gave us a hypothesis, but one ten-product run was dramatically slower than the others. Each run lasted about a second, mixed successful and rejected purchases, and included educational trace writes. The apparent improvement may be workload noise.</p>
               <div className="mt-5 grid grid-cols-2 gap-px bg-white/10">
                 <Metric label="Hot server p95" value={`${hotProductComparison.serverP95}ms`} />
                 <Metric label="Distributed server p95" value={`${tenProductComparison.serverP95}ms`} tone="good" />
@@ -572,13 +575,85 @@ export function LabPreview() {
               <p className="mt-3 text-sm leading-6 text-slate-400">A database row is not the only possible queue. The shared database, its indexes, request routing and network can still affect every product. Before choosing Redis, sharding or another coordinator, we need longer alternating runs and operation-level timing.</p>
               <div className="mt-5 border-l-2 border-amber-200/70 bg-amber-200/[0.04] px-4 py-3">
                 <p className="font-mono text-[11px] uppercase tracking-[0.14em] text-amber-200">Current conclusion</p>
-                <p className="mt-2 text-sm leading-6 text-slate-400">Distribution helped the median, but the experiment has not isolated the exact queue. The next design change must be earned by stronger evidence.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">Do not change the architecture yet. Remove trace writes, make every request execute the same successful transaction, lengthen each run, alternate the order and compare paired results.</p>
               </div>
             </article>
           </div>
         </div>
       </section>
+
+      <section className="mx-auto max-w-[1500px] px-5 pb-8 lg:px-8" id="stronger-evidence">
+        <div className="border border-white/10 bg-[#0b1118]">
+          <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
+            <div className="max-w-4xl">
+              <p className="eyebrow">09 · Stronger evidence · paired experiment</p>
+              <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">The apparent throughput improvement disappears.</h2>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Each scenario now has 1,000 buyers and 1,000 units, so every request succeeds through the same crash-safe reservation transaction. Trace writes are disabled. We ran ten pairs and reversed the order for every other pair: 20,000 measured purchase requests in total.</p>
+            </div>
+            <div className="border border-emerald-300/20 bg-emerald-300/[0.04] px-3 py-2 font-mono text-[11px] text-emerald-300">20/20 RUNS CORRECT · 0 ERRORS</div>
+          </div>
+
+          <div className="grid gap-px bg-white/10 md:grid-cols-2">
+            <StrongComparisonCard label="One product" detail="1,000 buyers → one inventory record" metrics={strongHot} />
+            <StrongComparisonCard label="Ten products" detail="100 buyers each → ten inventory records" metrics={strongDistributed} />
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 xl:grid-cols-3">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Throughput · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-slate-100">+0.8%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change for ten products. The 95% interval was −4.1% to +6.0%, and ten products won only 3 of 10 pairs.</p>
+              <p className="mt-3 text-xs leading-5 text-amber-200">The interval crosses zero: no reliable throughput improvement.</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Client p95 · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-slate-100">−4.8%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change for ten products. It won 8 of 10 pairs, but the 95% interval still ranged from −11.6% to +3.5%.</p>
+              <p className="mt-3 text-xs leading-5 text-amber-200">A promising direction, still compatible with a small regression.</p>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Transaction p95 · paired result</p>
+              <p className="mt-3 font-mono text-3xl text-slate-100">−0.9%</p>
+              <p className="mt-2 text-sm leading-6 text-slate-400">Mean change inside the D1 transaction. The 95% interval was −20.1% to +20.1%; ten products won 6 of 10 pairs.</p>
+              <p className="mt-3 text-xs leading-5 text-amber-200">The database timing does not show a stable row-distribution benefit.</p>
+            </article>
+          </div>
+
+          <div className="grid gap-px border-t border-white/10 bg-white/10 lg:grid-cols-[1.1fr_0.9fr]">
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">What changed our conclusion</p>
+              <h3 className="mt-2 text-xl font-medium">More rows do not create more write capacity inside one D1 database.</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-400">The first three-run result looked persuasive. The longer paired test did not reproduce its throughput gain. That fits D1&apos;s execution model: an individual database processes queries one at a time, so all ten products still meet the same database-wide queue.</p>
+              <a className="mt-4 inline-block font-mono text-[11px] text-cyan-200 underline decoration-cyan-300/30 underline-offset-4" href="https://developers.cloudflare.com/d1/platform/limits/#concurrency-and-throughput" target="_blank" rel="noreferrer">Cloudflare D1 concurrency documentation ↗</a>
+            </article>
+            <article className="bg-[#0b1118] p-5 sm:p-7">
+              <p className="eyebrow">Requirement earned by evidence</p>
+              <div className="mt-3 border-l-2 border-cyan-300/70 bg-cyan-300/[0.04] px-4 py-3">
+                <p className="font-medium text-cyan-100">Independent products must be able to make progress independently.</p>
+                <p className="mt-2 text-sm leading-6 text-slate-400">The next experiment must remove the shared database queue—for example, by partitioning products across independent D1 databases or per-product coordinators—and rerun the same paired workload.</p>
+              </div>
+              <p className="mt-4 text-xs leading-5 text-slate-600">This result is specific to one Worker, one D1 database, one Toronto load generator and the measured workload. It is evidence about this design, not a universal capacity claim.</p>
+            </article>
+          </div>
+        </div>
+      </section>
     </main>
+  );
+}
+
+function StrongComparisonCard({ label, detail, metrics }: { label: string; detail: string; metrics: typeof strongHot }) {
+  return (
+    <article className="bg-[#0b1118] p-5 sm:p-7">
+      <p className="font-mono text-sm text-cyan-200">{label}</p>
+      <p className="mt-2 text-xs text-slate-500">{detail}</p>
+      <div className="mt-6 grid grid-cols-2 gap-5 sm:grid-cols-4">
+        <div><p className="eyebrow">Throughput</p><p className="mt-2 font-mono text-xl">{metrics.throughputRequestsPerSecond}<span className="ml-1 text-[10px] text-slate-500">req/s</span></p></div>
+        <div><p className="eyebrow">Client p95</p><p className="mt-2 font-mono text-xl">{metrics.clientP95Ms}<span className="ml-1 text-[10px] text-slate-500">ms</span></p></div>
+        <div><p className="eyebrow">Server p95</p><p className="mt-2 font-mono text-xl">{metrics.serverP95Ms}<span className="ml-1 text-[10px] text-slate-500">ms</span></p></div>
+        <div><p className="eyebrow">DB transaction p95</p><p className="mt-2 font-mono text-xl">{metrics.transactionP95Ms}<span className="ml-1 text-[10px] text-slate-500">ms</span></p></div>
+      </div>
+      <p className="mt-5 font-mono text-[10px] text-emerald-300">10 RUNS · 10,000 ACCEPTED · INVENTORY CONSERVED</p>
+    </article>
   );
 }
 

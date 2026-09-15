@@ -8,10 +8,12 @@ const defaults = {
   buyers: 200,
   concurrency: 25,
   products: 1,
+  compareProducts: null,
   maxQuantity: 1,
   runs: 3,
   output: process.env.LOAD_OUTPUT ?? null,
   version: "transactional_hold",
+  expected: "any",
 };
 
 function parseArgs(argv) {
@@ -22,10 +24,12 @@ function parseArgs(argv) {
     ["--buyers", "buyers"],
     ["--concurrency", "concurrency"],
     ["--products", "products"],
+    ["--compare-products", "compareProducts"],
     ["--max-quantity", "maxQuantity"],
     ["--runs", "runs"],
     ["--output", "output"],
     ["--version", "version"],
+    ["--expected", "expected"],
   ]);
 
   for (let index = 0; index < argv.length; index += 2) {
@@ -34,7 +38,11 @@ function parseArgs(argv) {
     if (!key || value === undefined) {
       throw new Error(`Unknown or incomplete argument: ${argv[index] ?? "<empty>"}`);
     }
-    config[key] = key === "baseUrl" ? value.replace(/\/$/, "") : key === "output" || key === "version" ? value : Number(value);
+    config[key] = key === "baseUrl"
+      ? value.replace(/\/$/, "")
+      : key === "output" || key === "version" || key === "expected"
+        ? value
+        : Number(value);
   }
 
   for (const key of ["stock", "buyers", "concurrency", "products", "maxQuantity", "runs"]) {
@@ -45,10 +53,22 @@ function parseArgs(argv) {
   if (config.concurrency > 200) throw new Error("concurrency cannot exceed 200.");
   if (config.products > 100) throw new Error("products cannot exceed 100.");
   if (config.products > config.stock) throw new Error("products cannot exceed stock; every product needs at least one unit.");
+  if (config.compareProducts !== null) {
+    if (!Number.isInteger(config.compareProducts) || config.compareProducts < 1 || config.compareProducts > 100) {
+      throw new Error("compareProducts must be an integer from 1 to 100.");
+    }
+    if (config.compareProducts > config.stock) {
+      throw new Error("compareProducts cannot exceed stock; every product needs at least one unit.");
+    }
+    if (config.compareProducts === config.products) throw new Error("compareProducts must differ from products.");
+  }
   if (config.maxQuantity > 1_000) throw new Error("maxQuantity cannot exceed 1,000.");
   if (config.runs > 10) throw new Error("runs cannot exceed 10.");
   if (config.version !== "atomic" && config.version !== "transactional_hold") {
     throw new Error("version must be atomic or transactional_hold.");
+  }
+  if (!new Set(["any", "accepted", "mixed", "rejected"]).has(config.expected)) {
+    throw new Error("expected must be any, accepted, mixed, or rejected.");
   }
   return config;
 }
@@ -56,6 +76,40 @@ function parseArgs(argv) {
 function percentile(sorted, fraction) {
   if (sorted.length === 0) return 0;
   return sorted[Math.min(sorted.length - 1, Math.ceil(sorted.length * fraction) - 1)];
+}
+
+function median(values) {
+  const sorted = [...values].sort((left, right) => left - right);
+  const midpoint = Math.floor(sorted.length / 2);
+  return sorted.length % 2 === 0
+    ? (sorted[midpoint - 1] + sorted[midpoint]) / 2
+    : sorted[midpoint];
+}
+
+function mean(values) {
+  return values.reduce((total, value) => total + value, 0) / values.length;
+}
+
+function bootstrapMeanConfidenceInterval(values, samples = 10_000) {
+  let state = 0x5f3759df;
+  function random() {
+    state = (Math.imul(state, 1_664_525) + 1_013_904_223) >>> 0;
+    return state / 0x1_0000_0000;
+  }
+
+  const means = new Array(samples);
+  for (let sample = 0; sample < samples; sample += 1) {
+    let total = 0;
+    for (let index = 0; index < values.length; index += 1) {
+      total += values[Math.floor(random() * values.length)];
+    }
+    means[sample] = total / values.length;
+  }
+  means.sort((left, right) => left - right);
+  return {
+    low: Number(percentile(means, 0.025).toFixed(1)),
+    high: Number(percentile(means, 0.975).toFixed(1)),
+  };
 }
 
 async function postJson(url, body) {
@@ -105,6 +159,7 @@ async function executeRun(config, runNumber) {
             buyer: `Buyer-${String(buyerIndex + 1).padStart(4, "0")}`,
             quantity,
             simulateResponseLoss: false,
+            captureTrace: false,
           },
         );
         results[buyerIndex] = {
@@ -114,6 +169,7 @@ async function executeRun(config, runNumber) {
           quantity,
           productIndex,
           serverDurationMs: typeof payload.serverDurationMs === "number" ? payload.serverDurationMs : null,
+          serverTimings: payload.serverTimings && typeof payload.serverTimings === "object" ? payload.serverTimings : null,
           error: response.ok ? null : payload.error ?? `HTTP ${response.status}`,
         };
       } catch (error) {
@@ -124,6 +180,7 @@ async function executeRun(config, runNumber) {
           quantity,
           productIndex,
           serverDurationMs: null,
+          serverTimings: null,
           error: error instanceof Error ? error.message : String(error),
         };
       }
@@ -164,6 +221,14 @@ async function executeRun(config, runNumber) {
     .map((result) => result.serverDurationMs)
     .filter((duration) => duration !== null)
     .sort((left, right) => left - right);
+  const operationDurations = (name, selectedResults = results) => selectedResults
+    .map((result) => result.serverTimings?.[name])
+    .filter((duration) => typeof duration === "number")
+    .sort((left, right) => left - right);
+  const lookupDurations = operationDurations("lookupMs");
+  const transactionDurations = operationDurations("transactionMs");
+  const acceptedTransactionDurations = operationDurations("transactionMs", accepted);
+  const rejectedTransactionDurations = operationDurations("transactionMs", rejected);
   const acceptedUnitsFromResponses = accepted.reduce((total, result) => total + result.quantity, 0);
 
   return {
@@ -192,6 +257,13 @@ async function executeRun(config, runNumber) {
       acceptedServerP95Ms: Number(percentile(acceptedServerLatencies, 0.95).toFixed(1)),
       rejectedServerP95Ms: Number(percentile(rejectedServerLatencies, 0.95).toFixed(1)),
       serverTimingSamples: serverLatencies.length,
+      lookupP50Ms: Number(percentile(lookupDurations, 0.5).toFixed(1)),
+      lookupP95Ms: Number(percentile(lookupDurations, 0.95).toFixed(1)),
+      transactionP50Ms: Number(percentile(transactionDurations, 0.5).toFixed(1)),
+      transactionP95Ms: Number(percentile(transactionDurations, 0.95).toFixed(1)),
+      acceptedTransactionP95Ms: Number(percentile(acceptedTransactionDurations, 0.95).toFixed(1)),
+      rejectedTransactionP95Ms: Number(percentile(rejectedTransactionDurations, 0.95).toFixed(1)),
+      operationTimingSamples: transactionDurations.length,
     },
     responses: {
       accepted: accepted.length,
@@ -210,26 +282,87 @@ async function executeRun(config, runNumber) {
       responsesMatchDatabase: acceptedUnitsFromResponses === database.committedUnits,
       noNegativeStock: database.products.every((summary) => Number(summary.experiment.available) >= 0),
       serverTimingsComplete: serverLatencies.length === results.length - errors.length,
+      operationTimingsComplete: config.version !== "transactional_hold"
+        || transactionDurations.length === results.length - errors.length,
+      expectedOutcomeMatched: config.expected === "any"
+        || (config.expected === "accepted" && accepted.length === results.length)
+        || (config.expected === "rejected" && rejected.length === results.length)
+        || (config.expected === "mixed" && accepted.length > 0 && rejected.length > 0),
     },
   };
 }
 
 const config = parseArgs(process.argv.slice(2));
-const runs = [];
-for (let runNumber = 1; runNumber <= config.runs; runNumber += 1) {
-  const result = await executeRun(config, runNumber);
-  runs.push(result);
-  console.error(
-    `Run ${runNumber}: ${result.performance.throughputRequestsPerSecond} req/s, p95 ${result.performance.p95Ms} ms, errors ${result.responses.errors}, invariant ${result.checks.inventoryConserved ? "held" : "failed"}`,
-  );
-}
+const allRuns = [];
+let output;
 
-const output = {
-  measuredAt: new Date().toISOString(),
-  target: config.baseUrl,
-  note: "Client-observed end-to-end timings from one load-generator process.",
-  runs,
-};
+if (config.compareProducts === null) {
+  const runs = [];
+  for (let runNumber = 1; runNumber <= config.runs; runNumber += 1) {
+    const result = await executeRun(config, runNumber);
+    runs.push(result);
+    allRuns.push(result);
+    console.error(
+      `Run ${runNumber}: ${result.performance.throughputRequestsPerSecond} req/s, p95 ${result.performance.p95Ms} ms, errors ${result.responses.errors}, invariant ${result.checks.inventoryConserved ? "held" : "failed"}`,
+    );
+  }
+  output = {
+    measuredAt: new Date().toISOString(),
+    target: config.baseUrl,
+    note: "Client-observed end-to-end timings from one load-generator process. Educational trace writes were disabled.",
+    runs,
+  };
+} else {
+  const pairs = [];
+  for (let pair = 1; pair <= config.runs; pair += 1) {
+    const order = pair % 2 === 1
+      ? [config.products, config.compareProducts]
+      : [config.compareProducts, config.products];
+    const scenarios = {};
+    for (const products of order) {
+      const result = await executeRun({ ...config, products }, pair);
+      scenarios[String(products)] = result;
+      allRuns.push(result);
+      console.error(
+        `Pair ${pair}, ${products} product(s): ${result.performance.throughputRequestsPerSecond} req/s, client p95 ${result.performance.p95Ms} ms, transaction p95 ${result.performance.transactionP95Ms} ms`,
+      );
+    }
+    const baseline = scenarios[String(config.products)];
+    const comparison = scenarios[String(config.compareProducts)];
+    pairs.push({
+      pair,
+      order,
+      scenarios,
+      changePercent: {
+        throughput: Number((((comparison.performance.throughputRequestsPerSecond / baseline.performance.throughputRequestsPerSecond) - 1) * 100).toFixed(1)),
+        clientP95: Number((((comparison.performance.p95Ms / baseline.performance.p95Ms) - 1) * 100).toFixed(1)),
+        serverP95: Number((((comparison.performance.serverP95Ms / baseline.performance.serverP95Ms) - 1) * 100).toFixed(1)),
+        transactionP95: Number((((comparison.performance.transactionP95Ms / baseline.performance.transactionP95Ms) - 1) * 100).toFixed(1)),
+      },
+    });
+  }
+
+  const metrics = ["throughput", "clientP95", "serverP95", "transactionP95"];
+  const pairedSummary = Object.fromEntries(metrics.map((metric) => {
+    const changes = pairs.map((pair) => pair.changePercent[metric]);
+    return [metric, {
+      medianChangePercent: Number(median(changes).toFixed(1)),
+      meanChangePercent: Number(mean(changes).toFixed(1)),
+      confidenceInterval95ForMean: bootstrapMeanConfidenceInterval(changes),
+      comparisonWins: changes.filter((change) => metric === "throughput" ? change > 0 : change < 0).length,
+      pairs: changes.length,
+    }];
+  }));
+
+  output = {
+    measuredAt: new Date().toISOString(),
+    target: config.baseUrl,
+    note: "Paired, alternating-order comparison from one load-generator process. Educational trace writes were disabled.",
+    comparison: { baselineProducts: config.products, comparisonProducts: config.compareProducts },
+    pairs,
+    pairedSummary,
+  };
+}
 
 console.log(JSON.stringify(output, null, 2));
 
@@ -239,6 +372,11 @@ if (config.output) {
   console.error(`Saved ${config.output}`);
 }
 
-if (runs.some((run) => !run.checks.inventoryConserved || !run.checks.responsesMatchDatabase || !run.checks.noNegativeStock || !run.checks.serverTimingsComplete)) {
+if (allRuns.some((run) => !run.checks.inventoryConserved
+  || !run.checks.responsesMatchDatabase
+  || !run.checks.noNegativeStock
+  || !run.checks.serverTimingsComplete
+  || !run.checks.operationTimingsComplete
+  || !run.checks.expectedOutcomeMatched)) {
   process.exitCode = 1;
 }
