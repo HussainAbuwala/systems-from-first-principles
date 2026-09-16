@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { databaseForExperiment } from "@/lib/experiment-database";
 import { experimentWritesEnabled, readOnlyExperimentResponse } from "@/lib/experiment-access";
+import { sweepExpiredReservations } from "@/lib/reservation-lifecycle";
 
 export const runtime = "edge";
-type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold" | "idempotent_hold";
+type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold" | "idempotent_hold" | "payment_lifecycle";
 type Experiment = { id: string; version: Version; available: number };
-type ExpiredReservation = { id: string; buyer: string; quantity: number };
 type ExistingReservation = { id: string; buyer: string; quantity: number; status: string };
 
 const HOLD_DURATION_MS = 1_200;
@@ -17,24 +17,7 @@ async function record(database: D1Database, experimentId: string, buyer: string,
 }
 
 async function releaseExpiredHolds(database: D1Database, experimentId: string, now: number) {
-  const candidates = await database.prepare(
-    "SELECT id, buyer, quantity FROM reservations WHERE experiment_id = ? AND status = 'held' AND expires_at IS NOT NULL AND expires_at <= ?",
-  ).bind(experimentId, now).all<ExpiredReservation>();
-
-  for (const reservation of candidates.results) {
-    const expired = await database.prepare(
-      "UPDATE reservations SET status = 'expired', resolved_at = ? WHERE id = ? AND status = 'held' AND expires_at <= ?",
-    ).bind(now, reservation.id, now).run();
-
-    if (Number(expired.meta.changes ?? 0) !== 1) continue;
-
-    await database.batch([
-      database.prepare("UPDATE experiments SET available = available + ? WHERE id = ?").bind(reservation.quantity, experimentId),
-      database.prepare(
-        "INSERT INTO experiment_events (experiment_id, buyer, action, detail, created_at) VALUES (?, ?, 'expire', ?, ?)",
-      ).bind(experimentId, "System", `${reservation.buyer}'s hold expires; returns ${reservation.quantity} unit(s) to stock`, now),
-    ]);
-  }
+  await sweepExpiredReservations(database, { experimentId, now });
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -109,20 +92,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  if (experiment.version === "transactional_hold" || experiment.version === "idempotent_hold") {
+  if (experiment.version === "transactional_hold" || experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle") {
     const idempotencyKey = typeof body?.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
-    if (experiment.version === "idempotent_hold" && (idempotencyKey.length < 1 || idempotencyKey.length > 64)) {
+    if ((experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle") && (idempotencyKey.length < 1 || idempotencyKey.length > 64)) {
       return NextResponse.json({ error: "Idempotency key must contain 1 to 64 characters." }, { status: 400 });
     }
     const now = Date.now();
     const reservationId = crypto.randomUUID();
     const expiresAt = now + HOLD_DURATION_MS;
     const captureTrace = body?.captureTrace !== false;
-    const insertSql = experiment.version === "idempotent_hold"
+    const insertSql = experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle"
       ? "INSERT OR IGNORE INTO reservations (id, experiment_id, buyer, quantity, idempotency_key, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, ?, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?"
       : "INSERT INTO reservations (id, experiment_id, buyer, quantity, idempotency_key, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, NULL, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?";
     const statements = [
-      experiment.version === "idempotent_hold"
+      experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle"
         ? database.prepare(insertSql).bind(reservationId, buyer, quantity, idempotencyKey, expiresAt, now, id, quantity)
         : database.prepare(insertSql).bind(reservationId, buyer, quantity, expiresAt, now, id, quantity),
       database.prepare(
@@ -135,7 +118,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       ).bind(
         id,
         buyer,
-        experiment.version === "idempotent_hold"
+        experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle"
           ? "stock subtraction and keyed hold commit in one transaction"
           : "stock subtraction and hold commit in one transaction; response is lost afterward",
         now,
@@ -149,7 +132,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const inserted = Number(hold.meta.changes ?? 0) === 1;
     let replayed = false;
     let existingReservation: ExistingReservation | null = null;
-    if (!inserted && experiment.version === "idempotent_hold") {
+    if (!inserted && (experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle")) {
       existingReservation = await database.prepare(
         "SELECT id, buyer, quantity, status FROM reservations WHERE experiment_id = ? AND idempotency_key = ?",
       ).bind(id, idempotencyKey).first<ExistingReservation>();
@@ -184,7 +167,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     }
 
-    if (experiment.version === "idempotent_hold" && replayed) {
+    if ((experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle") && replayed) {
       if (captureTrace) await record(database, id, buyer, "replay", "retry returns the existing hold without subtracting stock again");
       return NextResponse.json({
         buyer,
@@ -195,7 +178,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     }
 
-    if (experiment.version === "idempotent_hold" && body?.simulateResponseLoss === true) {
+    if ((experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle") && body?.simulateResponseLoss === true) {
       if (captureTrace) await record(database, id, buyer, "response_loss", "hold committed, but its response never reached the client");
       return NextResponse.json(
         { buyer, quantity, accepted: false, simulatedResponseLoss: true, committed: "stock_and_hold" },
@@ -203,7 +186,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       );
     }
 
-    if (experiment.version === "idempotent_hold" || body?.simulateResponseLoss === false) {
+    if (experiment.version === "idempotent_hold" || experiment.version === "payment_lifecycle" || body?.simulateResponseLoss === false) {
       const responseStartedAt = performance.now();
       return NextResponse.json({
         buyer,

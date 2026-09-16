@@ -38,6 +38,16 @@ const writeAttempts = [
     path: "/api/experiments/read-only-check/abandon",
     body: { buyer: "Alice" },
   },
+  {
+    name: "payment resolution",
+    path: "/api/experiments/read-only-check/reservations/read-only-check/resolve",
+    body: { action: "confirm", eventKey: "read-only-check" },
+  },
+  {
+    name: "expiry recovery",
+    path: "/api/recovery/expire",
+    body: { experimentId: "read-only-check" },
+  },
 ];
 
 for (const attempt of writeAttempts) {

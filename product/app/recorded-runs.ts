@@ -1,4 +1,4 @@
-export type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold" | "idempotent_hold";
+export type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold" | "idempotent_hold" | "payment_lifecycle";
 
 export type RecordedRun = {
   experiment: { id: string; version: Version; initialStock: number; available: number; createdAt: number };
@@ -8,7 +8,7 @@ export type RecordedRun = {
     buyer: string;
     quantity: number;
     idempotencyKey: string | null;
-    status: "held" | "expired" | "confirmed";
+    status: "held" | "expired" | "confirmed" | "cancelled";
     expiresAt: number | null;
     abandonedAt: number | null;
     createdAt: number;
@@ -20,10 +20,10 @@ export type RecordedRun = {
   requirementMet: boolean;
 };
 
-const baseExperiment = (id: string, version: Version, available: number) => ({
+const baseExperiment = (id: string, version: Version, available: number, initialStock = 1) => ({
   id,
   version,
-  initialStock: 1,
+  initialStock,
   available,
   createdAt: 0,
 });
@@ -168,6 +168,56 @@ export const recordedRuns: Record<Version, RecordedRun> = {
     ],
     invariant: true,
     accountedUnits: 1,
+    requirementMet: true,
+  },
+  payment_lifecycle: {
+    experiment: baseExperiment("recorded-lifecycle", "payment_lifecycle", 2, 3),
+    allocations: [],
+    reservations: [
+      {
+        id: "lifecycle-alice",
+        buyer: "Alice",
+        quantity: 1,
+        idempotencyKey: "checkout-alice-002",
+        status: "confirmed",
+        expiresAt: 1_200,
+        abandonedAt: null,
+        createdAt: 0,
+        resolvedAt: 100,
+      },
+      {
+        id: "lifecycle-bob",
+        buyer: "Bob",
+        quantity: 1,
+        idempotencyKey: "checkout-bob-001",
+        status: "cancelled",
+        expiresAt: 1_201,
+        abandonedAt: null,
+        createdAt: 1,
+        resolvedAt: 101,
+      },
+      {
+        id: "lifecycle-carol",
+        buyer: "Carol",
+        quantity: 1,
+        idempotencyKey: "checkout-carol-001",
+        status: "expired",
+        expiresAt: 1_202,
+        abandonedAt: null,
+        createdAt: 2,
+        resolvedAt: 1_300,
+      },
+    ],
+    events: [
+      { id: 1, buyer: "Alice", action: "transaction", detail: "creates a keyed hold and subtracts one unit", createdAt: 0 },
+      { id: 2, buyer: "Bob", action: "transaction", detail: "creates a keyed hold and subtracts one unit", createdAt: 1 },
+      { id: 3, buyer: "Carol", action: "transaction", detail: "creates a keyed hold and subtracts one unit", createdAt: 2 },
+      { id: 4, buyer: "Alice", action: "confirm", detail: "payment succeeded; the held unit is confirmed", createdAt: 100 },
+      { id: 5, buyer: "Bob", action: "cancel", detail: "payment failed; the held unit returns to stock", createdAt: 101 },
+      { id: 6, buyer: "System", action: "expire", detail: "the scheduled sweep releases Carol's overdue hold", createdAt: 1_300 },
+    ],
+    invariant: true,
+    accountedUnits: 3,
     requirementMet: true,
   },
 };

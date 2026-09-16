@@ -172,7 +172,7 @@ const versions = {
     ],
   },
   idempotent_hold: {
-    label: "11 · Retry-safe hold",
+    label: "07 · Retry-safe hold",
     requirement: "Requirement 05",
     requirementTitle: "A retry must not create a second reservation.",
     requirementDescription: "Alice's hold commits, but its response is lost. She retries with the same request key.",
@@ -189,6 +189,23 @@ const versions = {
       ["]);", ""],
     ],
   },
+  payment_lifecycle: {
+    label: "08 · Complete or release",
+    requirement: "Requirement 06",
+    requirementTitle: "Every hold must reach one final outcome.",
+    requirementDescription: "Alice pays, Bob's payment fails, and Carol disappears until her deadline passes.",
+    eyebrow: "Payment outcomes and recovery",
+    question: "Can success, failure, and timeout each resolve exactly once?",
+    explanation: "Payment events carry unique keys. One atomic command confirms or cancels a hold, while a scheduled Worker finds overdue holds and releases them without waiting for another buyer.",
+    finding: "Alice remains confirmed. Bob and Carol each return one unit. Retried events and repeated sweeps do not apply twice.",
+    code: [
+      ["await applyOnce(paymentEvent.id, () => {", "decision"],
+      ["  resolveHold(paymentEvent.result);", "write"],
+      ["  if (failed) releaseStock();", "write"],
+      ["});", ""],
+      ["scheduled(() => expireDueHolds());", "promise"],
+    ],
+  },
 } as const;
 
 export function LabPreview() {
@@ -196,9 +213,10 @@ export function LabPreview() {
   const current = versions[version];
   const run = recordedRuns[version];
   const elapsed = Math.max(...run.events.map((event) => event.createdAt)) - Math.min(...run.events.map((event) => event.createdAt));
-  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold" || version === "crash_gap" || version === "transactional_hold" || version === "idempotent_hold";
+  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold" || version === "crash_gap" || version === "transactional_hold" || version === "idempotent_hold" || version === "payment_lifecycle";
   const isCrashVersion = version === "crash_gap" || version === "transactional_hold";
   const activeHolds = run.reservations.filter((reservation) => reservation.status === "held");
+  const confirmedReservations = run.reservations.filter((reservation) => reservation.status === "confirmed");
 
   return (
     <main className="relative min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -237,9 +255,10 @@ export function LabPreview() {
               <TabsTrigger value="crash_gap" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">05 · Crash between writes</TabsTrigger>
               <TabsTrigger value="transactional_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">06 · Atomic hold creation</TabsTrigger>
             </TabsList>
-            <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">Retry safety</p>
+            <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">Retry and completion</p>
             <TabsList className="h-auto w-full flex-col items-stretch gap-0 rounded-none border-l border-cyan-300/30 bg-transparent p-0">
-              <TabsTrigger value="idempotent_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">11 · Retry-safe hold</TabsTrigger>
+              <TabsTrigger value="idempotent_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">07 · Retry-safe hold</TabsTrigger>
+              <TabsTrigger value="payment_lifecycle" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">08 · Complete or release</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -253,7 +272,7 @@ export function LabPreview() {
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
             <div>
               <p className="eyebrow">Recorded experiment · {current.eyebrow}</p>
-              <h2 className="mt-1 text-lg font-medium">{version === "idempotent_hold" ? "One lost response, one safe retry" : isCrashVersion ? "One request, one injected crash" : isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
+              <h2 className="mt-1 text-lg font-medium">{version === "payment_lifecycle" ? "Three holds, three final outcomes" : version === "idempotent_hold" ? "One lost response, one safe retry" : isCrashVersion ? "One request, one injected crash" : isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
             </div>
             <span className="border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 font-mono text-[11px] text-cyan-200">READ ONLY · PREVIOUSLY VERIFIED</span>
           </div>
@@ -262,7 +281,7 @@ export function LabPreview() {
             <div>
                 <div className="grid grid-cols-3 gap-px border border-white/10 bg-white/10">
                   <Metric label="Stock left" value={String(run.experiment.available)} />
-                  <Metric label={isHoldVersion ? "Active holds" : "Promises"} value={String(isHoldVersion ? activeHolds.length : run.allocations.length)} tone={run.requirementMet ? "good" : "bad"} />
+                  <Metric label={version === "payment_lifecycle" ? "Confirmed" : isHoldVersion ? "Active holds" : "Promises"} value={String(version === "payment_lifecycle" ? confirmedReservations.length : isHoldVersion ? activeHolds.length : run.allocations.length)} tone={run.requirementMet ? "good" : "bad"} />
                   <Metric label={isCrashVersion ? "Accounted units" : "Trace span"} value={isCrashVersion ? `${run.accountedUnits}/${run.experiment.initialStock}` : `${elapsed}ms`} tone={isCrashVersion ? (run.invariant ? "good" : "bad") : undefined} />
                 </div>
 
@@ -281,6 +300,8 @@ export function LabPreview() {
                               ? "The response was lost after commit; Alice's durable hold still owns the unit."
                               : version === "idempotent_hold"
                                 ? "The same request key returned Alice's original hold; stock was subtracted once."
+                                : version === "payment_lifecycle"
+                                  ? "Payment success confirmed one unit; cancellation and timeout each released one unit exactly once."
                           : `Promises (${run.allocations.length}) must never exceed initial stock (${run.experiment.initialStock}).`}
                     </p>
                   </div>
@@ -295,8 +316,8 @@ export function LabPreview() {
                       ) : null}
                       {run.reservations.map((reservation) => (
                         <div key={reservation.id} className="border border-white/10 bg-white/[0.025] px-4 py-3">
-                          <div className="flex items-center justify-between gap-3"><span className={reservation.buyer === "Alice" ? "font-mono text-sm text-cyan-200" : "font-mono text-sm text-amber-200"}>{reservation.buyer}</span><span className={reservation.status === "expired" ? "text-xs uppercase text-slate-500" : "text-xs uppercase text-emerald-300"}>{reservation.status}</span></div>
-                          <p className="mt-2 text-xs text-slate-500">{reservation.expiresAt === null ? "No expiry recorded" : reservation.status === "expired" ? "Deadline passed; unit returned" : "Active until its deadline"}</p>
+                          <div className="flex items-center justify-between gap-3"><span className={reservation.buyer === "Alice" ? "font-mono text-sm text-cyan-200" : "font-mono text-sm text-amber-200"}>{reservation.buyer}</span><span className={reservation.status === "held" || reservation.status === "confirmed" ? "text-xs uppercase text-emerald-300" : "text-xs uppercase text-slate-500"}>{reservation.status}</span></div>
+                          <p className="mt-2 text-xs text-slate-500">{reservation.status === "confirmed" ? "Payment succeeded; unit stays committed" : reservation.status === "cancelled" ? "Payment failed; unit returned" : reservation.status === "expired" ? "Deadline passed; unit returned" : reservation.expiresAt === null ? "No expiry recorded" : "Active until its deadline"}</p>
                         </div>
                       ))}
                     </div>
@@ -325,7 +346,7 @@ export function LabPreview() {
 
         <aside className="space-y-5">
           <section className="border border-white/10 bg-white/[0.025] p-5">
-            <div className="flex items-center justify-between"><p className="eyebrow">Implementation</p><span className="font-mono text-[11px] text-slate-600">purchase.ts</span></div>
+            <div className="flex items-center justify-between"><p className="eyebrow">Implementation</p><span className="font-mono text-[11px] text-slate-600">{version === "payment_lifecycle" ? "lifecycle.ts" : "purchase.ts"}</span></div>
             <pre className="mt-5 overflow-x-auto font-mono text-[13px] leading-7 text-slate-300"><code>{current.code.map(([line, role], index) => <span className="block" key={index}><span className="mr-4 inline-block w-4 select-none text-right text-slate-700">{index + 1}</span><span className={role === "gap" ? "text-rose-300" : role === "decision" ? "text-amber-200" : role === "write" ? "text-violet-300" : role === "promise" ? "text-cyan-200" : ""}>{line}</span></span>)}</code></pre>
           </section>
           <section className="border border-white/10 bg-white/[0.025] p-5">
@@ -334,7 +355,7 @@ export function LabPreview() {
           </section>
           <section className="border border-white/10 bg-white/[0.025] p-5">
             <p className="eyebrow">What is real here</p>
-            <p className="mt-3 text-sm leading-6 text-slate-400">These are saved results from experiments executed against the real service and D1 database. The public site is read-only; the executable harness remains available for controlled local verification.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">These are saved results from experiments executed against the real service and D1 database. The public site is read-only; the executable harness remains available for controlled local verification. A separate scheduled Worker now performs overdue-hold recovery.</p>
           </section>
         </aside>
       </section>
@@ -343,7 +364,7 @@ export function LabPreview() {
         <div className="border border-white/10 bg-[#0b1118]">
           <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
             <div className="max-w-3xl">
-              <p className="eyebrow">07 · Hosted load test · observed baseline</p>
+              <p className="eyebrow">09 · Hosted load test · observed baseline</p>
               <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">More concurrency moves more requests—and makes each buyer wait longer.</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">One hot product, 50 units, 100 buyers, one unit per request, using the crash-safe transaction from Stage 06. Each concurrency level ran three times against an isolated Cloudflare Worker and D1 database. Every metric below is the median of its three measurements.</p>
             </div>
@@ -394,7 +415,7 @@ export function LabPreview() {
       <section className="mx-auto max-w-[1500px] px-5 pb-8 lg:px-8" id="key-distribution">
         <div className="border border-white/10 bg-[#0b1118]">
           <div className="border-b border-white/10 p-5 sm:p-7">
-            <p className="eyebrow">08 · Key distribution · first attempt</p>
+            <p className="eyebrow">10 · Key distribution · first attempt</p>
             <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Is the traffic volume expensive—or is one hot product expensive?</h2>
             <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-400">Both workloads send 100 one-unit requests at concurrency 50, contain 50 total units, and use the same Worker and D1 database. Only the destination changes. The first workload targets one inventory record; the second distributes requests evenly across ten records.</p>
           </div>
@@ -430,7 +451,7 @@ export function LabPreview() {
         <div className="border border-white/10 bg-[#0b1118]">
           <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
             <div className="max-w-4xl">
-              <p className="eyebrow">09 · Stronger evidence · paired experiment</p>
+              <p className="eyebrow">11 · Stronger evidence · paired experiment</p>
               <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">The apparent throughput improvement disappears.</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">Each scenario now has 1,000 buyers and 1,000 units, so every request succeeds through the same crash-safe reservation transaction. Trace writes are disabled. We ran ten pairs and reversed the order for every other pair: 20,000 measured purchase requests in total.</p>
             </div>
@@ -486,7 +507,7 @@ export function LabPreview() {
         <div className="border border-white/10 bg-[#0b1118]">
           <div className="grid gap-6 border-b border-white/10 p-5 md:grid-cols-[1fr_auto] md:items-end md:p-7">
             <div className="max-w-4xl">
-              <p className="eyebrow">10 · Database partitioning · controlled intervention</p>
+              <p className="eyebrow">12 · Database partitioning · controlled intervention</p>
               <h2 className="mt-2 text-2xl font-semibold sm:text-3xl">Removing the shared database queue produces a repeatable improvement.</h2>
               <p className="mt-3 text-sm leading-6 text-slate-400">Both scenarios use ten products, 1,000 buyers, 1,000 units, concurrency 50 and the same reservation transaction. In the first, every product uses one D1 database. In the second, the same ten products are routed round-robin across four independent D1 databases. Ten alternating pairs produced 20,000 measured purchases.</p>
             </div>
@@ -523,7 +544,7 @@ export function LabPreview() {
             <article className="bg-[#0b1118] p-5 sm:p-7">
               <p className="eyebrow">What this proves for our system</p>
               <h3 className="mt-2 text-xl font-medium">Independent database queues let independent products make progress in parallel.</h3>
-              <p className="mt-3 text-sm leading-6 text-slate-400">Stage 09 changed rows but kept one database and found no reliable throughput gain. Here we kept the ten products and changed the number of databases. Throughput rose from a median 187.0 to 278.7 requests per second. That isolates the shared D1 database as a material bottleneck in this workload.</p>
+              <p className="mt-3 text-sm leading-6 text-slate-400">Stage 11 changed rows but kept one database and found no reliable throughput gain. Here we kept the ten products and changed the number of databases. Throughput rose from a median 187.0 to 278.7 requests per second. That isolates the shared D1 database as a material bottleneck in this workload.</p>
               <p className="mt-3 text-sm leading-6 text-slate-400">Four databases did not make the system four times faster. Worker execution, network time and uneven work across four queues still remain.</p>
             </article>
             <article className="bg-[#0b1118] p-5 sm:p-7">

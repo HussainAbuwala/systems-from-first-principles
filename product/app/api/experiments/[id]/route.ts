@@ -22,8 +22,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   ]);
 
   const activeHolds = reservations.results.filter((reservation) => reservation.status === "held");
+  const confirmedReservations = reservations.results.filter((reservation) => reservation.status === "confirmed");
   const commitments = allocations.results.reduce((total, allocation) => total + Number(allocation.quantity), 0)
-    + activeHolds.reduce((total, reservation) => total + Number(reservation.quantity), 0);
+    + [...activeHolds, ...confirmedReservations].reduce((total, reservation) => total + Number(reservation.quantity), 0);
   const accountedUnits = Number(experiment.available) + commitments;
   const invariant = accountedUnits === Number(experiment.initialStock);
   const requirementMet = experiment.version === "permanent_hold"
@@ -35,6 +36,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         ? invariant
         : experiment.version === "transactional_hold" || experiment.version === "idempotent_hold"
           ? invariant && activeHolds.some((reservation) => reservation.buyer === "Alice")
+          : experiment.version === "payment_lifecycle"
+            ? invariant
+              && reservations.results.some((reservation) => reservation.buyer === "Alice" && reservation.status === "confirmed")
+              && reservations.results.some((reservation) => reservation.buyer === "Bob" && reservation.status === "cancelled")
+              && reservations.results.some((reservation) => reservation.buyer === "Carol" && reservation.status === "expired")
       : invariant;
 
   return NextResponse.json({

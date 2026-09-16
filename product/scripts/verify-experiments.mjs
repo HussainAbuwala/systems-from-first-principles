@@ -119,6 +119,50 @@ assert.equal(retryInspection.accountedUnits, 1);
 assert.equal(retryInspection.invariant, true);
 assert.equal(retryInspection.requirementMet, true);
 
+const lifecycle = await post("/api/experiments/start", { version: "payment_lifecycle", initialStock: 3 });
+const lifecyclePurchases = await Promise.all([
+  post(`/api/experiments/${lifecycle.id}/purchase`, { buyer: "Alice", idempotencyKey: "lifecycle-alice" }),
+  post(`/api/experiments/${lifecycle.id}/purchase`, { buyer: "Bob", idempotencyKey: "lifecycle-bob" }),
+  post(`/api/experiments/${lifecycle.id}/purchase`, { buyer: "Carol", idempotencyKey: "lifecycle-carol" }),
+]);
+assert.equal(lifecyclePurchases.every(({ accepted }) => accepted), true);
+const [alice, bob] = lifecyclePurchases;
+const alicePaymentEvent = `payment-alice-succeeded-${lifecycle.id}`;
+const bobPaymentEvent = `payment-bob-failed-${lifecycle.id}`;
+
+const confirmationResults = await Promise.all([
+  post(`/api/experiments/${lifecycle.id}/reservations/${alice.reservationId}/resolve`, { action: "confirm", eventKey: alicePaymentEvent }),
+  post(`/api/experiments/${lifecycle.id}/reservations/${alice.reservationId}/resolve`, { action: "confirm", eventKey: alicePaymentEvent }),
+]);
+assert.equal(confirmationResults.filter(({ applied }) => applied).length, 1);
+assert.equal(confirmationResults.filter(({ replayed }) => replayed).length, 1);
+
+const cancellationResults = await Promise.all([
+  post(`/api/experiments/${lifecycle.id}/reservations/${bob.reservationId}/resolve`, { action: "cancel", eventKey: bobPaymentEvent }),
+  post(`/api/experiments/${lifecycle.id}/reservations/${bob.reservationId}/resolve`, { action: "cancel", eventKey: bobPaymentEvent }),
+]);
+assert.equal(cancellationResults.filter(({ applied }) => applied).length, 1);
+assert.equal(cancellationResults.filter(({ replayed }) => replayed).length, 1);
+
+await new Promise((resolve) => setTimeout(resolve, 1_300));
+const firstSweep = await post("/api/recovery/expire", { experimentId: lifecycle.id });
+const repeatedSweep = await post("/api/recovery/expire", { experimentId: lifecycle.id });
+assert.equal(firstSweep.expired, 1);
+assert.equal(repeatedSweep.expired, 0);
+
+const lifecycleInspectionResponse = await fetch(`${baseUrl}/api/experiments/${lifecycle.id}`);
+assert.equal(lifecycleInspectionResponse.ok, true);
+const lifecycleInspection = await lifecycleInspectionResponse.json();
+assert.equal(lifecycleInspection.experiment.available, 2);
+assert.deepEqual(lifecycleInspection.reservations.map(({ buyer, status }) => ({ buyer, status })).sort((left, right) => left.buyer.localeCompare(right.buyer)), [
+  { buyer: "Alice", status: "confirmed" },
+  { buyer: "Bob", status: "cancelled" },
+  { buyer: "Carol", status: "expired" },
+]);
+assert.equal(lifecycleInspection.accountedUnits, 3);
+assert.equal(lifecycleInspection.invariant, true);
+assert.equal(lifecycleInspection.requirementMet, true);
+
 const multiUnit = await post("/api/experiments/start", { version: "atomic", initialStock: 10 });
 const multiUnitResults = await Promise.all([
   post(`/api/experiments/${multiUnit.id}/purchase`, { buyer: "Alice", quantity: 6 }),
@@ -132,4 +176,4 @@ assert.equal(multiUnitSummary.experiment.available, 4);
 assert.equal(multiUnitSummary.allocatedUnits, 6);
 assert.equal(multiUnitSummary.invariant, true);
 
-console.log("Verified all seven executable stages plus concurrent multi-unit allocation.");
+console.log("Verified all eight executable stages, retryable payment outcomes, scheduled recovery semantics, and concurrent multi-unit allocation.");

@@ -2,7 +2,7 @@
 
 An interactive lab for building real software systems one requirement at a time.
 
-The first system is an inventory reservation service. Its executable harness currently contains seven stages:
+The first system is an inventory reservation service. Its executable harness currently contains eight correctness and lifecycle stages, followed by four performance investigations:
 
 - `read → decide → write` reproducibly creates two promises from one unit;
 - an atomic conditional update permits exactly one promise;
@@ -11,10 +11,13 @@ The first system is an inventory reservation service. Its executable harness cur
 - a controlled crash between two writes makes the stock disappear without a durable owner;
 - a D1 transaction commits the stock change and its hold together, even when the response is lost afterward.
 - an idempotency key makes a lost-response retry return the original hold without subtracting stock again.
+- idempotent payment events confirm or cancel a hold exactly once, while a scheduled recovery Worker releases overdue holds without waiting for another purchase.
 
 The published website is a read-only presentation of evidence captured from those experiments. Its write endpoints are disabled at the Worker boundary so viewing the lesson cannot consume D1 writes. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
 
-To run the harness locally, build the Worker, apply the migrations to local D1, and start it with `npm run start:writable`. Then run `npm run verify:experiments` to execute all seven stages and assert their database outcomes. The ordinary `npm start` path remains read-only.
+To run the harness locally, build the Worker, apply the migrations to local D1, and start it with `npm run start:writable`. Then run `npm run verify:experiments` to execute all eight stages and assert their database outcomes. The ordinary `npm start` path remains read-only.
+
+The recovery process is a separate Worker with a one-minute cron trigger. Run `npm run start:recovery` to test its scheduled handler locally through Wrangler's `/__scheduled` route, and `npm run deploy:recovery` to deploy it.
 
 ## Performance experiments
 
@@ -40,7 +43,7 @@ Use Node.js 22.13 or later. Generate and apply the D1 migration before starting 
 
 ## Source and production
 
-The repository at `HussainAbuwala/systems-from-first-principles` is the canonical source. The application deploys from the `product/` directory to Cloudflare Workers and uses the `DB` binding for its D1 database.
+The repository at `HussainAbuwala/systems-from-first-principles` is the canonical source. The application deploys from the `product/` directory to Cloudflare Workers and uses the `DB` binding for its D1 database. A separate scheduled Worker shares that D1 binding only to recover expired holds; its public fetch handler always returns 404.
 
 The checked-in `wrangler.jsonc` contains non-secret resource identifiers and production runtime configuration. Run `npm run deploy` from `product/` to apply pending D1 migrations and deploy the Worker. This keeps production independent from whichever ChatGPT account performs the next development session.
 

@@ -4,7 +4,7 @@ import { experimentWritesEnabled, readOnlyExperimentResponse } from "@/lib/exper
 
 export const runtime = "edge";
 
-const versions = ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold", "idempotent_hold"] as const;
+const versions = ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold", "idempotent_hold", "payment_lifecycle"] as const;
 type Version = (typeof versions)[number];
 
 function isVersion(value: unknown): value is Version {
