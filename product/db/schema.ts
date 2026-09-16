@@ -1,8 +1,8 @@
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 export const experiments = sqliteTable("experiments", {
   id: text("id").primaryKey(),
-  version: text("version", { enum: ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold"] }).notNull(),
+  version: text("version", { enum: ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold", "idempotent_hold"] }).notNull(),
   initialStock: integer("initial_stock").notNull(),
   available: integer("available").notNull(),
   createdAt: integer("created_at").notNull(),
@@ -21,6 +21,7 @@ export const reservations = sqliteTable("reservations", {
   experimentId: text("experiment_id").notNull(),
   buyer: text("buyer").notNull(),
   quantity: integer("quantity").notNull().default(1),
+  idempotencyKey: text("idempotency_key"),
   status: text("status", { enum: ["held", "expired", "confirmed"] }).notNull(),
   expiresAt: integer("expires_at"),
   abandonedAt: integer("abandoned_at"),
@@ -29,6 +30,7 @@ export const reservations = sqliteTable("reservations", {
 }, (table) => [
   index("idx_reservations_experiment_status").on(table.experimentId, table.status),
   index("idx_reservations_expiry").on(table.status, table.expiresAt),
+  uniqueIndex("idx_reservations_experiment_idempotency").on(table.experimentId, table.idempotencyKey),
 ]);
 
 export const experimentEvents = sqliteTable("experiment_events", {

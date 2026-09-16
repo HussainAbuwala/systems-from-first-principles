@@ -16,7 +16,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const [allocations, reservations, events] = await Promise.all([
     database.prepare("SELECT id, buyer, quantity, created_at AS createdAt FROM allocations WHERE experiment_id = ? ORDER BY created_at, buyer").bind(id).all(),
     database.prepare(
-      "SELECT id, buyer, quantity, status, expires_at AS expiresAt, abandoned_at AS abandonedAt, created_at AS createdAt, resolved_at AS resolvedAt FROM reservations WHERE experiment_id = ? ORDER BY created_at, buyer",
+      "SELECT id, buyer, quantity, idempotency_key AS idempotencyKey, status, expires_at AS expiresAt, abandoned_at AS abandonedAt, created_at AS createdAt, resolved_at AS resolvedAt FROM reservations WHERE experiment_id = ? ORDER BY created_at, buyer",
     ).bind(id).all(),
     database.prepare("SELECT id, buyer, action, detail, created_at AS createdAt FROM experiment_events WHERE experiment_id = ? ORDER BY id").bind(id).all(),
   ]);
@@ -33,7 +33,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
         && activeHolds.some((reservation) => reservation.buyer === "Bob")
       : experiment.version === "crash_gap"
         ? invariant
-        : experiment.version === "transactional_hold"
+        : experiment.version === "transactional_hold" || experiment.version === "idempotent_hold"
           ? invariant && activeHolds.some((reservation) => reservation.buyer === "Alice")
       : invariant;
 

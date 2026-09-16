@@ -1,10 +1,12 @@
 import { NextResponse } from "next/server";
 import { databaseForExperiment } from "@/lib/experiment-database";
+import { experimentWritesEnabled, readOnlyExperimentResponse } from "@/lib/experiment-access";
 
 export const runtime = "edge";
-type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
+type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold" | "idempotent_hold";
 type Experiment = { id: string; version: Version; available: number };
 type ExpiredReservation = { id: string; buyer: string; quantity: number };
+type ExistingReservation = { id: string; buyer: string; quantity: number; status: string };
 
 const HOLD_DURATION_MS = 1_200;
 
@@ -36,6 +38,8 @@ async function releaseExpiredHolds(database: D1Database, experimentId: string, n
 }
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!experimentWritesEnabled()) return readOnlyExperimentResponse();
+
   const requestStartedAt = performance.now();
   const { id } = await params;
   const body = (await request.json().catch(() => null)) as {
@@ -43,6 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     quantity?: unknown;
     simulateResponseLoss?: unknown;
     captureTrace?: unknown;
+    idempotencyKey?: unknown;
   } | null;
   const buyer = typeof body?.buyer === "string" ? body.buyer.trim().slice(0, 24) : "";
   if (!buyer) return NextResponse.json({ error: "Buyer is required." }, { status: 400 });
@@ -104,15 +109,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
   }
 
-  if (experiment.version === "transactional_hold") {
+  if (experiment.version === "transactional_hold" || experiment.version === "idempotent_hold") {
+    const idempotencyKey = typeof body?.idempotencyKey === "string" ? body.idempotencyKey.trim() : "";
+    if (experiment.version === "idempotent_hold" && (idempotencyKey.length < 1 || idempotencyKey.length > 64)) {
+      return NextResponse.json({ error: "Idempotency key must contain 1 to 64 characters." }, { status: 400 });
+    }
     const now = Date.now();
     const reservationId = crypto.randomUUID();
     const expiresAt = now + HOLD_DURATION_MS;
     const captureTrace = body?.captureTrace !== false;
+    const insertSql = experiment.version === "idempotent_hold"
+      ? "INSERT OR IGNORE INTO reservations (id, experiment_id, buyer, quantity, idempotency_key, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, ?, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?"
+      : "INSERT INTO reservations (id, experiment_id, buyer, quantity, idempotency_key, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, NULL, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?";
     const statements = [
-      database.prepare(
-        "INSERT INTO reservations (id, experiment_id, buyer, quantity, status, expires_at, abandoned_at, created_at, resolved_at) SELECT ?, id, ?, ?, 'held', ?, NULL, ?, NULL FROM experiments WHERE id = ? AND available >= ?",
-      ).bind(reservationId, buyer, quantity, expiresAt, now, id, quantity),
+      experiment.version === "idempotent_hold"
+        ? database.prepare(insertSql).bind(reservationId, buyer, quantity, idempotencyKey, expiresAt, now, id, quantity)
+        : database.prepare(insertSql).bind(reservationId, buyer, quantity, expiresAt, now, id, quantity),
       database.prepare(
         "UPDATE experiments SET available = available - ? WHERE id = ? AND EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
       ).bind(quantity, id, reservationId),
@@ -120,13 +132,36 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (captureTrace) {
       statements.push(database.prepare(
         "INSERT INTO experiment_events (experiment_id, buyer, action, detail, created_at) SELECT ?, ?, 'transaction', ?, ? WHERE EXISTS (SELECT 1 FROM reservations WHERE id = ?)",
-      ).bind(id, buyer, "stock subtraction and hold commit in one transaction; response is lost afterward", now, reservationId));
+      ).bind(
+        id,
+        buyer,
+        experiment.version === "idempotent_hold"
+          ? "stock subtraction and keyed hold commit in one transaction"
+          : "stock subtraction and hold commit in one transaction; response is lost afterward",
+        now,
+        reservationId,
+      ));
     }
 
     const transactionStartedAt = performance.now();
     const [hold] = await database.batch(statements);
     const transactionFinishedAt = performance.now();
-    const accepted = Number(hold.meta.changes ?? 0) === 1;
+    const inserted = Number(hold.meta.changes ?? 0) === 1;
+    let replayed = false;
+    let existingReservation: ExistingReservation | null = null;
+    if (!inserted && experiment.version === "idempotent_hold") {
+      existingReservation = await database.prepare(
+        "SELECT id, buyer, quantity, status FROM reservations WHERE experiment_id = ? AND idempotency_key = ?",
+      ).bind(id, idempotencyKey).first<ExistingReservation>();
+      if (existingReservation && (existingReservation.buyer !== buyer || Number(existingReservation.quantity) !== quantity)) {
+        return NextResponse.json(
+          { error: "This idempotency key was already used for a different purchase." },
+          { status: 409 },
+        );
+      }
+      replayed = existingReservation !== null;
+    }
+    const accepted = inserted || replayed;
     let traceDurationMs = 0;
     if (!accepted) {
       if (captureTrace) {
@@ -149,12 +184,33 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       });
     }
 
-    if (body?.simulateResponseLoss === false) {
+    if (experiment.version === "idempotent_hold" && replayed) {
+      if (captureTrace) await record(database, id, buyer, "replay", "retry returns the existing hold without subtracting stock again");
+      return NextResponse.json({
+        buyer,
+        quantity,
+        accepted: true,
+        replayed: true,
+        reservationId: existingReservation?.id,
+      });
+    }
+
+    if (experiment.version === "idempotent_hold" && body?.simulateResponseLoss === true) {
+      if (captureTrace) await record(database, id, buyer, "response_loss", "hold committed, but its response never reached the client");
+      return NextResponse.json(
+        { buyer, quantity, accepted: false, simulatedResponseLoss: true, committed: "stock_and_hold" },
+        { status: 503 },
+      );
+    }
+
+    if (experiment.version === "idempotent_hold" || body?.simulateResponseLoss === false) {
       const responseStartedAt = performance.now();
       return NextResponse.json({
         buyer,
         quantity,
         accepted: true,
+        replayed: false,
+        reservationId,
         serverDurationMs: Number((responseStartedAt - requestStartedAt).toFixed(2)),
         serverTimings: {
           parseMs: Number((requestParsedAt - requestStartedAt).toFixed(2)),

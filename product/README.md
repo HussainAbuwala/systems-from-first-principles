@@ -2,7 +2,7 @@
 
 An interactive lab for building real software systems one requirement at a time.
 
-The first system is an inventory reservation service. It currently contains six executable stages:
+The first system is an inventory reservation service. Its executable harness currently contains seven stages:
 
 - `read → decide → write` reproducibly creates two promises from one unit;
 - an atomic conditional update permits exactly one promise;
@@ -10,10 +10,11 @@ The first system is an inventory reservation service. It currently contains six 
 - an expiring hold returns the abandoned unit so Bob can acquire it on retry;
 - a controlled crash between two writes makes the stock disappear without a durable owner;
 - a D1 transaction commits the stock change and its hold together, even when the response is lost afterward.
+- an idempotency key makes a lost-response retry return the original hold without subtracting stock again.
 
-Every interactive teaching path executes against persistent database state and emits a database trace. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
+The published website is a read-only presentation of evidence captured from those experiments. Its write endpoints are disabled at the Worker boundary so viewing the lesson cannot consume D1 writes. The deliberate pause in the naïve implementation exposes the same unsafe gap that ordinary latency can create. The short hold deadline makes expiry observable without making the viewer wait through a real checkout timeout.
 
-Run `npm run verify:experiments` while the local preview is available to execute all six stages and assert their expected database outcomes.
+To run the harness locally, build the Worker, apply the migrations to local D1, and start it with `npm run start:writable`. Then run `npm run verify:experiments` to execute all seven stages and assert their database outcomes. The ordinary `npm start` path remains read-only.
 
 ## Performance experiments
 
@@ -43,7 +44,7 @@ The repository at `HussainAbuwala/systems-from-first-principles` is the canonica
 
 The checked-in `wrangler.jsonc` contains non-secret resource identifiers and production runtime configuration. Run `npm run deploy` from `product/` to apply pending D1 migrations and deploy the Worker. This keeps production independent from whichever ChatGPT account performs the next development session.
 
-The `benchmark` Wrangler environment is a separate Worker with four D1 database bindings. Run `npm run deploy:benchmark` before collecting measurements so load experiments cannot change the public demonstration's data or consume its write capacity.
+The `benchmark` Wrangler environment is a separate Worker with four D1 database bindings. Its write endpoints are disabled by default as well. Enable `EXPERIMENT_WRITES_ENABLED` only for a controlled benchmark window, then disable it again after collecting measurements. The databases protect production data, while the account-level D1 quota remains shared.
 
 ## Product rule
 

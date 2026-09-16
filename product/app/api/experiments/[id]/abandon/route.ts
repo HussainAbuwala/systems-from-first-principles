@@ -1,9 +1,12 @@
 import { NextResponse } from "next/server";
 import { databaseForExperiment } from "@/lib/experiment-database";
+import { experimentWritesEnabled, readOnlyExperimentResponse } from "@/lib/experiment-access";
 
 export const runtime = "edge";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  if (!experimentWritesEnabled()) return readOnlyExperimentResponse();
+
   const { id } = await params;
   const body = (await request.json().catch(() => null)) as { buyer?: unknown } | null;
   const buyer = typeof body?.buyer === "string" ? body.buyer.trim().slice(0, 24) : "";

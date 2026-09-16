@@ -1,9 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { Check, CircleAlert, Clock3, Database, Gauge, Play, RotateCcw, Users } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { useState } from "react";
+import { Check, CircleAlert, Clock3, Database, Gauge, Users } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { recordedRuns, type Version } from "./recorded-runs";
 import concurrency5 from "@/benchmarks/hot-product-c5.json";
 import concurrency20 from "@/benchmarks/hot-product-c20.json";
 import concurrency50 from "@/benchmarks/hot-product-c50.json";
@@ -11,28 +11,6 @@ import mixedQuantity from "@/benchmarks/mixed-quantity-c20.json";
 import tenProducts from "@/benchmarks/ten-products-c50.json";
 import strongComparison from "@/benchmarks/strong-success-c50-summary.json";
 import databaseShardComparison from "@/benchmarks/strong-database-shards-c50-summary.json";
-
-type Version = "naive" | "atomic" | "permanent_hold" | "expiring_hold" | "crash_gap" | "transactional_hold";
-type Event = { id: number; buyer: string; action: string; detail: string; createdAt: number };
-type Reservation = {
-  id: string;
-  buyer: string;
-  quantity: number;
-  status: "held" | "expired" | "confirmed";
-  expiresAt: number | null;
-  abandonedAt: number | null;
-  createdAt: number;
-  resolvedAt: number | null;
-};
-type Run = {
-  experiment: { id: string; version: Version; initialStock: number; available: number; createdAt: number };
-  allocations: Array<{ id: string; buyer: string; quantity: number; createdAt: number }>;
-  reservations: Reservation[];
-  events: Event[];
-  invariant: boolean;
-  accountedUnits: number;
-  requirementMet: boolean;
-};
 
 type BenchmarkRun = {
   performance: {
@@ -85,21 +63,6 @@ const strongHot = strongComparison.scenarioMedians.oneProduct;
 const strongDistributed = strongComparison.scenarioMedians.tenProducts;
 const oneDatabase = databaseShardComparison.scenarioMedians.oneDatabase;
 const fourDatabases = databaseShardComparison.scenarioMedians.fourDatabases;
-
-declare global {
-  interface Document {
-    modelContext?: {
-      registerTool: (tool: {
-        name: string;
-        title?: string;
-        description: string;
-        inputSchema: object;
-        annotations?: { readOnlyHint?: boolean; untrustedContentHint?: boolean };
-        execute: (input: unknown) => unknown | Promise<unknown>;
-      }, options?: { signal?: AbortSignal }) => void | Promise<void>;
-    };
-  }
-}
 
 const versions = {
   naive: {
@@ -208,143 +171,34 @@ const versions = {
       ["return hold.changes === 1;", "decision"],
     ],
   },
+  idempotent_hold: {
+    label: "11 · Retry-safe hold",
+    requirement: "Requirement 05",
+    requirementTitle: "A retry must not create a second reservation.",
+    requirementDescription: "Alice's hold commits, but its response is lost. She retries with the same request key.",
+    eyebrow: "Idempotent retry",
+    question: "Can the retry return the first result without subtracting stock again?",
+    explanation: "The client gives the purchase a stable idempotency key. A unique database index permits one hold for that key; later attempts return the existing reservation.",
+    finding: "Alice's retry returns her original hold. One request key produced one reservation and one stock subtraction.",
+    code: [
+      ["const prior = await db.findByKey(key);", "decision"],
+      ["if (prior) return prior;", "promise"],
+      ["await db.transaction([", ""],
+      ["  insertHoldOnce(key),", "write"],
+      ["  subtractForNewHold(key)", "write"],
+      ["]);", ""],
+    ],
+  },
 } as const;
-
-async function postStep(url: string, buyer: string) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ buyer }),
-  });
-  if (!response.ok) {
-    const payload = await response.json() as { error?: string };
-    throw new Error(payload.error ?? `${buyer}'s request failed.`);
-  }
-}
-
-async function postExpectedFailure(url: string, buyer: string) {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ buyer }),
-  });
-  const payload = await response.json() as { simulatedCrash?: boolean; error?: string };
-  if (response.status !== 503 || !payload.simulatedCrash) {
-    throw new Error(payload.error ?? "The controlled crash did not occur at the expected boundary.");
-  }
-}
-
-async function runOnServer(version: Version, report: (message: string) => void): Promise<Run> {
-  const startResponse = await fetch("/api/experiments/start", {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ version }),
-  });
-  if (!startResponse.ok) {
-    const payload = await startResponse.json() as { error?: string };
-    throw new Error(payload.error ?? "Could not start the experiment.");
-  }
-  const started = await startResponse.json() as { id: string };
-
-  if (version === "naive" || version === "atomic") {
-    report("Alice and Bob are sending requests at the same time…");
-    await Promise.all(["Alice", "Bob"].map((buyer) => postStep(`/api/experiments/${started.id}/purchase`, buyer)));
-  } else if (version === "crash_gap" || version === "transactional_hold") {
-    report(version === "crash_gap"
-      ? "Alice's request is crashing after stock is subtracted…"
-      : "Alice's response is being lost after the transaction commits…");
-    await postExpectedFailure(`/api/experiments/${started.id}/purchase`, "Alice");
-  } else {
-    report("Alice is starting payment and receiving a hold…");
-    await postStep(`/api/experiments/${started.id}/purchase`, "Alice");
-    report("Alice has left checkout without paying…");
-    await postStep(`/api/experiments/${started.id}/abandon`, "Alice");
-    report("Bob is trying while Alice's hold is active…");
-    await postStep(`/api/experiments/${started.id}/purchase`, "Bob");
-
-    if (version === "expiring_hold") {
-      report("Waiting 1.2 seconds for Alice's hold to expire…");
-      await new Promise((resolve) => setTimeout(resolve, 1_300));
-      report("Bob is retrying after the deadline…");
-      await postStep(`/api/experiments/${started.id}/purchase`, "Bob");
-    }
-  }
-
-  const result = await fetch(`/api/experiments/${started.id}`);
-  if (!result.ok) {
-    const payload = await result.json() as { error?: string };
-    throw new Error(payload.error ?? "Could not inspect the experiment.");
-  }
-  return result.json() as Promise<Run>;
-}
 
 export function LabPreview() {
   const [version, setVersion] = useState<Version>("naive");
-  const [run, setRun] = useState<Run | null>(null);
-  const [status, setStatus] = useState<"idle" | "running" | "error">("idle");
-  const [error, setError] = useState("");
-  const [progress, setProgress] = useState("");
-
-  const execute = useCallback(async (selected: Version = version) => {
-    setVersion(selected);
-    setRun(null);
-    setError("");
-    setProgress("");
-    setStatus("running");
-    try {
-      const result = await runOnServer(selected, setProgress);
-      setRun(result);
-      setStatus("idle");
-      return {
-        version: result.experiment.version,
-        available: result.experiment.available,
-        commitments: result.allocations.reduce((total, allocation) => total + allocation.quantity, 0)
-          + result.reservations.filter((reservation) => reservation.status === "held").reduce((total, reservation) => total + reservation.quantity, 0),
-        accountedUnits: result.accountedUnits,
-        invariantHeld: result.invariant,
-        requirementMet: result.requirementMet,
-      };
-    } catch (cause) {
-      const message = cause instanceof Error ? cause.message : "The experiment failed unexpectedly.";
-      setError(message);
-      setStatus("error");
-      throw cause;
-    }
-  }, [version]);
-
-  useEffect(() => {
-    const context = document.modelContext;
-    if (!context?.registerTool) return;
-    const lifecycle = new AbortController();
-    void Promise.resolve(context.registerTool({
-      name: "run_inventory_progression",
-      title: "Run inventory progression",
-      description: "Run one stage of the inventory system—from the concurrency race through crash-safe payment holds—and display its database evidence.",
-      inputSchema: {
-        type: "object",
-        properties: { version: { type: "string", enum: ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold"] } },
-        required: ["version"],
-        additionalProperties: false,
-      },
-      annotations: { readOnlyHint: false, untrustedContentHint: false },
-      execute(input) {
-        const candidate = (input as { version?: unknown } | null)?.version;
-        if (candidate !== "naive" && candidate !== "atomic" && candidate !== "permanent_hold" && candidate !== "expiring_hold" && candidate !== "crash_gap" && candidate !== "transactional_hold") {
-          throw new Error("Unknown experiment version.");
-        }
-        return execute(candidate);
-      },
-    }, { signal: lifecycle.signal })).catch(() => {});
-    return () => lifecycle.abort();
-  }, [execute]);
-
   const current = versions[version];
-  const elapsed = run?.events.length
-    ? Math.max(...run.events.map((event) => event.createdAt)) - Math.min(...run.events.map((event) => event.createdAt))
-    : 0;
-  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold" || version === "crash_gap" || version === "transactional_hold";
+  const run = recordedRuns[version];
+  const elapsed = Math.max(...run.events.map((event) => event.createdAt)) - Math.min(...run.events.map((event) => event.createdAt));
+  const isHoldVersion = version === "permanent_hold" || version === "expiring_hold" || version === "crash_gap" || version === "transactional_hold" || version === "idempotent_hold";
   const isCrashVersion = version === "crash_gap" || version === "transactional_hold";
-  const activeHolds = run?.reservations.filter((reservation) => reservation.status === "held") ?? [];
+  const activeHolds = run.reservations.filter((reservation) => reservation.status === "held");
 
   return (
     <main className="relative min-h-screen bg-[var(--background)] text-[var(--foreground)]">
@@ -357,7 +211,7 @@ export function LabPreview() {
               <p className="text-sm text-slate-300">Inventory reservation lab</p>
             </div>
           </div>
-          <div className="hidden items-center gap-2 font-mono text-xs text-slate-500 sm:flex"><Database className="size-3.5" /> LIVE DATABASE · SYSTEM 01</div>
+          <div className="hidden items-center gap-2 font-mono text-xs text-slate-500 sm:flex"><Database className="size-3.5" /> RECORDED EVIDENCE · SYSTEM 01</div>
         </div>
       </header>
 
@@ -367,7 +221,7 @@ export function LabPreview() {
           <h1 className="mt-3 text-2xl font-semibold leading-tight">{current.requirementTitle}</h1>
           <p className="mt-3 text-sm leading-6 text-slate-400">{current.requirementDescription}</p>
 
-          <Tabs value={version} onValueChange={(value) => { setVersion(value as Version); setRun(null); setError(""); setProgress(""); setStatus("idle"); }} className="mt-7">
+          <Tabs value={version} onValueChange={(value) => setVersion(value as Version)} className="mt-7">
             <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">Concurrency</p>
             <TabsList className="h-auto w-full flex-col items-stretch gap-0 rounded-none border-l border-cyan-300/30 bg-transparent p-0">
               <TabsTrigger value="naive" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">01 · Read, check, write</TabsTrigger>
@@ -383,6 +237,10 @@ export function LabPreview() {
               <TabsTrigger value="crash_gap" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">05 · Crash between writes</TabsTrigger>
               <TabsTrigger value="transactional_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">06 · Atomic hold creation</TabsTrigger>
             </TabsList>
+            <p className="mb-2 mt-5 font-mono text-[10px] uppercase tracking-[0.16em] text-slate-600">Retry safety</p>
+            <TabsList className="h-auto w-full flex-col items-stretch gap-0 rounded-none border-l border-cyan-300/30 bg-transparent p-0">
+              <TabsTrigger value="idempotent_hold" className="justify-start rounded-none border-l-2 border-transparent px-4 py-3 font-mono text-xs text-slate-500 data-[state=active]:border-cyan-300 data-[state=active]:bg-cyan-300/[0.06] data-[state=active]:text-cyan-200">11 · Retry-safe hold</TabsTrigger>
+            </TabsList>
           </Tabs>
 
           <div className="mt-7 border-t border-white/10 pt-5">
@@ -394,31 +252,14 @@ export function LabPreview() {
         <section className="border border-white/10 bg-[#0b1118]">
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 px-5 py-4">
             <div>
-              <p className="eyebrow">Real experiment · {current.eyebrow}</p>
-              <h2 className="mt-1 text-lg font-medium">{isCrashVersion ? "One request, one injected crash" : isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
+              <p className="eyebrow">Recorded experiment · {current.eyebrow}</p>
+              <h2 className="mt-1 text-lg font-medium">{version === "idempotent_hold" ? "One lost response, one safe retry" : isCrashVersion ? "One request, one injected crash" : isHoldVersion ? "One abandoned checkout, one waiting buyer" : "Two buyers, one last pair"}</h2>
             </div>
-            <Button disabled={status === "running"} onClick={() => void execute()} className="rounded-none bg-cyan-300 text-slate-950 hover:bg-cyan-200">
-              <Play className="size-4" /> {status === "running" ? "Running…" : isCrashVersion ? "Inject failure" : isHoldVersion ? "Run checkout lifecycle" : "Run two buyers"}
-            </Button>
+            <span className="border border-cyan-300/20 bg-cyan-300/[0.04] px-3 py-2 font-mono text-[11px] text-cyan-200">READ ONLY · PREVIOUSLY VERIFIED</span>
           </div>
 
           <div className="min-h-[505px] p-5 sm:p-7">
-            {!run && status !== "error" ? (
-              <div className="grid min-h-[440px] place-items-center">
-                <div className="max-w-md text-center">
-                  <div className="mx-auto grid size-28 place-items-center rounded-full border border-dashed border-cyan-300/30 bg-cyan-300/[0.03] font-mono text-3xl text-cyan-200">1</div>
-                  <p className="mt-5 text-lg">One unit is available.</p>
-                  <p className="mt-2 text-sm leading-6 text-slate-500">{status === "running" ? progress : current.question}</p>
-                </div>
-              </div>
-            ) : null}
-
-            {status === "error" ? (
-              <div className="grid min-h-[440px] place-items-center text-center"><div><CircleAlert className="mx-auto size-9 text-rose-300" /><p className="mt-4 text-rose-200">Experiment unavailable</p><p className="mt-2 max-w-md text-sm text-slate-500">{error}</p></div></div>
-            ) : null}
-
-            {run ? (
-              <div>
+            <div>
                 <div className="grid grid-cols-3 gap-px border border-white/10 bg-white/10">
                   <Metric label="Stock left" value={String(run.experiment.available)} />
                   <Metric label={isHoldVersion ? "Active holds" : "Promises"} value={String(isHoldVersion ? activeHolds.length : run.allocations.length)} tone={run.requirementMet ? "good" : "bad"} />
@@ -438,6 +279,8 @@ export function LabPreview() {
                             ? "Stock is 0, but no allocation or hold owns the unit."
                             : version === "transactional_hold"
                               ? "The response was lost after commit; Alice's durable hold still owns the unit."
+                              : version === "idempotent_hold"
+                                ? "The same request key returned Alice's original hold; stock was subtracted once."
                           : `Promises (${run.allocations.length}) must never exceed initial stock (${run.experiment.initialStock}).`}
                     </p>
                   </div>
@@ -473,12 +316,10 @@ export function LabPreview() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between gap-4">
+                <div className="mt-5">
                   <p className="text-sm text-slate-400">{current.finding}</p>
-                  <Button variant="ghost" size="sm" onClick={() => setRun(null)} className="rounded-none text-slate-300 hover:bg-white/5 hover:text-white"><RotateCcw className="size-4" /> Reset</Button>
                 </div>
               </div>
-            ) : null}
           </div>
         </section>
 
@@ -493,7 +334,7 @@ export function LabPreview() {
           </section>
           <section className="border border-white/10 bg-white/[0.025] p-5">
             <p className="eyebrow">What is real here</p>
-            <p className="mt-3 text-sm leading-6 text-slate-400">The requests, writes, allocations, holds, expiry timestamps and event trace come from the running service and its persistent database. Stage 05 injects a controlled failure at a precise boundary so its effect is repeatable. Stage 06 uses a real D1 database transaction.</p>
+            <p className="mt-3 text-sm leading-6 text-slate-400">These are saved results from experiments executed against the real service and D1 database. The public site is read-only; the executable harness remains available for controlled local verification.</p>
           </section>
         </aside>
       </section>

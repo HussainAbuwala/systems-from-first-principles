@@ -5,6 +5,9 @@
   "main": "vinext/server/fetch-handler",
   "compatibility_date": "2026-09-15",
   "compatibility_flags": ["nodejs_compat"],
+  "vars": {
+    "EXPERIMENT_WRITES_ENABLED": "false"
+  },
   "assets": {
     "directory": "./dist/client",
     "not_found_handling": "none",
@@ -26,6 +29,9 @@
     "benchmark": {
       "name": "systems-from-first-principles-benchmark",
       "workers_dev": true,
+      "vars": {
+        "EXPERIMENT_WRITES_ENABLED": "false"
+      },
       "d1_databases": [
         {
           "binding": "DB",

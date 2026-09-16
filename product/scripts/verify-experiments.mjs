@@ -24,6 +24,18 @@ async function postExpectedFailure(path, body) {
   return payload;
 }
 
+async function postExpectedResponseLoss(path, body) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const payload = await response.json();
+  assert.equal(response.status, 503, `${path} should expose the lost response`);
+  assert.equal(payload.simulatedResponseLoss, true, `${path} should identify the response loss as deliberate`);
+  return payload;
+}
+
 async function run(version) {
   const started = await post("/api/experiments/start", { version });
   const purchase = (buyer) => post(`/api/experiments/${started.id}/purchase`, { buyer });
@@ -83,6 +95,30 @@ assert.equal(transactional.accountedUnits, 1);
 assert.equal(transactional.invariant, true);
 assert.equal(transactional.requirementMet, true);
 
+const retrySafe = await post("/api/experiments/start", { version: "idempotent_hold" });
+const retryPath = `/api/experiments/${retrySafe.id}/purchase`;
+await postExpectedResponseLoss(retryPath, {
+  buyer: "Alice",
+  quantity: 1,
+  idempotencyKey: "alice-checkout-001",
+  simulateResponseLoss: true,
+});
+const retries = await Promise.all([
+  post(retryPath, { buyer: "Alice", quantity: 1, idempotencyKey: "alice-checkout-001" }),
+  post(retryPath, { buyer: "Alice", quantity: 1, idempotencyKey: "alice-checkout-001" }),
+]);
+assert.equal(retries.every(({ accepted, replayed }) => accepted && replayed), true);
+assert.equal(new Set(retries.map(({ reservationId }) => reservationId)).size, 1);
+const retryInspectionResponse = await fetch(`${baseUrl}/api/experiments/${retrySafe.id}`);
+assert.equal(retryInspectionResponse.ok, true);
+const retryInspection = await retryInspectionResponse.json();
+assert.equal(retryInspection.experiment.available, 0);
+assert.equal(retryInspection.reservations.length, 1);
+assert.equal(retryInspection.reservations[0].idempotencyKey, "alice-checkout-001");
+assert.equal(retryInspection.accountedUnits, 1);
+assert.equal(retryInspection.invariant, true);
+assert.equal(retryInspection.requirementMet, true);
+
 const multiUnit = await post("/api/experiments/start", { version: "atomic", initialStock: 10 });
 const multiUnitResults = await Promise.all([
   post(`/api/experiments/${multiUnit.id}/purchase`, { buyer: "Alice", quantity: 6 }),
@@ -96,4 +132,4 @@ assert.equal(multiUnitSummary.experiment.available, 4);
 assert.equal(multiUnitSummary.allocatedUnits, 6);
 assert.equal(multiUnitSummary.invariant, true);
 
-console.log("Verified all six stages plus concurrent multi-unit allocation.");
+console.log("Verified all seven executable stages plus concurrent multi-unit allocation.");

@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { BENCHMARK_DATABASE_SHARDS, createExperimentId, databaseForShard } from "@/lib/experiment-database";
+import { experimentWritesEnabled, readOnlyExperimentResponse } from "@/lib/experiment-access";
 
 export const runtime = "edge";
 
-const versions = ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold"] as const;
+const versions = ["naive", "atomic", "permanent_hold", "expiring_hold", "crash_gap", "transactional_hold", "idempotent_hold"] as const;
 type Version = (typeof versions)[number];
 
 function isVersion(value: unknown): value is Version {
@@ -11,6 +12,8 @@ function isVersion(value: unknown): value is Version {
 }
 
 export async function POST(request: Request) {
+  if (!experimentWritesEnabled()) return readOnlyExperimentResponse();
+
   const body = (await request.json().catch(() => null)) as {
     version?: unknown;
     initialStock?: unknown;
