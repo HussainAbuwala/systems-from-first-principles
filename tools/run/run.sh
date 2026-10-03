@@ -35,6 +35,11 @@ for s in $systems; do machines+=("$s"); done
   echo "]"
 } > "$out/machines.json"
 
+# Which code each system machine is running (written there by the deploy script).
+for s in $systems; do
+  echo "$s: $(sfp_ssh "$(sfp_ip "$s")" 'cat /opt/shortener/VERSION 2>/dev/null || echo unknown')"
+done > "$out/deployed-versions.txt"
+
 cp "$script" "$out/$(basename "$script")"
 scp_to "$script" "$load_ip" /opt/sfp/script.js
 
