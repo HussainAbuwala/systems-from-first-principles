@@ -1,4 +1,4 @@
-# Script: System name
+# Script: Problem name
 
 ## Working title
 
@@ -16,7 +16,7 @@ By the end of this episode, the viewer will understand...
 
 **Visual:**
 
-**Evidence:**
+**Run IDs:**
 
 ### 00:30 — Define the problem
 
@@ -24,27 +24,46 @@ By the end of this episode, the viewer will understand...
 
 **Visual:**
 
-**Evidence:**
+**Run IDs:**
 
-### Level 0 — Simplest possible solution
-
-**Narration:**
-
-**Visual:**
-
-**Failure introduced:**
-
-### Final architecture and tradeoffs
+### Stage 0 — Simplest thing that works
 
 **Narration:**
 
 **Visual:**
 
-**Evidence:**
+**Run IDs:**
+
+### Event ENN — Survived | Broke
+
+**Narration:**
+
+**Visual:** (the real graph from the run)
+
+**Run IDs:**
+
+**If broke — saturated resource, options, change:**
+
+### Final scoreboard and claim
+
+**Narration:**
+
+**Visual:**
+
+**Run IDs:**
+
+### Interview cut
+
+**Narration:**
+
+**Visual:**
+
+**Run IDs:**
 
 ## Accuracy review
 
-- [ ] Documented, inferred, and proposed claims are distinguishable.
-- [ ] Historical claims include their date.
-- [ ] No source is quoted beyond what is necessary.
-- [ ] The final design includes costs and failure modes.
+- [ ] Every number on screen is measured or derived, and carries its run ID.
+- [ ] Every design change points to a failed run of a locked event.
+- [ ] Survived events are shown, not skipped.
+- [ ] No capacity is claimed beyond the largest measured run.
+- [ ] The final claim includes monthly cost and the resource closest to its limit.

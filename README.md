@@ -1,44 +1,43 @@
 # Systems from First Principles
 
-Real-world software systems reconstructed from public engineering sources, starting with the simplest design and evolving it through failures, constraints, and production tradeoffs.
+Start with the cheapest thing that could possibly work. Throw real traffic at it. Add a piece only when something breaks or a new requirement arrives that the current design cannot deliver. End with a system that serves real scale, and say exactly how much it handles and what it costs, because we measured it.
 
-This repository supports **Systems from First Principles**, a video series on **The Unplanned Stack** YouTube channel. Each episode asks:
+This repository supports **Systems from First Principles**, a video series on **The Unplanned Stack** YouTube channel.
 
-1. What problem are we solving?
-2. Why does the simplest solution fail?
-3. What does each added piece of complexity buy us?
+## Why this series exists
 
-## Evidence standard
+Most system design teaching shows the finished architecture: draw the boxes, explain each one, move on. Three things get lost:
 
-- **Documented** — explicitly stated in a first-party engineering source.
-- **Inferred** — supported by public evidence but not directly stated.
-- **Proposed** — an educational simplification developed for the episode.
+1. **What forced each piece.** Viewers memorise the final diagram but cannot say why any box is there, or what number made it necessary.
+2. **The break itself.** "This won't scale" is asserted, never shown. Architecture problems only appear at scale, so small examples hide them.
+3. **When not to add a box.** The default answer reaches for queues, caches, and shards before anything has strained. Nobody shows how far a simple design actually goes.
 
-Company posts are dated snapshots, not proof of a complete or current architecture.
+This series does the opposite. The simple design gets a fair chance, every break is reproduced under load, and every number on screen comes from a measurement.
+
+## The rules
+
+1. **Start embarrassingly simple, but plausible.** Free or nearly free. If people laugh at stage 0, good. Every choice must be one a reasonable engineer could defend at that point; plausible choices that later fail are the best lessons. Choices made *because* they will fail are not allowed.
+2. **The event script is fixed before building.** The traffic steps and new requirements are written down and locked before stage 0 exists. See [format](docs/FORMAT.md#the-event-script).
+3. **Change the design only for a reason on the script.** A load step broke it, or a requirement cannot be met. "It would be best practice" is not a reason.
+4. **Surviving counts.** When an event passes without changes, the video says so. That is the point.
+5. **Everything is measured.** Capacity, latency, errors and cost come from real runs. Anything derived is arithmetic on measured numbers with the formula shown. See [measurement standard](docs/MEASUREMENT.md).
+6. **End with the scoreboard.** What the final system handles, at what latency, for what monthly cost, and which resource runs out next.
 
 ## Episodes
 
 | Episode | Status | Central question |
 | --- | --- | --- |
-| [Figma multiplayer](episodes/figma-multiplayer/README.md) | Long form complete; Short in progress | How can multiple people edit one design without losing work? |
-| [Shopify inventory reservations](episodes/shopify-inventory-reservations/README.md) | Story and canvas revised; ready to rehearse | How do we avoid promising the same last item twice? |
+| [URL shortener](episodes/url-shortener/README.md) | Event script locked; building tools and stage 0 | How far does one file on a €5 server get you, and what does it take to handle almost a billion clicks a month? |
 
-## Interactive lab
-
-The companion application turns each requirement into a repeatable experiment backed by real infrastructure. The inventory system currently demonstrates the naïve concurrency race, an atomic inventory decision, a stranded payment hold, and an expiring hold that returns abandoned stock.
-
-[Open the live lab](https://systems-from-first-principles.hussainabuwala-1997.workers.dev) or see [`product/`](product/README.md) for local development and deployment.
+Earlier episodes used a different format (reconstructing a company's system from its engineering posts). They live in [archive](archive/README.md).
 
 ## Repository structure
 
 ```text
-episodes/    Research, scripts, recordings, diagrams, and publishing assets
-animation/   Reusable Remotion components and active compositions
-product/     Interactive experiments deployed to Cloudflare Workers and D1
-docs/        Cross-episode production guidance and lessons
-templates/   Repeatable research and writing documents
+docs/        Format, measurement standard, topic selection, production guide
+templates/   Event script, stage log, interview cut, script and storyboard
+episodes/    One folder per problem: event script, stages, results, script
+archive/     Earlier-format episodes, their animation workspace and lab
 ```
-
-Generated dependencies, audio beds, previews, and final renders stay out of Git. Choose topics with the [episode selection criteria](docs/episode-selection.md), then read the [video production guide](docs/video-production-guide.md) before beginning a new episode.
 
 Narration WAV files use Git LFS; run `git lfs install` once before cloning or pulling the repository.

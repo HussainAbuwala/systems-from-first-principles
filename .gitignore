@@ -3,9 +3,9 @@ node_modules/
 dist/
 out/
 
-# Generated audio beds. Recreate with `npm run audio:generate` in animation/.
-animation/public/audio/music/ambient-bed.wav
-animation/public/audio/room-tone.wav
+# Generated audio beds. Recreate with `npm run audio:generate` in archive/v1-company-reconstructions/animation/.
+archive/v1-company-reconstructions/animation/public/audio/music/ambient-bed.wav
+archive/v1-company-reconstructions/animation/public/audio/room-tone.wav
 .env
 .env.*
 !.env.example

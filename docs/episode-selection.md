@@ -1,41 +1,48 @@
 # Episode selection
 
-Use this before researching a new **Systems from First Principles** episode. A topic must pass every gate, then earn its place on the weighted score.
+Use this before starting a new **Systems from First Principles** problem. A problem must pass every gate, then earn its place on the score.
 
 ## Gates
 
-A topic that fails any gate is rejected, regardless of score.
+A problem that fails any gate is rejected, regardless of score.
 
-1. **First-party evidence exists.** At least two dated first-party engineering posts or talks describe how the system works, and ideally why it changed. Without them, most levels become speculation.
-2. **The problem is visible in ten seconds.** A cold open can show what goes wrong for a real user before any technology is named.
-3. **The simple design fails honestly.** At least two failures can be demonstrated, so the episode is an evolution rather than a tour of a finished architecture.
+1. **It comes up in interviews,** or it teaches a pattern that common interview problems rely on.
+2. **It can be load tested with scripts.** Every event on the script can be generated and checked by code. If a real third party is involved (payments, maps, email), it can be replaced by a fake whose behaviour is stated in the episode.
+3. **A believable stage 0 exists:** simple, free or nearly free, and good enough for real users at small scale.
+4. **The top of the ladder is affordable to measure.** Problems dominated by egress or storage cost (video streaming, large file hosting) usually fail this gate.
 
-## Weighted score
+## Score
 
 Score each criterion from 0 to 5, then compute `weight × score ÷ 5`. The maximum total is 100.
 
 | Criterion | Weight | 1 — weak | 3 — solid | 5 — excellent |
 | --- | ---: | --- | --- | --- |
-| **Evolution depth** | 30% | One or two fixes, mostly asserted rather than forced | Four or more levels, each motivated by the previous failure | Four to eight levels, with failures the company documented itself |
-| **Transferable lesson** | 20% | Specific to one company's stack | Teaches a known pattern in context | Teaches patterns engineers reuse widely and meet in system-design interviews |
-| **Curiosity hook** | 15% | Title needs the architecture to make sense | Clear question about a familiar product | A question viewers want answered before clicking, about something they use |
-| **Visual explainability** | 15% | Mostly boxes and labels | Some state changes can be animated | Every level is a visible event: packets, cursors, stale copies, crashes |
-| **Distinctness** | 10% | Widely covered, or reteaches a previous episode | Covered elsewhere but with a clearly different angle | Rarely explained well and adds new concepts to the series |
-| **Relevance** | 10% | Design since replaced, or sources more than about eight years old with no update | Still broadly in use; sources a few years old | Current production design with recent sources, solving a problem engineers face today |
+| **Convention gap** | 25% | The usual answer is already simple | The usual answer adds a few boxes early | The usual answer is heavily over-built, so stage 0 going far is a real surprise |
+| **Interview frequency** | 25% | Rarely asked | Asked at some companies | One of the standard problems |
+| **Arc depth** | 20% | One or two breaks | Four or more events that genuinely break something | Six to eight events, mixing load, requirements and failures |
+| **Visible break** | 15% | The break only shows in a log | The break shows on a latency or error graph | The break is something a user would notice, and it shows on a graph |
+| **Distinctness** | 15% | Reteaches a previous episode | New problem, mostly familiar patterns | Introduces patterns the series has not covered |
 
 ### Decision rule
 
 - **Proceed:** passes all gates, scores **70 or higher**, and no criterion scores below 2.
-- **Park:** passes all gates but misses the threshold. Record why; better sources or a sharper angle may revive it.
+- **Park:** passes all gates but misses the threshold. Record why.
 - **Reject:** fails a gate.
 
-## Tiebreakers and warnings
+## Candidates
 
-- **News hype** breaks ties only. Relevance asks whether the design is current; hype asks whether it is trending this week. A long-form episode should still be worth watching in two years.
-- **Company fame** is not a criterion. A lesser-known company with a documented failure beats a famous one with thin sources.
-- **Scope:** if the honest story needs more than about eight levels, split it or narrow the central question. Figma multiplayer used eight levels in 12–14 minutes.
-- **The common trap:** many engineering posts describe only the final system. Documented failures are the rarest ingredient, which is why evolution depth carries the most weight.
+Not yet scored, except where noted.
 
-## Approval
+| Problem | Notes |
+| --- | --- |
+| **URL shortener** | **Chosen first** (2026-10-01). Most-covered problem, so the contrast is strongest; read-heavy, hot links, analytics, takedown, multi-region. |
+| Rate limiter | Small and sharp; distributed counting and clock problems appear quickly. |
+| Chat / messaging | Long-lived connections, fan-out, ordering, offline delivery. Load testing many open connections is its own challenge. |
+| News feed | Fan-out on write vs read; celebrity accounts as hot keys. |
+| Leaderboard / top-K | Counting at speed; exact vs approximate. |
+| Ticket booking / flash sale | Contention on the last item. Overlaps the archived Shopify inventory work, which can be reused. |
+| Notification system | Queues, retries, deduplication, provider fakes (gate 2). |
+| Typeahead / autocomplete | Read-heavy, latency-critical, index rebuilds. |
+| Job scheduler | Exactly-once execution, leases, crashes mid-job. |
 
-Track scored ideas in [episode candidates](episode-candidates.md). Record every serious candidate with the [topic brief template](../templates/topic-brief-template.md) and get explicit approval before starting research. Approved briefs live at `episodes/<slug>/research/topic-brief.md`.
+Likely to fail a gate: video streaming (gate 4, egress cost), web crawler (gate 2 unless crawling a synthetic web we host), ride matching (gate 2 needs a convincing fake of moving drivers; possible but heavy).

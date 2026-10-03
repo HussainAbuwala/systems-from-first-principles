@@ -1,8 +1,8 @@
-# Storyboard: System name
+# Storyboard: Problem name
 
-| Scene | Purpose | Screen action | Narration beat | Evidence ID |
+| Scene | Purpose | Screen action | Narration beat | Run ID |
 | --- | --- | --- | --- | --- |
-| 01 | Hook | Show the user-visible failure | State the stakes | C01 |
+| 01 | Hook | Show the user-visible failure | State the stakes |  |
 
 ## Visual grammar
 
@@ -12,6 +12,9 @@
 - Confirmed changes:
 - Failure:
 - Recovery:
+- Load (req/s) and latency graphs:
+- Saturated resource:
+- Scoreboard:
 
 ## Output formats
 

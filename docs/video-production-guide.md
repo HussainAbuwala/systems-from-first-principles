@@ -1,15 +1,24 @@
 # Video production guide
 
-Use this as the short preflight for future **Systems from First Principles** episodes. Pick and approve the topic first with the [episode selection criteria](episode-selection.md).
+Use this as the short preflight for future **Systems from First Principles** episodes. Pick and approve the problem first with the [episode selection criteria](episode-selection.md), then follow the [format](FORMAT.md) and [measurement standard](MEASUREMENT.md).
 
 ## Story
 
-- Never start with the answer. Build the system from scratch, piece by piece, and add each component only because the previous design visibly failed. Weave in the company's documented failures as the build reaches them.
+- Never start with the answer. Build from the cheapest design that works, and add each component only because an event on the locked script broke the previous design.
 - Start with the real user-visible problem and show it happening.
-- Build in this order: **simple solution → visible failure → smallest useful fix**.
+- Build in this order: **simple solution → event → survived, or visible failure → smallest useful fix**.
+- Give survived events real screen time. "It held, here are the numbers" is the series' surprise, not filler.
+- When a company famously hit the same wall, a short cameo is fine. It is colour, not the spine.
 - Define a term only when the audience has seen why it is needed. Always explain what it is for and when it matters.
 - Connect every section to the previous failure. Remove technically interesting material that does not advance the central question.
 - Keep one authoritative recording script aligned line-by-line with the final scenes.
+
+## Showing measurements
+
+- Graphs on screen come from real runs. Never redraw or smooth them to look better.
+- Every number on screen carries its run ID, small, in a corner.
+- Show the break as it happens: the latency line climbing and the saturated resource beside it, in the same frame.
+- Keep the scoreboard visible as a recurring element; it fills one row per stage.
 
 ## Visual language
 
@@ -17,7 +26,7 @@ Use this as the short preflight for future **Systems from First Principles** epi
 - Give each idea its own frame. Avoid overlapping cards, labels, and diagrams.
 - Match narration literally: if the voice says **position**, do not animate **fill**.
 - Make the visual event happen just before or as it is spoken—not several seconds later.
-- Open with a product-like demonstration; end by zooming out to the complete system map and highlighting each learned component.
+- Open with a product-like demonstration; end by zooming out to the complete system map and highlighting each learned component, with the stage and number that forced it.
 
 ## Voice and sound
 
@@ -26,7 +35,9 @@ Use this as the short preflight for future **Systems from First Principles** epi
 - Keep music clearly present but below speech; check headphones and laptop speakers.
 - Review the full edit once without reading the script to catch robotic pacing.
 
-## Mistakes not to repeat
+## Lessons from earlier episodes
+
+From the archived Figma multiplayer episode:
 
 - Do not introduce CRDTs or another alternative architecture without first explaining its purpose; omit it if it distracts from the documented system.
 - Avoid unexplained operational phrases such as “a deployment closes processes.” Describe the concrete event and consequence.
