@@ -1,0 +1,21 @@
+{
+  "event": "E02",
+  "verdict": "PASS",
+  "reasons": [],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 300,
+    "redirects": 30053,
+    "creates": 602,
+    "redirect_p50_ms": 7.5,
+    "redirect_p99_ms": 17.7,
+    "create_p99_ms": 26.0,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 0
+  }
+}

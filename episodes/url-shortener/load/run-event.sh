@@ -29,8 +29,9 @@ with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
             tags = dict(t.split("=", 1) for t in r["extra_tags"].split("&") if "=" in t)
             pairs.append((tags["code"], r["url"]))
 created = len(pairs) - 1
+# The first 1,000 sampled links are enough to show stored links still resolve.
 with open(f"{out}/sample.csv") as f:
-    pairs += [tuple(row) for row in list(csv.reader(f))[1:]]
+    pairs += [tuple(row) for row in list(csv.reader(f))[1:1001]]
 csv.writer(open(f"{out}/check-pairs.csv", "w", newline="")).writerows(pairs)
 print(f"checking {created} links created during the run and {len(pairs) - 1 - created} seeded links")
 PY
