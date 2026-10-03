@@ -28,8 +28,14 @@ def process_usage(name):
                 stat = f.read()
         except OSError:
             continue
-        comm = stat[stat.index("(") + 1:stat.rindex(")")]
-        if comm != name:
+        # Match the program's file name (node renames its main thread to
+        # "MainThread", so the kernel's short name cannot be trusted).
+        try:
+            with open(f"/proc/{pid}/cmdline", "rb") as f:
+                argv0 = f.read().split(b"\0", 1)[0].decode(errors="replace")
+        except OSError:
+            continue
+        if os.path.basename(argv0) != name:
             continue
         fields = stat[stat.rindex(")") + 2:].split()
         ticks += int(fields[11]) + int(fields[12])  # utime + stime

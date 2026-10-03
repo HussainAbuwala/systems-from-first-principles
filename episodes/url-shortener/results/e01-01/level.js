@@ -1,0 +1,113 @@
+// Load for one URL shortener level: redirects and creates at fixed rates.
+//
+//   k6 run -e TARGET=https://1.2.3.4 -e SAMPLE=sample.csv -e RUN_ID=e01-01 \
+//          -e REDIRECTS=1 -e CREATES=0.02 -e DURATION=6m level.js
+//
+// Follows the locked traffic model: clicks are skewed (Zipf, s = 1.0) so a
+// few links get most of them; every click opens a fresh TLS connection;
+// redirects are checked but never followed. SAMPLE is a CSV of code,url
+// pairs already stored, written by the seeder.
+import http from "k6/http";
+import exec from "k6/execution";
+import { SharedArray } from "k6/data";
+import { Counter, Trend } from "k6/metrics";
+
+const target = __ENV.TARGET;
+const redirectRate = Number(__ENV.REDIRECTS || 1);
+const createRate = Number(__ENV.CREATES || 0);
+const duration = __ENV.DURATION || "6m";
+const zipfS = Number(__ENV.ZIPF_S || 1.0);
+
+const links = new SharedArray("links", () =>
+  open(__ENV.SAMPLE)
+    .trim()
+    .split("\n")
+    .slice(1)
+    .map((line) => {
+      const comma = line.indexOf(",");
+      return [line.slice(0, comma), line.slice(comma + 1)];
+    }),
+);
+
+// Cumulative Zipf weights: rank k is clicked in proportion to 1 / k^s.
+const cdf = new SharedArray("zipf", () => {
+  const weights = [];
+  let total = 0;
+  for (let k = 1; k <= links.length; k++) {
+    total += 1 / Math.pow(k, zipfS);
+    weights.push(total);
+  }
+  return weights.map((w) => w / total);
+});
+
+function pickLink() {
+  const u = Math.random();
+  let lo = 0;
+  let hi = cdf.length - 1;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    if (cdf[mid] < u) lo = mid + 1;
+    else hi = mid;
+  }
+  return links[lo];
+}
+
+// What a new visitor waits for: connect + TLS handshake + request + response.
+const visit = new Trend("visit_duration", true);
+const wrongRedirect = new Counter("wrong_redirect");
+const createdLink = new Counter("created_link");
+
+function record(res, kind) {
+  const t = res.timings;
+  visit.add(t.blocked + t.connecting + t.tls_handshaking + t.duration, { kind });
+}
+
+function scenario(execName, rate) {
+  // Rates below one per second become "one every N seconds".
+  const perSecond = rate >= 1;
+  return {
+    executor: "constant-arrival-rate",
+    exec: execName,
+    rate: perSecond ? rate : 1,
+    timeUnit: perSecond ? "1s" : `${Math.round(1 / rate)}s`,
+    duration,
+    preAllocatedVUs: Math.max(5, Math.ceil(rate * 0.5)),
+    maxVUs: Number(__ENV.MAX_VUS || 5000),
+  };
+}
+
+const scenarios = { redirects: scenario("redirect", redirectRate) };
+if (createRate > 0) scenarios.creates = scenario("create", createRate);
+
+export const options = {
+  noConnectionReuse: true,
+  insecureSkipTLSVerify: true, // self-made certificate; the handshake work is unchanged
+  maxRedirects: 0,
+  summaryTrendStats: ["avg", "min", "med", "p(95)", "p(99)", "max"],
+  scenarios,
+};
+
+export function redirect() {
+  const [code, url] = pickLink();
+  const res = http.get(`${target}/${code}`, {
+    tags: { kind: "redirect", name: "redirect" },
+    timeout: "10s",
+    responseType: "none",
+  });
+  record(res, "redirect");
+  if (res.status !== 0 && (res.status !== 301 || res.headers["Location"] !== url)) {
+    wrongRedirect.add(1, { code, status: String(res.status) });
+  }
+}
+
+export function create() {
+  const tag = Math.random().toString(36).slice(2, 10);
+  const url = `https://made.example.invalid/${__ENV.RUN_ID}/${exec.vu.idInTest}-${exec.scenario.iterationInTest}?utm_source=share&ref=${tag}`;
+  const res = http.post(`${target}/links`, JSON.stringify({ url }), {
+    headers: { "content-type": "application/json" },
+    tags: { kind: "create", name: "create" },
+    timeout: "10s",
+  });
+  record(res, "create");
+  if (res.status === 201) createdLink.add(1, { code: res.json("code"), url });
+}
