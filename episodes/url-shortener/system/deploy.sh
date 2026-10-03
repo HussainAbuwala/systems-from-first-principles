@@ -9,6 +9,9 @@ here="$(cd "$(dirname "$0")" && pwd)"
 scp_opts=(-q -i "$SFP_SSH_KEY_FILE" -o UserKnownHostsFile="$SFP_ROOT/tools/cloud/.known_hosts")
 
 sfp_ssh "$ip" "mkdir -p /opt/shortener /var/lib/shortener"
+# Record exactly which code is deployed; runs copy this into their evidence.
+version="$(git -C "$SFP_ROOT" describe --tags --always --dirty)"
+sfp_ssh "$ip" "echo '$version' > /opt/shortener/VERSION"
 scp "${scp_opts[@]}" "$here"/*.ts "root@$ip:/opt/shortener/"
 scp "${scp_opts[@]}" "$here/shortener.service" "root@$ip:/etc/systemd/system/shortener.service"
 sfp_ssh "$ip" "cat > /etc/shortener.env <<ENV

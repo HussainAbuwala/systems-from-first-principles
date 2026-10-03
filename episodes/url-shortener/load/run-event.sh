@@ -25,15 +25,17 @@ out = sys.argv[1]
 pairs = [("code", "url")]
 with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
     for r in csv.DictReader(f):
+        tags = dict(t.split("=", 1) for t in (r["extra_tags"] or "").split("&") if "=" in t)
         if r["metric_name"] == "created_link":
-            tags = dict(t.split("=", 1) for t in r["extra_tags"].split("&") if "=" in t)
             pairs.append((tags["code"], r["url"]))
+        elif r["metric_name"] == "name_round" and tags.get("winners") == "1":
+            pairs.append((tags["round_name"], tags["winner_url"]))
 created = len(pairs) - 1
 # The first 1,000 sampled links are enough to show stored links still resolve.
 with open(f"{out}/sample.csv") as f:
     pairs += [tuple(row) for row in list(csv.reader(f))[1:1001]]
 csv.writer(open(f"{out}/check-pairs.csv", "w", newline="")).writerows(pairs)
-print(f"checking {created} links created during the run and {len(pairs) - 1 - created} seeded links")
+print(f"checking {created} links created during the run (including winning names) and {len(pairs) - 1 - created} seeded links")
 PY
 scp "${scp_opts[@]}" "$here/check.py" "$out/check-pairs.csv" "root@$load_ip:/opt/sfp/"
 sfp_ssh "$load_ip" "python3 /opt/sfp/check.py https://$system_ip /opt/sfp/check-pairs.csv /opt/sfp/check.json"

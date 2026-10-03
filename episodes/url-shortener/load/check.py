@@ -11,6 +11,9 @@ load machine, one request at a time, no redirects followed.
 """
 import csv
 import http.client
+import re
+import statistics
+import time
 import json
 import ssl
 import sys
@@ -36,12 +39,16 @@ def get(code):
         conn.close()
 
 
+GENERATED = re.compile(r"^[0-9A-Za-z]{1,7}$")
 pairs = list(csv.DictReader(open(pairs_path)))
 problems = []
 caching = Counter()
+timings = {"generated": [], "name": []}
 for p in pairs:
     try:
+        started = time.perf_counter()
         status, location, cache_control, expires = get(p["code"])
+        timings["generated" if GENERATED.match(p["code"]) else "name"].append(1000 * (time.perf_counter() - started))
     except Exception as e:  # timeouts and connection errors count as problems
         problems.append({"code": p["code"], "error": str(e)})
         continue
@@ -60,6 +67,11 @@ result = {
     "problems": len(problems),
     "examples": problems[:20],
     "redirect_caching_headers": dict(caching),
+    # One request at a time, no other load: what each lookup path costs alone.
+    "unloaded_ms": {kind: {"count": len(v), "median": round(statistics.median(v), 2) if v else None,
+                           "p99": round(sorted(v)[int(0.99 * (len(v) - 1))], 2) if v else None}
+                    for kind, v in timings.items()},
 }
 json.dump(result, open(out_path, "w"), indent=2)
 print(f"checked {len(pairs)} links: {len(problems)} problems; caching headers seen: {dict(caching)}")
+print(f"unloaded visit time by path: {result['unloaded_ms']}")
