@@ -35,7 +35,9 @@ def pct(sorted_vals, p):
 reqs = defaultdict(int)
 failed = defaultdict(int)
 dropped = defaultdict(float)
-durations = defaultdict(list)
+durations = defaultdict(list)       # all visits
+kind_durations = defaultdict(list)  # (window, kind) -> visits, when the script tags kind=...
+wrong = defaultdict(int)
 statuses = defaultdict(lambda: defaultdict(int))
 
 with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
@@ -49,7 +51,13 @@ with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
         elif name == "http_req_failed" and float(row["metric_value"]) == 1:
             failed[w] += 1
         elif name == "visit_duration":
-            durations[w].append(float(row["metric_value"]))
+            v = float(row["metric_value"])
+            durations[w].append(v)
+            tags = dict(t.split("=", 1) for t in (row.get("extra_tags") or "").split("&") if "=" in t)
+            if "kind" in tags:
+                kind_durations[(w, tags["kind"])].append(v)
+        elif name == "wrong_redirect":
+            wrong[w] += int(float(row["metric_value"]))
         elif name == "dropped_iterations":
             dropped[w] += float(row["metric_value"])
 
@@ -100,9 +108,13 @@ for w in sorted(reqs):
         "p95_ms": round(pct(d, 95), 1) if d else None,
         "p99_ms": round(pct(d, 99), 1) if d else None,
         "error_pct": round(100 * failed[w] / reqs[w], 2),
+        "wrong_redirects": wrong[w],
         "statuses": " ".join(f"{k}:{v}" for k, v in sorted(statuses[w].items())),
         "load_cpu_pct": round(load_cpu, 0) if load_cpu is not None else None,
     }
+    for kind in sorted({k for (_, k) in kind_durations}):
+        kd = sorted(kind_durations.get((w, kind), []))
+        row[f"{kind}_p99_ms"] = round(pct(kd, 99), 1) if kd else None
     for s in systems:
         avg, top = cpu.get(s, {}).get(w, (None, None))
         row[f"{s}_cpu_avg_pct"] = round(avg, 0) if avg is not None else None
@@ -123,7 +135,8 @@ with open(os.path.join(out, "windows.csv"), "w", newline="") as f:
     writer.writerows(rows)
 
 t0 = rows[0]["window_start"] if rows else 0
-cols = ["req_per_s", "p50_ms", "p95_ms", "p99_ms", "error_pct", "load_cpu_pct"]
+kinds = sorted({k for (_, k) in kind_durations})
+cols = ["req_per_s", "p50_ms", "p99_ms"] + [f"{k}_p99_ms" for k in kinds] + ["error_pct", "load_cpu_pct"]
 for s in systems:
     cols += [f"{s}_cpu_avg_pct", f"{s}_cpu_top_core_pct", f"{s}_node_cpu_pct"]
 print("t(s)  " + "  ".join(c.replace(f"{systems[0]}_", "sys_") if systems else c for c in cols) + "  valid")

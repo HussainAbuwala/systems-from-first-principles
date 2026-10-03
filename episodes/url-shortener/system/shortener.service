@@ -1,0 +1,13 @@
+[Unit]
+Description=URL shortener
+After=network-online.target
+
+[Service]
+EnvironmentFile=/etc/shortener.env
+ExecStart=/usr/local/bin/node /opt/shortener/server.ts
+WorkingDirectory=/opt/shortener
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target
