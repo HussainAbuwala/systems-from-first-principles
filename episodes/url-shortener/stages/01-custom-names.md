@@ -27,15 +27,17 @@ Not a resource limit: stage 0 has no concept of a chosen name. Its codes are cal
 
 | Event | Run ID | Redirect p99 | Errors | Correct | Pass |
 | --- | --- | ---: | ---: | --- | --- |
-| E01 |  |  |  |  |  |
-| E02 |  |  |  |  |  |
-| E03 |  |  |  |  |  |
+| E01 | e01-02 | 18.2 ms | 0% | yes | PASS |
+| E02 | e02-02 | 12.9 ms | 0% | yes | PASS |
+| E03 | e03-02 | **179.5 ms** | 0% | yes (1,000/1,000 single winners) | **FAIL** (redirect p99) |
+
+Stage 1 met every correctness rule of E03 but not its speed rule: bursts of 50 TLS handshakes block the single Node thread. See `results/e03-02/NOTES.md`. This triggers stage 2.
 
 ## Scoreboard row
 
 | Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 01 | Stage 0 + names table, routed by format |  |  |  |  |  |  |
+| 01 | Stage 0 + names table, routed by format | E02 (100 redirects/s, 10 M links) | 12.9 ms | 0% | 1.2 GB | €5.49 + €0.50 IPv4 | E03: bursts of 50 TLS handshakes on one thread (redirect p99 179.5 ms) |
 
 ## Interview line
 

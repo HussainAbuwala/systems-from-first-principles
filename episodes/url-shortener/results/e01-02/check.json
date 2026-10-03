@@ -1,0 +1,20 @@
+{
+  "links_checked": 1008,
+  "problems": 0,
+  "examples": [],
+  "redirect_caching_headers": {
+    "Cache-Control=None Expires=None": 1008
+  },
+  "unloaded_ms": {
+    "generated": {
+      "count": 1008,
+      "median": 3.87,
+      "p99": 8.12
+    },
+    "name": {
+      "count": 0,
+      "median": null,
+      "p99": null
+    }
+  }
+}
