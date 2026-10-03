@@ -1,0 +1,22 @@
+[
+{
+  "name": "sfp-load",
+  "role": "load",
+  "type": "cpx62",
+  "cores": 16,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 32,
+  "location": null
+}
+,{
+  "name": "sfp-ok",
+  "role": "system",
+  "type": "cx23",
+  "cores": 2,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 4,
+  "location": null
+}
+]

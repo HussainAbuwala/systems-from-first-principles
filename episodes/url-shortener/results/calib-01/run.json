@@ -1,0 +1,12 @@
+{
+  "run_id": "calib-01",
+  "started_utc": "2026-10-03T16:51:02Z",
+  "ended_utc": "2026-10-03T16:59:19Z",
+  "git_commit": "4fb29966514899aab492ef6670d6ec83d3b90dbd",
+  "uncommitted_changes": true,
+  "k6_script": "steps.js",
+  "k6_script_sha256": "15a1bb2411e8d9ae4303d188e68fd22a7ae9ec8c44003d341f5583dfb0ba44ea",
+  "k6_args": "-e TARGET=https://2.28.128.67/ -e STEPS=100,250,500,1000,2000,4000,8000 -e HOLD=60 -e RAMP=10 -e PRE_VUS=500 -e MAX_VUS=5000",
+  "k6_exit_code": 0,
+  "load_machine": "sfp-load"
+}

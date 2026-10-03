@@ -9,3 +9,11 @@ archive/v1-company-reconstructions/animation/public/audio/room-tone.wav
 .env
 .env.*
 !.env.example
+
+# Hetzner tooling state
+tools/cloud/.known_hosts*
+tools/cloud/watchdog.log
+
+# Raw per-request load output: large, kept locally (see docs/MEASUREMENT.md)
+episodes/*/results/*/k6.csv.gz
+episodes/*/results/*/k6-output.txt.gz
