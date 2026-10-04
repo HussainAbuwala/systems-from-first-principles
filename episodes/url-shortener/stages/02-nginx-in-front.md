@@ -39,6 +39,7 @@ Per-second CPU never reached the limit: the cause is sub-second bursts, visible 
 
 - `system/server.ts`: `node:http` instead of `node:https`, listening on `127.0.0.1:8080` only. No other change.
 - `system/nginx-shortener.conf`: nginx listens on 443 with the same certificate and forwards to `127.0.0.1:8080` over kept-open local connections (`keepalive 32`). Everything else is Ubuntu's nginx default (`worker_processes auto`, one worker per vCPU).
+- **Attempt 2:** `keepalive_timeout 4s` in the upstream block, so nginx drops an idle local connection before Node's 5-second default closes it and never sends a request down a closing connection. One line; no application change.
 - `system/deploy.sh`: installs Ubuntu's nginx package and the site config.
 
 ## Rerun of every event so far
