@@ -1,3 +1,5 @@
+// Stage 5: stage 4 with synchronous=EXTRA (E06), so a save confirmed just
+// before a power cut is not rolled back on reboot.
 // Stage 4: stage 3 plus click counts (E05). Every redirect adds one to an
 // in-memory tally for (link, day of the click); once a second all tallies are
 // saved to SQLite in a single transaction. A sudden power cut can lose up to
@@ -16,6 +18,10 @@ const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://localhost";
 const MAX_URL_LENGTH = 2048;
 
 const db = new DatabaseSync(DB_PATH);
+// SQLite's default (FULL) does not sync the deletion of the rollback journal,
+// so the last transaction before a power cut can be rolled back on reboot
+// (seen in e06-01). EXTRA syncs it before a save returns.
+db.exec("PRAGMA synchronous = EXTRA");
 db.exec(`CREATE TABLE IF NOT EXISTS links (
   id         INTEGER PRIMARY KEY,
   url        TEXT    NOT NULL,
@@ -182,4 +188,4 @@ const server = createServer(
   },
 );
 
-server.listen(PORT, HOST, () => console.log(`shortener stage 4 listening on ${HOST}:${PORT}, database ${DB_PATH}`));
+server.listen(PORT, HOST, () => console.log(`shortener stage 5 listening on ${HOST}:${PORT}, database ${DB_PATH}`));

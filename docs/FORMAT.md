@@ -57,6 +57,16 @@ A change is allowed only when the current event fails. For each change, record i
 
 Rejected options matter as much as the chosen one. "We did not add a cache here, because the database was at 12% CPU" is the kind of sentence this series exists to say.
 
+## Accepted failures
+
+Sometimes the honest choice is not to fix a failing rule, because the fix costs far more than the failure. That is allowed only in the open:
+
+- The run stays recorded as **FAIL**, with the rule unchanged; the stage log marks it **accepted (won't fix)** with the reason and what the fix would have cost.
+- The scoreboard and the final claim state the limitation in plain words.
+- The video shows the alternative and its price, so the viewer can disagree.
+
+A correctness failure that loses or corrupts what users were promised (a confirmed link, a name with two owners) cannot be accepted.
+
 ## The scoreboard
 
 One row per stage. Every cell is either measured or derived from measured numbers.
