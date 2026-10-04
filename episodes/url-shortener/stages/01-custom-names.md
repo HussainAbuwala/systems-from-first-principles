@@ -29,9 +29,9 @@ Not a resource limit: stage 0 has no concept of a chosen name. Its codes are cal
 | --- | --- | ---: | ---: | --- | --- |
 | E01 | e01-02 | 18.2 ms | 0% | yes | PASS |
 | E02 | e02-02 | 12.9 ms | 0% | yes | PASS |
-| E03 | e03-02 | **179.5 ms** | 0% | yes (1,000/1,000 single winners) | **FAIL** (redirect p99) |
+| E03 | e03-02, e03-03, e03-04 | **179.5 / 171.1 / 170.4 ms** | 0% | yes (every round exactly one winner) | **FAIL** (redirect p99), 3 of 3 runs |
 
-Stage 1 met every correctness rule of E03 but not its speed rule: bursts of 50 TLS handshakes block the single Node thread. See `results/e03-02/NOTES.md`. This triggers stage 2.
+Stage 1 met every correctness rule of E03 but not its speed rule: bursts of 50 TLS handshakes block the single Node thread. See `results/e03-02/NOTES.md`. Confirmed by two further runs with CPU steal recorded: steal stayed at 0%, and redirect p99 exceeded 100 ms in all 30 ten-second windows of every run (combined verdict: `results/verdicts/E03-stage-01.json`). This triggers stage 2.
 
 ## Scoreboard row
 

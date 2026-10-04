@@ -1,0 +1,27 @@
+
+
+  █ TOTAL RESULTS 
+
+    CUSTOM
+    created_link...................: 720    1.999479/s
+    name_round.....................: 1001   2.779831/s
+    visit_duration.................: avg=69.89ms min=3.06ms   med=67.76ms p(95)=161.9ms p(99)=192.75ms max=306.63ms
+
+    HTTP
+    http_req_duration..............: avg=1.92ms  min=460.86µs med=1.52ms  p(95)=3.67ms  p(99)=10.5ms   max=57.42ms 
+      { expected_response:true }...: avg=1.92ms  min=460.86µs med=1.52ms  p(95)=3.67ms  p(99)=10.5ms   max=57.42ms 
+    http_req_failed................: 0.00%  0 out of 86771
+    http_reqs......................: 86771  240.967712/s
+
+    EXECUTION
+    iteration_duration.............: avg=16.02ms min=1.97ms   med=4.85ms  p(95)=73.66ms p(99)=93.04ms  max=155.88ms
+    iterations.....................: 37722  104.756013/s
+    vus............................: 1      min=0          max=10
+    vus_max........................: 75     min=75         max=75
+
+    NETWORK
+    data_received..................: 232 MB 645 kB/s
+    data_sent......................: 157 MB 435 kB/s
+
+
+

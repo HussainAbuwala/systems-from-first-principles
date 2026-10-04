@@ -1,0 +1,103 @@
+{
+  "event": "E03",
+  "stage": "stage-01",
+  "verdict": "FAIL",
+  "runs": {
+    "e03-02": "FAIL",
+    "e03-03": "FAIL",
+    "e03-04": "FAIL"
+  },
+  "reasons": {
+    "e03-02": [
+      "redirect p99 179.5 ms ≥ 100"
+    ],
+    "e03-03": [
+      "redirect p99 171.1 ms ≥ 100"
+    ],
+    "e03-04": [
+      "redirect p99 170.4 ms ≥ 100"
+    ]
+  },
+  "spread": {
+    "redirect_p50_ms": {
+      "best": 7.7,
+      "median": 7.8,
+      "worst": 8.8,
+      "runs": [
+        8.8,
+        7.8,
+        7.7
+      ]
+    },
+    "redirect_p99_ms": {
+      "best": 170.4,
+      "median": 171.1,
+      "worst": 179.5,
+      "runs": [
+        179.5,
+        171.1,
+        170.4
+      ]
+    },
+    "create_p99_ms": {
+      "best": 60.2,
+      "median": 64.2,
+      "worst": 66.1,
+      "runs": [
+        66.1,
+        60.2,
+        64.2
+      ]
+    },
+    "name_create_p99_ms": {
+      "best": 198.5,
+      "median": 202.0,
+      "worst": 207.5,
+      "runs": [
+        207.5,
+        202.0,
+        198.5
+      ]
+    },
+    "error_pct": {
+      "best": 0.0,
+      "median": 0.0,
+      "worst": 0.0,
+      "runs": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "wrong_redirects": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "checker_problems": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "rounds_exactly_one_winner": {
+      "best": 1000,
+      "median": 1001,
+      "worst": 1001,
+      "runs": [
+        1000,
+        1001,
+        1001
+      ]
+    }
+  }
+}

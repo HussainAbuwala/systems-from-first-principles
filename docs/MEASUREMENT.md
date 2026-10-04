@@ -46,6 +46,8 @@ Shared vCPUs are slower when the host's other customers are busy (measured as CP
 
 Earlier single-run verdicts may stand where the margin is large (for example a p99 under a fifth of its limit); they are marked as single runs.
 
+**Regression checks:** after a design change, earlier events are re-run to show nothing regressed. One run is enough when every measure is within a fifth of its limit (for example redirect p99 under 20 ms); otherwise that event also gets three runs.
+
 ## Pass criteria
 
 Each event defines:
