@@ -1,15 +1,14 @@
-// Stage 1: stage 0 plus custom names (E03). One Node.js program, HTTPS served
-// directly, SQLite with default settings, generated codes made by counting up.
-// Custom names live in their own table; their format (a hyphen, or longer than
-// 7 characters) means they can never look like a generated code.
-import { createServer, type IncomingMessage, type ServerResponse } from "node:https";
-import { readFileSync } from "node:fs";
+// Stage 2: stage 1 behind nginx. nginx terminates HTTPS on every core and
+// forwards plain HTTP over local connections; this program listens only inside
+// the machine. Still one Node.js program, SQLite with default settings,
+// generated codes made by counting up, custom names in their own table.
+import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { DatabaseSync } from "node:sqlite";
 import { decode, encode, MAX_CODE_LENGTH } from "./codes.ts";
 
-const PORT = Number(process.env.PORT ?? 443);
+const HOST = process.env.HOST ?? "127.0.0.1";
+const PORT = Number(process.env.PORT ?? 8080);
 const DB_PATH = process.env.DB_PATH ?? "/var/lib/shortener/links.db";
-const TLS_DIR = process.env.TLS_DIR ?? "/opt/sfp/tls";
 const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://localhost";
 
 const MAX_URL_LENGTH = 2048;
@@ -114,7 +113,6 @@ function redirect(code: string, res: ServerResponse) {
 }
 
 const server = createServer(
-  { key: readFileSync(`${TLS_DIR}/key.pem`), cert: readFileSync(`${TLS_DIR}/cert.pem`) },
   (req, res) => {
     const path = (req.url ?? "/").split("?")[0];
     if (req.method === "POST" && path === "/links") {
@@ -127,4 +125,4 @@ const server = createServer(
   },
 );
 
-server.listen(PORT, () => console.log(`shortener stage 1 listening on ${PORT}, database ${DB_PATH}`));
+server.listen(PORT, HOST, () => console.log(`shortener stage 2 listening on ${HOST}:${PORT}, database ${DB_PATH}`));
