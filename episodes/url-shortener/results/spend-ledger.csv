@@ -2,3 +2,4 @@ server,type,role,created_utc,deleted_utc,hours_billed,eur,reason
 sfp-smoke,cx23,smoke,2026-10-03T16:42:39Z,2026-10-03T16:43:43Z,1,0.0088,watchdog
 sfp-load,cpx62,load,2026-10-03T16:49:19Z,2026-10-03T17:00:28Z,1,0.2083,calib-01-done
 sfp-load,cpx42,load,2026-10-03T17:50:37Z,2026-10-03T19:26:37Z,2,0.2228,break
+sfp-load,cpx42,load,2026-10-04T10:14:15Z,2026-10-04T11:45:13Z,2,0.2228,stage-02-tests-done

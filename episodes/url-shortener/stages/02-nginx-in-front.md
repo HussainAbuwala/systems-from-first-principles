@@ -46,15 +46,18 @@ Per-second CPU never reached the limit: the cause is sub-second bursts, visible 
 
 | Event | Run ID | Redirect p99 | Errors | Correct | Pass |
 | --- | --- | ---: | ---: | --- | --- |
-| E01 | e01-03 (attempt 1) | 15.4 ms | 0% | yes | PASS |
-| E02 |  |  |  |  |  |
+| E01 | e01-03 (attempt 1), e01-04 | 15.4 / 15.0 ms | 0% | yes | PASS |
+| E02 | e02-04 | 11.2 ms | 0% | yes | PASS |
 | E03 | e03-05, e03-06, e03-07 (attempt 1) | 71.2 / 71.1 / 68.5 ms | 0.015–0.036% | 990–996 of 1,001 rounds clean | **FAIL** (502s instead of "taken") |
+| E03 | e03-08, e03-09, e03-10 (attempt 2) | 71.0 / 68.5 / 69.2 ms | 0% | every round exactly one winner and 49 "taken" | **PASS**, 3 of 3 runs |
+
+Combined verdicts: `results/verdicts/E03-stage-02-attempt-1.json` (FAIL) and `results/verdicts/E03-stage-02.json` (PASS). Resource breakdown in `results/e03-08/NOTES.md`.
 
 ## Scoreboard row
 
 | Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 02 | Stage 1 behind nginx (TLS on both vCPUs) |  |  |  |  |  |  |
+| 02 | Stage 1 behind nginx (TLS on both vCPUs) | E03 (100 redirects/s + 2 creates/s + bursts of 50 name claims, 3 a second; 10 M links) | 69.2 ms (median of 3) | 0% | 1.2 GB | €5.49 + €0.50 IPv4 | not yet broken; next is E04 |
 
 ## Interview line
 

@@ -1,72 +1,66 @@
 {
   "event": "E03",
   "stage": "stage-02",
-  "verdict": "FAIL",
+  "verdict": "PASS",
   "runs": {
-    "e03-05": "FAIL",
-    "e03-06": "FAIL",
-    "e03-07": "FAIL"
+    "e03-08": "PASS",
+    "e03-09": "PASS",
+    "e03-10": "PASS"
   },
   "reasons": {
-    "e03-05": [
-      "only 993 of 1001 rounds had exactly one winner and 49 'taken'"
-    ],
-    "e03-06": [
-      "only 996 of 1001 rounds had exactly one winner and 49 'taken'"
-    ],
-    "e03-07": [
-      "only 990 of 1001 rounds had exactly one winner and 49 'taken'"
-    ]
+    "e03-08": [],
+    "e03-09": [],
+    "e03-10": []
   },
   "spread": {
     "redirect_p50_ms": {
-      "best": 6.4,
-      "median": 6.5,
-      "worst": 6.6,
+      "best": 6.3,
+      "median": 6.4,
+      "worst": 6.4,
       "runs": [
-        6.6,
+        6.3,
         6.4,
-        6.5
+        6.4
       ]
     },
     "redirect_p99_ms": {
       "best": 68.5,
-      "median": 71.1,
-      "worst": 71.2,
+      "median": 69.2,
+      "worst": 71.0,
       "runs": [
-        71.2,
-        71.1,
-        68.5
+        71.0,
+        68.5,
+        69.2
       ]
     },
     "create_p99_ms": {
-      "best": 35.8,
-      "median": 37.9,
-      "worst": 38.3,
+      "best": 37.1,
+      "median": 38.0,
+      "worst": 38.5,
       "runs": [
-        35.8,
-        37.9,
-        38.3
+        38.5,
+        38.0,
+        37.1
       ]
     },
     "name_create_p99_ms": {
-      "best": 91.2,
-      "median": 99.3,
-      "worst": 103.1,
+      "best": 93.0,
+      "median": 94.4,
+      "worst": 100.1,
       "runs": [
-        99.3,
-        103.1,
-        91.2
+        100.1,
+        93.0,
+        94.4
       ]
     },
     "error_pct": {
-      "best": 0.015,
-      "median": 0.03,
-      "worst": 0.036,
+      "best": 0.0,
+      "median": 0.0,
+      "worst": 0.0,
       "runs": [
-        0.036,
-        0.015,
-        0.03
+        0.0,
+        0.0,
+        0.0
       ]
     },
     "wrong_redirects": {
@@ -90,13 +84,13 @@
       ]
     },
     "rounds_exactly_one_winner": {
-      "best": 990,
-      "median": 993,
-      "worst": 996,
+      "best": 1000,
+      "median": 1000,
+      "worst": 1001,
       "runs": [
-        993,
-        996,
-        990
+        1000,
+        1001,
+        1000
       ]
     }
   }

@@ -1,0 +1,103 @@
+{
+  "event": "E03",
+  "stage": "stage-02-attempt-1",
+  "verdict": "FAIL",
+  "runs": {
+    "e03-05": "FAIL",
+    "e03-06": "FAIL",
+    "e03-07": "FAIL"
+  },
+  "reasons": {
+    "e03-05": [
+      "only 993 of 1001 rounds had exactly one winner and 49 'taken'"
+    ],
+    "e03-06": [
+      "only 996 of 1001 rounds had exactly one winner and 49 'taken'"
+    ],
+    "e03-07": [
+      "only 990 of 1001 rounds had exactly one winner and 49 'taken'"
+    ]
+  },
+  "spread": {
+    "redirect_p50_ms": {
+      "best": 6.4,
+      "median": 6.5,
+      "worst": 6.6,
+      "runs": [
+        6.6,
+        6.4,
+        6.5
+      ]
+    },
+    "redirect_p99_ms": {
+      "best": 68.5,
+      "median": 71.1,
+      "worst": 71.2,
+      "runs": [
+        71.2,
+        71.1,
+        68.5
+      ]
+    },
+    "create_p99_ms": {
+      "best": 35.8,
+      "median": 37.9,
+      "worst": 38.3,
+      "runs": [
+        35.8,
+        37.9,
+        38.3
+      ]
+    },
+    "name_create_p99_ms": {
+      "best": 91.2,
+      "median": 99.3,
+      "worst": 103.1,
+      "runs": [
+        99.3,
+        103.1,
+        91.2
+      ]
+    },
+    "error_pct": {
+      "best": 0.015,
+      "median": 0.03,
+      "worst": 0.036,
+      "runs": [
+        0.036,
+        0.015,
+        0.03
+      ]
+    },
+    "wrong_redirects": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "checker_problems": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "rounds_exactly_one_winner": {
+      "best": 990,
+      "median": 993,
+      "worst": 996,
+      "runs": [
+        993,
+        996,
+        990
+      ]
+    }
+  }
+}

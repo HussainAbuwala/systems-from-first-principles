@@ -1,0 +1,40 @@
+{
+  "event": "E03",
+  "verdict": "PASS",
+  "reasons": [],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 300,
+    "redirects": 30049,
+    "creates": 600,
+    "redirect_p50_ms": 6.4,
+    "redirect_p99_ms": 68.5,
+    "create_p99_ms": 38.0,
+    "name_create_requests": 50050,
+    "name_create_p99_ms": 93.0,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 1720,
+        "median": 4.04,
+        "p99": 5.86
+      },
+      "name": {
+        "count": 1001,
+        "median": 4.0,
+        "p99": 5.96
+      }
+    },
+    "name_rounds": 1001,
+    "rounds_exactly_one_winner": 1001,
+    "rounds_two_or_more_winners": 0,
+    "rounds_no_winner": 0,
+    "rounds_other_answers": 0
+  }
+}
