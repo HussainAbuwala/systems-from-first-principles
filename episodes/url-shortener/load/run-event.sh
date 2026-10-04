@@ -41,4 +41,30 @@ scp "${scp_opts[@]}" "$here/check.py" "$out/check-pairs.csv" "root@$load_ip:/opt
 sfp_ssh "$load_ip" "python3 /opt/sfp/check.py https://$system_ip /opt/sfp/check-pairs.csv /opt/sfp/check.json"
 scp "${scp_opts[@]}" "root@$load_ip:/opt/sfp/check.json" "$out/check.json"
 
+# E05 onward: compare the server's click counts with what the load generator sent.
+if [[ "${CHECK_COUNTS:-0}" == "1" ]]; then
+  python3 - "$out" <<'PY'
+import csv, gzip, random, sys, collections, json, datetime
+out = sys.argv[1]
+truth = collections.Counter()
+with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
+    for r in csv.DictReader(f):
+        if r["metric_name"] == "http_reqs" and r["status"] == "301" and r["name"] in ("redirect", "viral"):
+            day = datetime.datetime.fromtimestamp(int(float(r["timestamp"])), datetime.timezone.utc).date().isoformat()
+            code = dict(t.split("=", 1) for t in (r["extra_tags"] or "").split("&") if "=" in t).get("code")
+            if code: truth[(code, day)] += 1
+ranked = [k for k, _ in truth.most_common()]
+picked = ranked[:101] + random.sample(ranked[101:], min(1000, max(0, len(ranked) - 101)))
+with open(f"{out}/count-truth.csv", "w", newline="") as f:
+    w = csv.writer(f); w.writerow(["code", "day", "clicks"])
+    for k in picked: w.writerow([k[0], k[1], truth[k]])
+print(f"count truth: {sum(truth.values())} clicks over {len(truth)} links; checking {len(picked)}")
+PY
+  ended=$(jq -r .ended_utc "$out/run.json")
+  not_before=$(( $(date -j -u -f "%Y-%m-%dT%H:%M:%SZ" "$ended" +%s) + 60 ))
+  scp "${scp_opts[@]}" "$here/count-check.py" "$out/count-truth.csv" "root@$load_ip:/opt/sfp/"
+  sfp_ssh "$load_ip" "python3 /opt/sfp/count-check.py https://$system_ip /opt/sfp/count-truth.csv /opt/sfp/counts.json $not_before"
+  scp "${scp_opts[@]}" "root@$load_ip:/opt/sfp/counts.json" "$out/counts.json"
+fi
+
 python3 "$here/judge.py" "$out" "$event"

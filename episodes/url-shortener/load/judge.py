@@ -103,6 +103,21 @@ if "name_rounds" in measures:
         failures.append(f"only {measures['name_rounds']} of {expected_rounds} contention rounds completed")
     if measures["rounds_exactly_one_winner"] != measures["name_rounds"]:
         failures.append(f"only {measures['rounds_exactly_one_winner']} of {measures['name_rounds']} rounds had exactly one winner and {contenders - 1} 'taken'")
+counts_path = os.path.join(out, "counts.json")
+if os.path.exists(counts_path):
+    counts = json.load(open(counts_path))
+    measures["count_links_checked"] = counts["links_checked"]
+    measures["count_links_outside_1pct"] = counts["links_outside_1pct"]
+    measures["count_truth_vs_server"] = f"{counts['clicks_truth_total']} vs {counts['clicks_server_total']}"
+    if counts["links_outside_1pct"]:
+        failures.append(f"{counts['links_outside_1pct']} of {counts['links_checked']} links' click counts more than 1% off, 60 s after the load stopped")
+# From E05 on, every redirect must stop browsers reusing it, or repeat clicks go uncounted.
+if event in ("E05",) and check is not None:
+    headers = check.get("redirect_caching_headers", {})
+    reusable = sum(n for h, n in headers.items() if not any(x in h for x in ("no-store", "no-cache", "max-age=0")))
+    measures["redirects_browsers_may_reuse"] = reusable
+    if reusable:
+        failures.append(f"{reusable} checked redirects let browsers reuse them without asking the server")
 if check is None:
     failures.append("link checker did not run")
 elif check["problems"]:

@@ -137,7 +137,7 @@ export const options = {
 export function redirect() {
   const [code, url] = pickLink();
   const res = http.get(`${target}/${code}`, {
-    tags: { kind: "redirect", name: "redirect" },
+    tags: { kind: "redirect", name: "redirect", code },  // code: per-link truth for E05
     timeout: "10s",
     responseType: "none",
   });
@@ -194,7 +194,7 @@ export function contention() {
 export function viral() {
   const [code, url] = links[0];
   const res = http.get(`${target}/${code}`, {
-    tags: { kind: "redirect", name: "viral" },
+    tags: { kind: "redirect", name: "viral", code },
     timeout: "10s",
     responseType: "none",
   });
