@@ -1,0 +1,42 @@
+{
+  "event": "E04",
+  "verdict": "FAIL",
+  "reasons": [
+    "redirect p99 9356.0 ms ≥ 100",
+    "create p99 9120.5 ms ≥ 300",
+    "errors 18.352% ≥ 0.1%"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 720,
+    "redirects": 1386880,
+    "creates": 1440,
+    "redirect_p50_ms": 626.4,
+    "redirect_p99_ms": 9356.0,
+    "create_p99_ms": 9120.5,
+    "viral_redirects": 1314979,
+    "viral_redirect_p99_ms": 9440.3,
+    "other_redirect_p99_ms": 9011.5,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 18.352,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 2357,
+        "median": 5.25,
+        "p99": 7.8
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    }
+  }
+}
