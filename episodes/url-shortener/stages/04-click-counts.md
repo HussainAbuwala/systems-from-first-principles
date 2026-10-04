@@ -13,6 +13,8 @@ The obvious design, shown on purpose: a `clicks (code, day, count)` table, and e
 
 **Expectation stated before running:** collapse. Stage 0 (e03-01) collapsed at about 165 synchronous saves per second, with Node's single thread waiting for the disk; E05 asks for about 2,100.
 
+**Result (`results/e05-01/`): FAIL, collapse.** 166 successful clicks per second against about 2,100 offered; 91% errors; Node's thread waiting on the disk (iowait 15%, CPU mostly idle). The same ceiling as stage 0's synchronous saves (about 165/s, e03-01). The stall cascaded into nginx (worker connections exhausted, 500s, connections turned away), and the server over-counted by about 5.6% because it finished requests whose visitors had already given up.
+
 ## How the counts are checked
 
 The load generator tags every click with its short code, so its own log gives the true count per link per day (successful redirects only). Sixty seconds after the load stops, `load/count-check.py` asks the server for the viral link, the 100 most-clicked links and 1,000 random others, and each must be within 1% of the truth (rounded down, so small counts must be exact). Verified locally before any Hetzner run: 890 clicks over 217 links, server 890, all exact.

@@ -142,8 +142,7 @@ export function redirect() {
     responseType: "none",
   });
   record(res, "redirect");
-  // A redirect to the wrong address. Error answers (5xx) count as errors, not here.
-  if (res.status === 301 && res.headers["Location"] !== url) {
+  if (res.status !== 0 && (res.status !== 301 || res.headers["Location"] !== url)) {
     wrongRedirect.add(1, { code, status: String(res.status) });
   }
 }
@@ -201,7 +200,7 @@ export function viral() {
   });
   const t = res.timings;
   visit.add(t.blocked + t.connecting + t.tls_handshaking + t.duration, { kind: "redirect", link: "viral" });
-  if (res.status === 301 && res.headers["Location"] !== url) {
+  if (res.status !== 0 && (res.status !== 301 || res.headers["Location"] !== url)) {
     wrongRedirect.add(1, { code, status: String(res.status) });
   }
 }
