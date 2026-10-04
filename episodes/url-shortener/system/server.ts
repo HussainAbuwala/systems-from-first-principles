@@ -1,6 +1,8 @@
-// Stage 4, attempt 1: stage 3 plus click counts (E05). Every redirect adds one
-// to that link's count for the day and saves it immediately (SQLite defaults),
-// and redirects tell browsers not to remember them, so every click reaches us.
+// Stage 4: stage 3 plus click counts (E05). Every redirect adds one to an
+// in-memory tally for (link, day of the click); once a second all tallies are
+// saved to SQLite in a single transaction. A sudden power cut can lose up to
+// about a second of counts; links themselves are still saved immediately.
+// Redirects tell browsers not to remember them, so every click reaches us.
 // nginx terminates HTTPS in front; this program listens only inside the machine.
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { DatabaseSync } from "node:sqlite";
@@ -33,9 +35,41 @@ db.exec(`CREATE TABLE IF NOT EXISTS clicks (
   PRIMARY KEY (code, day)
 )`);
 const insertName = db.prepare("INSERT INTO names (name, url, created_at) VALUES (?, ?, ?)");
-const countClick = db.prepare(
-  "INSERT INTO clicks (code, day, count) VALUES (?, ?, 1) ON CONFLICT (code, day) DO UPDATE SET count = count + 1",
+const addClicks = db.prepare(
+  "INSERT INTO clicks (code, day, count) VALUES (?, ?, ?) ON CONFLICT (code, day) DO UPDATE SET count = count + excluded.count",
 );
+
+// Clicks not yet saved, keyed by "code<TAB>day". The day is the day the click
+// happened, not the day it is saved.
+let pending = new Map<string, number>();
+
+function saveClicks() {
+  if (pending.size === 0) return;
+  const batch = pending;
+  pending = new Map();
+  try {
+    db.exec("BEGIN");
+    for (const [key, n] of batch) {
+      const [code, day] = key.split("\t");
+      addClicks.run(code, day, n);
+    }
+    db.exec("COMMIT");
+  } catch (err) {
+    try { db.exec("ROLLBACK"); } catch {}
+    // Keep the counts and try again next time.
+    for (const [key, n] of batch) pending.set(key, (pending.get(key) ?? 0) + n);
+    console.error("saving clicks failed; will retry", err);
+  }
+}
+setInterval(saveClicks, 1000);
+
+// On a normal stop or restart, save what is pending before exiting.
+for (const signal of ["SIGTERM", "SIGINT"] as const) {
+  process.on(signal, () => {
+    saveClicks();
+    process.exit(0);
+  });
+}
 const readClicks = db.prepare("SELECT day, count FROM clicks WHERE code = ? ORDER BY day");
 const findName = db.prepare("SELECT url FROM names WHERE name = ?");
 
@@ -119,7 +153,8 @@ function redirect(code: string, res: ServerResponse) {
   if (id !== null) row = findLink.get(id) as { url: string } | undefined;
   else if (isValidName(code)) row = findName.get(code) as { url: string } | undefined;
   if (!row) return send(res, 404, "Not found\n");
-  countClick.run(code, new Date().toISOString().slice(0, 10));
+  const key = `${code}\t${new Date().toISOString().slice(0, 10)}`;
+  pending.set(key, (pending.get(key) ?? 0) + 1);
   // no-store: a browser must ask us again next time, so every click is counted
   // and a taken-down link stops working for everyone.
   send(res, 301, "", { location: row.url, "cache-control": "no-store" });

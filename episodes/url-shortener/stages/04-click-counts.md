@@ -15,6 +15,14 @@ The obvious design, shown on purpose: a `clicks (code, day, count)` table, and e
 
 **Result (`results/e05-01/`): FAIL, collapse.** 166 successful clicks per second against about 2,100 offered; 91% errors; Node's thread waiting on the disk (iowait 15%, CPU mostly idle). The same ceiling as stage 0's synchronous saves (about 165/s, e03-01). The stall cascaded into nginx (worker connections exhausted, 500s, connections turned away), and the server over-counted by about 5.6% because it finished requests whose visitors had already given up.
 
+### Attempt 2: count in memory, save once a second
+
+Each redirect adds one to an in-memory tally keyed by (link, day of the click) and answers immediately. Once a second, all tallies are written to the `clicks` table in a single transaction (one disk wait per second instead of one per click), then cleared; a failed save keeps the tallies for the next second. On a normal stop or restart the pending tallies are saved before exiting. Links and names are still saved immediately, unchanged.
+
+**What it gives up:** a sudden power cut can lose up to about one second of counts. E05 itself has no crash; E06 will test this. Because "within 1%" is per link, a link with fewer than 100 clicks must be exact, so losing even one click from such a link would fail E06's count check. That is expected to be tested, not pre-empted.
+
+**Verified locally before deploying:** 890 clicks over 211 links, server 890, all exact two seconds after the load stopped; five clicks followed immediately by a stop and restart were all kept.
+
 ## How the counts are checked
 
 The load generator tags every click with its short code, so its own log gives the true count per link per day (successful redirects only). Sixty seconds after the load stops, `load/count-check.py` asks the server for the viral link, the 100 most-clicked links and 1,000 random others, and each must be within 1% of the truth (rounded down, so small counts must be exact). Verified locally before any Hetzner run: 890 clicks over 217 links, server 890, all exact.
