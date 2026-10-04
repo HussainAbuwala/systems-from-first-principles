@@ -18,6 +18,12 @@ Bursts of 50 new TLS connections arrive at the same instant, three times a secon
 
 Per-second CPU never reached the limit: the cause is sub-second bursts, visible in the latency distribution (median 8 ms, p90 116 ms) rather than in CPU averages.
 
+## Attempts that failed
+
+| Attempt | Why it was plausible | What failed (run ID) | Lesson |
+| --- | --- | --- | --- |
+| nginx with Ubuntu defaults and upstream keepalive, Node with its defaults (tag `url-shortener/stage-02-attempt-1`) | The textbook reverse-proxy setup | E03 in 3 of 3 runs (`e03-05`–`e03-07`): redirect p99 now 68–71 ms (passes), but 12–29 `POST /links` per run got 502 because nginx reused local connections Node had just closed | The proxy and the app must agree on idle timeouts: the app must keep idle connections open longer than the proxy does |
+
 ## Options considered
 
 | Option | What it fixes | What it costs | Chosen? Why |
@@ -39,9 +45,9 @@ Per-second CPU never reached the limit: the cause is sub-second bursts, visible 
 
 | Event | Run ID | Redirect p99 | Errors | Correct | Pass |
 | --- | --- | ---: | ---: | --- | --- |
-| E01 |  |  |  |  |  |
+| E01 | e01-03 (attempt 1) | 15.4 ms | 0% | yes | PASS |
 | E02 |  |  |  |  |  |
-| E03 |  |  |  |  |  |
+| E03 | e03-05, e03-06, e03-07 (attempt 1) | 71.2 / 71.1 / 68.5 ms | 0.015–0.036% | 990–996 of 1,001 rounds clean | **FAIL** (502s instead of "taken") |
 
 ## Scoreboard row
 

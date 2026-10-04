@@ -1,0 +1,42 @@
+{
+  "event": "E03",
+  "verdict": "FAIL",
+  "reasons": [
+    "only 990 of 1001 rounds had exactly one winner and 49 'taken'"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 300,
+    "redirects": 30024,
+    "creates": 601,
+    "redirect_p50_ms": 6.5,
+    "redirect_p99_ms": 68.5,
+    "create_p99_ms": 38.3,
+    "name_create_requests": 50050,
+    "name_create_p99_ms": 91.2,
+    "error_pct": 0.03,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 1721,
+        "median": 3.71,
+        "p99": 6.06
+      },
+      "name": {
+        "count": 1001,
+        "median": 3.71,
+        "p99": 6.23
+      }
+    },
+    "name_rounds": 1001,
+    "rounds_exactly_one_winner": 990,
+    "rounds_two_or_more_winners": 0,
+    "rounds_no_winner": 0,
+    "rounds_other_answers": 11
+  }
+}
