@@ -3,7 +3,8 @@
 
     recorder.py OUT.csv [PROCESS_NAME ...]
 
-Columns: unix time, busy % of each CPU core, memory used, disk and network
+Columns: unix time, busy % of each CPU core, % of CPU time spent waiting for
+disk (iowait) and taken by the host for other customers' machines (steal), memory used, disk and network
 throughput, open TCP connections, and sockets in TIME_WAIT. Per-core CPU
 matters because a single-threaded program can saturate one core while the
 average looks half idle. For each PROCESS_NAME (e.g. node), also records that
@@ -51,7 +52,8 @@ def cpu_times():
                 name, *vals = line.split()
                 vals = list(map(int, vals))
                 idle = vals[3] + vals[4]  # idle + iowait
-                cores[name] = (sum(vals), idle, vals[4])
+                steal = vals[7] if len(vals) > 7 else 0  # time the host gave our vCPU to someone else
+                cores[name] = (sum(vals), idle, vals[4], steal)
     return cores
 
 
@@ -108,24 +110,26 @@ def main():
     prev_proc = {p: process_usage(p)[0] for p in procs}
     names = sorted(prev_cpu, key=lambda n: int(n[3:]))
     out.write("ts," + ",".join(f"{n}_busy_pct" for n in names) +
-              ",cpu_iowait_pct,mem_used_mb,disk_read_kbps,disk_write_kbps,net_rx_kbps,net_tx_kbps,tcp_inuse,tcp_timewait" +
+              ",cpu_iowait_pct,cpu_steal_pct,mem_used_mb,disk_read_kbps,disk_write_kbps,net_rx_kbps,net_tx_kbps,tcp_inuse,tcp_timewait" +
               "".join(f",{p}_cpu_pct,{p}_rss_mb" for p in procs) + "\n")
     next_tick = time.time() + 1
     while True:
         time.sleep(max(0, next_tick - time.time()))
         next_tick += 1
         cpu, disk, net = cpu_times(), disk_sectors(), net_bytes()
-        busy, iowait_total, total_all = [], 0, 0
+        busy, iowait_total, steal_total, total_all = [], 0, 0, 0
         for n in names:
             total = cpu[n][0] - prev_cpu[n][0]
             idle = cpu[n][1] - prev_cpu[n][1]
             iowait_total += cpu[n][2] - prev_cpu[n][2]
+            steal_total += cpu[n][3] - prev_cpu[n][3]
             total_all += total
             busy.append(100 * (total - idle) / total if total else 0)
         iowait = 100 * iowait_total / total_all if total_all else 0
+        steal = 100 * steal_total / total_all if total_all else 0
         inuse, tw = sockets()
         row = [f"{time.time():.0f}"] + [f"{b:.1f}" for b in busy] + [
-            f"{iowait:.1f}", str(meminfo_mb()),
+            f"{iowait:.1f}", f"{steal:.1f}", str(meminfo_mb()),
             f"{(disk[0] - prev_disk[0]) / 2:.0f}", f"{(disk[1] - prev_disk[1]) / 2:.0f}",
             f"{(net[0] - prev_net[0]) / 1024:.0f}", f"{(net[1] - prev_net[1]) / 1024:.0f}",
             str(inuse), str(tw)]
