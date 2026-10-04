@@ -9,7 +9,7 @@ set +a
 : "${HCLOUD_TOKEN:?HCLOUD_TOKEN missing from .env}"
 
 SFP_EPISODE="${SFP_EPISODE:-url-shortener}"
-SFP_LOCATION="${SFP_LOCATION:-fsn1}"
+SFP_LOCATION="${SFP_LOCATION:-nbg1}"  # moved from fsn1 at stage 3: CX33 is not offered in fsn1
 SFP_IMAGE="${SFP_IMAGE:-ubuntu-24.04}"
 SFP_SSH_KEY_NAME="sfp-laptop"
 SFP_SSH_KEY_FILE="$HOME/.ssh/sfp_hetzner"

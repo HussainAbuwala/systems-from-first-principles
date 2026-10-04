@@ -10,6 +10,9 @@ matters because a single-threaded program can saturate one core while the
 average looks half idle. For each PROCESS_NAME (e.g. node), also records that
 program's own CPU use as a % of one core, which a single-threaded program
 caps at about 100 no matter which core the OS runs it on, and its memory.
+Also records the waiting room for new HTTPS connections: how many fully
+opened connections on port 443 no program has taken yet (accept queue), and
+how many new connections were turned away that second because it was full.
 Reads /proc only; needs nothing installed.
 """
 import os
@@ -105,14 +108,43 @@ def sockets():
     return 0, 0
 
 
+def accept_queue(port=443):
+    """Connections the kernel has fully opened on PORT that no program has
+    taken yet (the listening socket's accept queue: the waiting room)."""
+    waiting = 0
+    for path in ("/proc/net/tcp", "/proc/net/tcp6"):
+        try:
+            with open(path) as f:
+                next(f)
+                for line in f:
+                    parts = line.split()
+                    local, state, queues = parts[1], parts[3], parts[4]
+                    if state == "0A" and int(local.rsplit(":", 1)[1], 16) == port:  # 0A = LISTEN
+                        waiting += int(queues.split(":")[1], 16)  # rx_queue = accept-queue length
+        except OSError:
+            pass
+    return waiting
+
+
+def listen_overflows():
+    """Running count of new connections turned away because an accept queue was full."""
+    with open("/proc/net/netstat") as f:
+        lines = f.readlines()
+    for header, values in zip(lines[::2], lines[1::2]):
+        if header.startswith("TcpExt:"):
+            return dict(zip(header.split()[1:], map(int, values.split()[1:]))).get("ListenOverflows", 0)
+    return 0
+
+
 def main():
     out = open(sys.argv[1], "w", buffering=1)
     procs = sys.argv[2:]
     prev_cpu, prev_disk, prev_net = cpu_times(), disk_sectors(), net_bytes()
     prev_proc = {p: process_usage(p)[0] for p in procs}
+    prev_overflows = listen_overflows()
     names = sorted(prev_cpu, key=lambda n: int(n[3:]))
     out.write("ts," + ",".join(f"{n}_busy_pct" for n in names) +
-              ",cpu_iowait_pct,cpu_steal_pct,mem_used_mb,disk_read_kbps,disk_write_kbps,net_rx_kbps,net_tx_kbps,tcp_inuse,tcp_timewait" +
+              ",cpu_iowait_pct,cpu_steal_pct,mem_used_mb,disk_read_kbps,disk_write_kbps,net_rx_kbps,net_tx_kbps,tcp_inuse,tcp_timewait,accept_queue_443,turned_away" +
               "".join(f",{p}_cpu_pct,{p}_rss_mb" for p in procs) + "\n")
     next_tick = time.time() + 1
     while True:
@@ -135,6 +167,9 @@ def main():
             f"{(disk[0] - prev_disk[0]) / 2:.0f}", f"{(disk[1] - prev_disk[1]) / 2:.0f}",
             f"{(net[0] - prev_net[0]) / 1024:.0f}", f"{(net[1] - prev_net[1]) / 1024:.0f}",
             str(inuse), str(tw)]
+        overflows = listen_overflows()
+        row += [str(accept_queue()), str(overflows - prev_overflows)]
+        prev_overflows = overflows
         for p in procs:
             ticks, rss = process_usage(p)
             row += [f"{100 * (ticks - prev_proc[p]) / TICKS:.1f}", str(rss)]
