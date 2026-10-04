@@ -1,0 +1,27 @@
+{
+  "links_checked": 1838,
+  "problems": 1,
+  "examples": [
+    {
+      "code": "FXwR",
+      "status": 301,
+      "location": "https://made.example.invalid/e06-01/822-388?utm_source=share&ref=br4cj9so",
+      "expected": "https://made.example.invalid/e06-01/2-280?utm_source=share&ref=l8uf4ud6"
+    }
+  ],
+  "redirect_caching_headers": {
+    "Cache-Control='no-store' Expires=None": 1838
+  },
+  "unloaded_ms": {
+    "generated": {
+      "count": 1838,
+      "median": 3.14,
+      "p99": 5.75
+    },
+    "name": {
+      "count": 0,
+      "median": null,
+      "p99": null
+    }
+  }
+}

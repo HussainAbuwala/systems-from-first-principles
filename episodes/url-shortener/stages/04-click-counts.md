@@ -35,11 +35,13 @@ Each redirect adds one to an in-memory tally keyed by (link, day of the click) a
 | E04 | (covered by E05 runs) | 14.1–15.4 ms | 0% | yes | PASS |
 | E05 | e05-03, e05-04, e05-05 | 15.4 / 14.5 / 14.1 ms | 0% | counts exact | **PASS**, 3 of 3 |
 
+**E06 against stage 4 (`results/e06-01/`): FAIL.** A link confirmed about a second before the power cut was rolled back on reboot (SQLite's defaults are not fully durable across power loss in rollback-journal mode), and its counting-up code was then issued to a different link. Five small links' counts were short (the last second of in-memory counts was lost). Recovery took 61 s (passes). This triggers stage 5.
+
 ## Scoreboard row
 
 | Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 04 | Stage 3 + click counts tallied in memory, saved once a second | E05 (about 2,100 new connections/s with counting) | 14.5 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; next is E06 (power cut) |
+| 04 | Stage 3 + click counts tallied in memory, saved once a second | E05 (about 2,100 new connections/s with counting) | 14.5 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | E06: last pre-cut link rolled back and its code reissued; last second of counts lost |
 
 ## Interview line
 

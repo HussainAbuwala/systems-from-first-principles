@@ -40,15 +40,20 @@ failure = None
 failure_path = os.path.join(out, "failure.json")
 if os.path.exists(failure_path):
     failure = json.load(open(failure_path))
+    # The power-off command returns a few seconds before the machine actually
+    # stops, so the outage is taken from what visitors saw: the longest gap in
+    # successful redirects starting within 60 s of the command.
     with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
-        after = sorted(int(float(r["timestamp"])) for r in csv.DictReader(f)
-                       if r["metric_name"] == "http_reqs" and r["status"] == "301"
-                       and int(float(r["timestamp"])) >= failure["poweroff_unix"] + 1)
-    failure["first_redirect_after_unix"] = after[0] if after else None
-    failure["recovery_seconds"] = after[0] - failure["poweroff_unix"] if after else None
+        ok = sorted(int(float(r["timestamp"])) for r in csv.DictReader(f)
+                    if r["metric_name"] == "http_reqs" and r["status"] == "301")
+    gaps = [(b - a, a, b) for a, b in zip(ok, ok[1:]) if abs(a - failure["poweroff_unix"]) <= 60]
+    _, last_before, first_after = max(gaps) if gaps else (None, failure["poweroff_unix"], None)
+    failure["last_redirect_before_unix"] = last_before
+    failure["first_redirect_after_unix"] = first_after
+    failure["recovery_seconds"] = first_after - last_before if first_after else None
     # Requests sent during the outage can time out up to 10 s (the client
     # timeout) after recovery, so the excluded window extends by that much.
-    outage = (failure["poweroff_unix"], after[0] + 10 if after else 10**12)
+    outage = (last_before + 1, first_after + 10 if first_after else 10**12)
     failure["excluded_window_unix"] = list(outage)
     rows = [r for r in rows if not (outage[0] <= int(float(r["timestamp"])) <= outage[1])]
 rows = [r for r in rows if r["metric_name"] != "name_round"]

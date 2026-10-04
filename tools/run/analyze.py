@@ -75,8 +75,12 @@ for path in glob.glob(os.path.join(out, "metrics-*.csv")):
     app_w = defaultdict(lambda: defaultdict(list))
     steal_w = defaultdict(list)
     queue_w = defaultdict(list)
-    with open(path) as f:
-        for row in csv.DictReader(f):
+    with open(path, errors="replace") as f:
+        # A power cut can leave the end of a machine's log as zero bytes
+        # (length recorded, data never written); skip lines that don't parse.
+        for row in csv.DictReader(line for line in f if "\x00" not in line):
+            if not (row.get("ts") or "").isdigit():
+                continue
             ts = int(row["ts"])
             cores = [float(v) for k, v in row.items() if k.endswith("_busy_pct")]
             per_w[ts - ts % window].append((sum(cores) / len(cores), max(cores)))

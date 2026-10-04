@@ -1,0 +1,46 @@
+{
+  "event": "E06",
+  "verdict": "FAIL",
+  "reasons": [
+    "5 of 1101 links' click counts more than 1% off, 60 s after the load stopped",
+    "link checker found 1 problems"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 420,
+    "redirects": 34901,
+    "creates": 698,
+    "redirect_p50_ms": 6.5,
+    "redirect_p99_ms": 12.7,
+    "create_p99_ms": 19.2,
+    "viral_redirects": 0,
+    "viral_redirect_p99_ms": null,
+    "other_redirect_p99_ms": null,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 1,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 1838,
+        "median": 3.14,
+        "p99": 5.75
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "power_cut_recovery_seconds": 61,
+    "power_off_seconds": 41,
+    "count_links_checked": 1101,
+    "count_links_outside_1pct": 5,
+    "count_truth_vs_server": "19902 vs 19879"
+  }
+}
