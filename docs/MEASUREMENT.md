@@ -37,6 +37,15 @@ Load steps in the event script are expressed in req/s and data size. User and mo
 - **Real data volume.** Seed the data size the event calls for before the run. A database with 1,000 rows tells us nothing about one with 100 million.
 - **Check provider rules** on load testing before any high-load run.
 
+## Repeats
+
+Shared vCPUs are slower when the host's other customers are busy (measured as CPU steal), so one run can be unlucky. Every verdict therefore comes from **three runs** of the same event on the same deployed stage, each from the same starting state (database reseeded before each run).
+
+- **All three agree:** that is the verdict, reported with the best, median and worst value of every measure.
+- **They disagree:** the verdict is **INCONSISTENT**. Check steal and the per-window results, and investigate before any design change.
+
+Earlier single-run verdicts may stand where the margin is large (for example a p99 under a fifth of its limit); they are marked as single runs.
+
 ## Pass criteria
 
 Each event defines:

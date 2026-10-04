@@ -64,23 +64,30 @@ with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
 machines = {m["name"]: m for m in json.load(open(os.path.join(out, "machines.json")))}
 cpu = {}  # machine -> window -> (avg busy %, max single-core busy %)
 mem = {}
-app = {}  # machine -> window -> max CPU % of the "node" process (100 = one full core)
+app = {}  # machine -> process -> window -> max CPU % of that program (100 = one full core)
+steal = {}  # machine -> window -> max % of CPU time taken by the host for other machines
+PROCS = ("node", "nginx")
 for path in glob.glob(os.path.join(out, "metrics-*.csv")):
     m = os.path.basename(path)[len("metrics-"):-len(".csv")]
     per_w = defaultdict(list)
     mem_w = defaultdict(list)
-    app_w = defaultdict(list)
+    app_w = defaultdict(lambda: defaultdict(list))
+    steal_w = defaultdict(list)
     with open(path) as f:
         for row in csv.DictReader(f):
             ts = int(row["ts"])
             cores = [float(v) for k, v in row.items() if k.endswith("_busy_pct")]
             per_w[ts - ts % window].append((sum(cores) / len(cores), max(cores)))
             mem_w[ts - ts % window].append(int(row["mem_used_mb"]))
-            if row.get("node_cpu_pct") not in (None, ""):
-                app_w[ts - ts % window].append(float(row["node_cpu_pct"]))
+            for p in PROCS:
+                if row.get(f"{p}_cpu_pct") not in (None, ""):
+                    app_w[p][ts - ts % window].append(float(row[f"{p}_cpu_pct"]))
+            if row.get("cpu_steal_pct") not in (None, ""):
+                steal_w[ts - ts % window].append(float(row["cpu_steal_pct"]))
     cpu[m] = {w: (max(a for a, _ in v), max(c for _, c in v)) for w, v in per_w.items()}
     mem[m] = {w: max(v) for w, v in mem_w.items()}
-    app[m] = {w: max(v) for w, v in app_w.items()}
+    app[m] = {p: {w: max(v) for w, v in by_w.items()} for p, by_w in app_w.items()}
+    steal[m] = {w: max(v) for w, v in steal_w.items()}
 
 load = [m for m, info in machines.items() if info["role"] == "load"][0]
 systems = [m for m, info in machines.items() if info["role"] == "system"]
@@ -120,7 +127,10 @@ for w in sorted(reqs):
         row[f"{s}_cpu_avg_pct"] = round(avg, 0) if avg is not None else None
         row[f"{s}_cpu_top_core_pct"] = round(top, 0) if top is not None else None
         row[f"{s}_mem_mb"] = mem.get(s, {}).get(w)
-        row[f"{s}_node_cpu_pct"] = app.get(s, {}).get(w)
+        for p in PROCS:
+            if p in app.get(s, {}):
+                row[f"{s}_{p}_cpu_pct"] = app[s][p].get(w)
+        row[f"{s}_steal_pct"] = steal.get(s, {}).get(w)
     if invalid:
         row["valid"] = "INVALID: " + ", ".join(invalid)
     elif saturated:
@@ -130,7 +140,7 @@ for w in sorted(reqs):
     rows.append(row)
 
 with open(os.path.join(out, "windows.csv"), "w", newline="") as f:
-    writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
+    writer = csv.DictWriter(f, fieldnames=list(dict.fromkeys(k for r in rows for k in r)))
     writer.writeheader()
     writer.writerows(rows)
 
@@ -138,8 +148,8 @@ t0 = rows[0]["window_start"] if rows else 0
 kinds = sorted({k for (_, k) in kind_durations})
 cols = ["req_per_s", "p50_ms", "p99_ms"] + [f"{k}_p99_ms" for k in kinds] + ["error_pct", "load_cpu_pct"]
 for s in systems:
-    cols += [f"{s}_cpu_avg_pct", f"{s}_cpu_top_core_pct", f"{s}_node_cpu_pct"]
+    cols += [f"{s}_cpu_avg_pct", f"{s}_cpu_top_core_pct"] + [f"{s}_{p}_cpu_pct" for p in PROCS if p in app.get(s, {})] + [f"{s}_steal_pct"]
 print("t(s)  " + "  ".join(c.replace(f"{systems[0]}_", "sys_") if systems else c for c in cols) + "  valid")
 for r in rows:
-    print(f"{r['window_start'] - t0:>4}  " + "  ".join(f"{str(r[c]):>{len(c) if not systems else 8}}" for c in cols) + f"  {r['valid']}")
+    print(f"{r['window_start'] - t0:>4}  " + "  ".join(f"{str(r.get(c)):>{len(c) if not systems else 8}}" for c in cols) + f"  {r['valid']}")
 print(f"\nwrote {os.path.join(out, 'windows.csv')}")

@@ -36,7 +36,9 @@ def process_usage(name):
                 argv0 = f.read().split(b"\0", 1)[0].decode(errors="replace")
         except OSError:
             continue
-        if os.path.basename(argv0) != name:
+        # nginx renames its processes "nginx: master process ..." and
+        # "nginx: worker process", so also match "<name>:" at the start.
+        if os.path.basename(argv0) != name and not argv0.startswith(name + ":"):
             continue
         fields = stat[stat.rindex(")") + 2:].split()
         ticks += int(fields[11]) + int(fields[12])  # utime + stime

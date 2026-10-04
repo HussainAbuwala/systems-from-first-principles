@@ -43,7 +43,7 @@ done > "$out/deployed-versions.txt"
 cp "$script" "$out/$(basename "$script")"
 scp_to "$script" "$load_ip" /opt/sfp/script.js
 
-start_recorder() { sfp_ssh "$1" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node k6 >/dev/null 2>&1 & echo \$! > /opt/sfp/recorder.pid"; }
+start_recorder() { sfp_ssh "$1" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node nginx k6 >/dev/null 2>&1 & echo \$! > /opt/sfp/recorder.pid"; }
 stop_recorder()  { sfp_ssh "$1" 'kill "$(cat /opt/sfp/recorder.pid)" 2>/dev/null || true'; }
 
 for m in "${machines[@]}"; do start_recorder "$(sfp_ip "$m")"; done
