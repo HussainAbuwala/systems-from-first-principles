@@ -188,4 +188,7 @@ const server = createServer(
   },
 );
 
-server.listen(PORT, HOST, () => console.log(`shortener stage 5 listening on ${HOST}:${PORT}, database ${DB_PATH}`));
+const syncMode = (db.prepare("PRAGMA synchronous").get() as { synchronous: number }).synchronous;
+server.listen(PORT, HOST, () =>
+  console.log(`shortener stage 5 listening on ${HOST}:${PORT}, database ${DB_PATH}, synchronous=${syncMode} (3 = EXTRA)`),
+);
