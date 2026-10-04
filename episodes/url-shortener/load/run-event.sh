@@ -18,30 +18,9 @@ scp "${scp_opts[@]}" "$sample" "root@$load_ip:/opt/sfp/sample.csv"
   -e "TARGET=https://$system_ip" -e SAMPLE=/opt/sfp/sample.csv -e "RUN_ID=$run_id" "$@"
 cp "$sample" "$out/sample.csv"
 
-# Every link created during the run, plus the seeded sample, must still redirect correctly.
-python3 - "$out" <<'PY'
-import csv, gzip, sys
-out = sys.argv[1]
-pairs = [("code", "url")]
-with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
-    for r in csv.DictReader(f):
-        tags = dict(t.split("=", 1) for t in (r["extra_tags"] or "").split("&") if "=" in t)
-        if r["metric_name"] == "created_link":
-            pairs.append((tags["code"], r["url"]))
-        elif r["metric_name"] == "name_round" and tags.get("winners") == "1":
-            pairs.append((tags["round_name"], tags["winner_url"]))
-created = len(pairs) - 1
-# The first 1,000 sampled links are enough to show stored links still resolve.
-with open(f"{out}/sample.csv") as f:
-    pairs += [tuple(row) for row in list(csv.reader(f))[1:1001]]
-csv.writer(open(f"{out}/check-pairs.csv", "w", newline="")).writerows(pairs)
-print(f"checking {created} links created during the run (including winning names) and {len(pairs) - 1 - created} seeded links")
-PY
-scp "${scp_opts[@]}" "$here/check.py" "$out/check-pairs.csv" "root@$load_ip:/opt/sfp/"
-sfp_ssh "$load_ip" "python3 /opt/sfp/check.py https://$system_ip /opt/sfp/check-pairs.csv /opt/sfp/check.json"
-scp "${scp_opts[@]}" "root@$load_ip:/opt/sfp/check.json" "$out/check.json"
-
 # E05 onward: compare the server's click counts with what the load generator sent.
+# This must run before the link checker below: every link it opens is a real
+# click the server counts, which the load generator's tally does not include.
 if [[ "${CHECK_COUNTS:-0}" == "1" ]]; then
   python3 - "$out" <<'PY'
 import csv, gzip, random, sys, collections, json, datetime
@@ -66,5 +45,29 @@ PY
   sfp_ssh "$load_ip" "python3 /opt/sfp/count-check.py https://$system_ip /opt/sfp/count-truth.csv /opt/sfp/counts.json $not_before"
   scp "${scp_opts[@]}" "root@$load_ip:/opt/sfp/counts.json" "$out/counts.json"
 fi
+
+
+# Every link created during the run, plus the seeded sample, must still redirect correctly.
+python3 - "$out" <<'PY'
+import csv, gzip, sys
+out = sys.argv[1]
+pairs = [("code", "url")]
+with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
+    for r in csv.DictReader(f):
+        tags = dict(t.split("=", 1) for t in (r["extra_tags"] or "").split("&") if "=" in t)
+        if r["metric_name"] == "created_link":
+            pairs.append((tags["code"], r["url"]))
+        elif r["metric_name"] == "name_round" and tags.get("winners") == "1":
+            pairs.append((tags["round_name"], tags["winner_url"]))
+created = len(pairs) - 1
+# The first 1,000 sampled links are enough to show stored links still resolve.
+with open(f"{out}/sample.csv") as f:
+    pairs += [tuple(row) for row in list(csv.reader(f))[1:1001]]
+csv.writer(open(f"{out}/check-pairs.csv", "w", newline="")).writerows(pairs)
+print(f"checking {created} links created during the run (including winning names) and {len(pairs) - 1 - created} seeded links")
+PY
+scp "${scp_opts[@]}" "$here/check.py" "$out/check-pairs.csv" "root@$load_ip:/opt/sfp/"
+sfp_ssh "$load_ip" "python3 /opt/sfp/check.py https://$system_ip /opt/sfp/check-pairs.csv /opt/sfp/check.json"
+scp "${scp_opts[@]}" "root@$load_ip:/opt/sfp/check.json" "$out/check.json"
 
 python3 "$here/judge.py" "$out" "$event"

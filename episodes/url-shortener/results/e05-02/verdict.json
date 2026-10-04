@@ -1,0 +1,44 @@
+{
+  "event": "E05",
+  "verdict": "FAIL",
+  "reasons": [
+    "84 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 720,
+    "redirects": 1392039,
+    "creates": 1442,
+    "redirect_p50_ms": 5.5,
+    "redirect_p99_ms": 15.6,
+    "create_p99_ms": 28.0,
+    "viral_redirects": 1319970,
+    "viral_redirect_p99_ms": 15.6,
+    "other_redirect_p99_ms": 16.2,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 2561,
+        "median": 3.05,
+        "p99": 5.55
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "count_links_checked": 1101,
+    "count_links_outside_1pct": 84,
+    "count_truth_vs_server": "1356045 vs 1356193",
+    "redirects_browsers_may_reuse": 0
+  }
+}
