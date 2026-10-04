@@ -33,6 +33,24 @@ rows = []
 with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
     rows = [r for r in csv.DictReader(f) if r["metric_name"] in ("visit_duration", "http_reqs", "http_req_failed", "wrong_redirect", "name_round")]
 rounds = [r for r in rows if r["metric_name"] == "name_round"]
+
+# E06: a failure during the run. Recovery = first successful redirect after
+# the power cut. Latency and error rules apply outside [cut, recovery].
+failure = None
+failure_path = os.path.join(out, "failure.json")
+if os.path.exists(failure_path):
+    failure = json.load(open(failure_path))
+    with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
+        after = sorted(int(float(r["timestamp"])) for r in csv.DictReader(f)
+                       if r["metric_name"] == "http_reqs" and r["status"] == "301"
+                       and int(float(r["timestamp"])) >= failure["poweroff_unix"] + 1)
+    failure["first_redirect_after_unix"] = after[0] if after else None
+    failure["recovery_seconds"] = after[0] - failure["poweroff_unix"] if after else None
+    # Requests sent during the outage can time out up to 10 s (the client
+    # timeout) after recovery, so the excluded window extends by that much.
+    outage = (failure["poweroff_unix"], after[0] + 10 if after else 10**12)
+    failure["excluded_window_unix"] = list(outage)
+    rows = [r for r in rows if not (outage[0] <= int(float(r["timestamp"])) <= outage[1])]
 rows = [r for r in rows if r["metric_name"] != "name_round"]
 start = min(int(float(r["timestamp"])) for r in rows)
 measured = [r for r in rows if int(float(r["timestamp"])) >= start + warmup]
@@ -103,6 +121,11 @@ if "name_rounds" in measures:
         failures.append(f"only {measures['name_rounds']} of {expected_rounds} contention rounds completed")
     if measures["rounds_exactly_one_winner"] != measures["name_rounds"]:
         failures.append(f"only {measures['rounds_exactly_one_winner']} of {measures['name_rounds']} rounds had exactly one winner and {contenders - 1} 'taken'")
+if failure is not None:
+    measures["power_cut_recovery_seconds"] = failure["recovery_seconds"]
+    measures["power_off_seconds"] = failure["poweron_unix"] - failure["poweroff_unix"]
+    if failure["recovery_seconds"] is None or failure["recovery_seconds"] > 300:
+        failures.append(f"redirects not working again within 5 minutes of the power cut (recovery: {failure['recovery_seconds']} s)")
 counts_path = os.path.join(out, "counts.json")
 if os.path.exists(counts_path):
     counts = json.load(open(counts_path))

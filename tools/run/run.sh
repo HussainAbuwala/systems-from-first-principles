@@ -44,7 +44,8 @@ cp "$script" "$out/$(basename "$script")"
 scp_to "$script" "$load_ip" /opt/sfp/script.js
 
 start_recorder() { sfp_ssh "$1" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node nginx k6 >/dev/null 2>&1 & echo \$! > /opt/sfp/recorder.pid"; }
-stop_recorder()  { sfp_ssh "$1" 'kill "$(cat /opt/sfp/recorder.pid)" 2>/dev/null || true'; }
+# Stop by name, not by saved PID: after a reboot (E06) the old PID may belong to another program.
+stop_recorder()  { sfp_ssh "$1" 'pkill -f "^python3 /opt/sfp/recorder.py" || true'; }
 
 for m in "${machines[@]}"; do start_recorder "$(sfp_ip "$m")"; done
 started=$(date -u +%FT%TZ)

@@ -14,9 +14,25 @@ load_ip="$(sfp_ip "$load")" system_ip="$(sfp_ip "$system")"
 scp_opts=(-q -i "$SFP_SSH_KEY_FILE" -o UserKnownHostsFile="$SFP_ROOT/tools/cloud/.known_hosts")
 
 scp "${scp_opts[@]}" "$sample" "root@$load_ip:/opt/sfp/sample.csv"
+
+# E06: cut the system's power POWERCUT_AFTER seconds from now, leave it off for
+# POWERCUT_OFF seconds, then power it on. "poweroff" is Hetzner's hard power cut:
+# no signal, no clean shutdown. Times are recorded for the judge.
+failure_log=""
+if [[ -n "${POWERCUT_AFTER:-}" ]]; then
+  failure_log="$(mktemp)"
+  (
+    sleep "$POWERCUT_AFTER"
+    off=$(date +%s); hcloud server poweroff "$system" >/dev/null
+    sleep "${POWERCUT_OFF:-30}"
+    on=$(date +%s); hcloud server poweron "$system" >/dev/null
+    printf '{"kind": "power cut", "poweroff_unix": %s, "poweron_unix": %s}\n' "$off" "$on" > "$failure_log"
+  ) &
+fi
 "$SFP_ROOT/tools/run/run.sh" "$run_id" "$load" "$system" "$here/level.js" \
   -e "TARGET=https://$system_ip" -e SAMPLE=/opt/sfp/sample.csv -e "RUN_ID=$run_id" "$@"
 cp "$sample" "$out/sample.csv"
+if [[ -n "$failure_log" ]]; then wait; cp "$failure_log" "$out/failure.json"; fi
 
 # E05 onward: compare the server's click counts with what the load generator sent.
 # This must run before the link checker below: every link it opens is a real
