@@ -47,6 +47,8 @@ def kind(r):
 
 
 redirects = [float(r["metric_value"]) for r in measured if r["metric_name"] == "visit_duration" and kind(r) == "redirect"]
+viral = [float(r["metric_value"]) for r in measured if r["metric_name"] == "visit_duration" and tags(r).get("link") == "viral"]
+others = [float(r["metric_value"]) for r in measured if r["metric_name"] == "visit_duration" and kind(r) == "redirect" and tags(r).get("link") != "viral"]
 creates = [float(r["metric_value"]) for r in measured if r["metric_name"] == "visit_duration" and kind(r) == "create"]
 name_creates = [float(r["metric_value"]) for r in measured if r["metric_name"] == "visit_duration" and kind(r) == "name_create"]
 reqs = sum(1 for r in measured if r["metric_name"] == "http_reqs")
@@ -64,6 +66,9 @@ measures = {
     "redirect_p50_ms": round(pct(redirects, 50), 1) if redirects else None,
     "redirect_p99_ms": round(pct(redirects, 99), 1) if redirects else None,
     "create_p99_ms": round(pct(creates, 99), 1) if creates else None,
+    "viral_redirects": len(viral),
+    "viral_redirect_p99_ms": round(pct(viral, 99), 1) if viral else None,
+    "other_redirect_p99_ms": round(pct(others, 99), 1) if viral and others else None,
     "name_create_requests": len(name_creates),
     "name_create_p99_ms": round(pct(name_creates, 99), 1) if name_creates else None,
     "error_pct": round(100 * failed / reqs, 3) if reqs else None,

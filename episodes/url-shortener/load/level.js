@@ -100,6 +100,29 @@ if (rounds > 0) {
 }
 const nameRound = new Counter("name_round");
 
+// E04: one stored link goes viral. After WARMUP it ramps from 0 to
+// VIRAL_RATE clicks/s over VIRAL_RAMP seconds, holds for VIRAL_HOLD seconds,
+// then falls back to 0 over VIRAL_RAMP seconds, on top of the other traffic.
+// The viral link is the first link in the sample, so the checker verifies it.
+const viralRate = Number(__ENV.VIRAL_RATE || 0);
+if (viralRate > 0) {
+  const ramp = Number(__ENV.VIRAL_RAMP || 60);
+  scenarios.viral = {
+    executor: "ramping-arrival-rate",
+    exec: "viral",
+    startRate: 0,
+    timeUnit: "1s",
+    startTime: `${Number(__ENV.WARMUP || 60)}s`,
+    stages: [
+      { target: viralRate, duration: `${ramp}s` },
+      { target: viralRate, duration: `${Number(__ENV.VIRAL_HOLD || 600)}s` },
+      { target: 0, duration: `${ramp}s` },
+    ],
+    preAllocatedVUs: 200,
+    maxVUs: Number(__ENV.MAX_VUS || 5000),
+  };
+}
+
 export const options = {
   noConnectionReuse: true,
   insecureSkipTLSVerify: true, // self-made certificate; the handshake work is unchanged
@@ -166,4 +189,18 @@ export function contention() {
     }
   });
   nameRound.add(1, { round_name: name, winners: String(winners), taken: String(taken), winner_url: winnerUrl });
+}
+
+export function viral() {
+  const [code, url] = links[0];
+  const res = http.get(`${target}/${code}`, {
+    tags: { kind: "redirect", name: "viral" },
+    timeout: "10s",
+    responseType: "none",
+  });
+  const t = res.timings;
+  visit.add(t.blocked + t.connecting + t.tls_handshaking + t.duration, { kind: "redirect", link: "viral" });
+  if (res.status !== 0 && (res.status !== 301 || res.headers["Location"] !== url)) {
+    wrongRedirect.add(1, { code, status: String(res.status) });
+  }
 }

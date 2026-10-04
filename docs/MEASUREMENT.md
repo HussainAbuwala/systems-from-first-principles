@@ -39,14 +39,16 @@ Load steps in the event script are expressed in req/s and data size. User and mo
 
 ## Repeats
 
-Shared vCPUs are slower when the host's other customers are busy (measured as CPU steal), so one run can be unlucky. Every verdict therefore comes from **three runs** of the same event on the same deployed stage, each from the same starting state (database reseeded before each run).
+Shared vCPUs are slower when the host's other customers are busy (measured as CPU steal), so one run can be unlucky. Measured run-to-run spread so far: about 5% on redirect p99 (E03 on stages 1 and 2, three runs each, steal 0%). Each run starts from the same state (database reseeded).
 
-- **All three agree:** that is the verdict, reported with the best, median and worst value of every measure.
-- **They disagree:** the verdict is **INCONSISTENT**. Check steal and the per-window results, and investigate before any design change.
+| Run | How many | Exception |
+| --- | --- | --- |
+| **The new event** being played against a stage | **3** | **1** if the first run is far past a limit (more than 1.5 times it, e.g. p99 in seconds): more runs cannot change the verdict |
+| **Earlier events** re-run after a design change (regression checks) | **1** | **3** if any judged measure lands within 25% of its limit |
+| Any run with **CPU steal** above about 2%, or INVALID windows | repeat it | — |
 
-Earlier single-run verdicts may stand where the margin is large (for example a p99 under a fifth of its limit); they are marked as single runs.
-
-**Regression checks:** after a design change, earlier events are re-run to show nothing regressed. One run is enough when every measure is within a fifth of its limit (for example redirect p99 under 20 ms); otherwise that event also gets three runs.
+- With three runs, if all agree that is the verdict, reported with the best, median and worst value; if they disagree the verdict is **INCONSISTENT** until investigated.
+- A correctness failure (two owners of a name, a lost or wrong link) counts after one run: a defect that happens once is a defect.
 
 ## Pass criteria
 
