@@ -23,6 +23,28 @@ Each redirect adds one to an in-memory tally keyed by (link, day of the click) a
 
 **Verified locally before deploying:** 890 clicks over 211 links, server 890, all exact two seconds after the load stopped; five clicks followed immediately by a stop and restart were all kept.
 
+**Result: PASS, 3 of 3 runs** (`results/e05-03/`, `e05-04/`, `e05-05/`): redirect p99 14.1–15.4 ms, no errors, every one of 1,101 checked links' counts exact in every run. A first run (`e05-02`) is INVALID: the link checker's own clicks were counted (see its notes).
+
+## Rerun of every event so far
+
+| Event | Run ID | Redirect p99 | Errors | Correct | Pass |
+| --- | --- | ---: | ---: | --- | --- |
+| E01 | e01-06 | 18.0 ms | 0% | yes | PASS |
+| E02 | e02-06 | 12.4 ms | 0% | yes; counts exact | PASS |
+| E03 | e03-12 | 28.7 ms | 0% | every round exactly one winner; counts exact | PASS |
+| E04 | (covered by E05 runs) | 14.1–15.4 ms | 0% | yes | PASS |
+| E05 | e05-03, e05-04, e05-05 | 15.4 / 14.5 / 14.1 ms | 0% | counts exact | **PASS**, 3 of 3 |
+
+## Scoreboard row
+
+| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 04 | Stage 3 + click counts tallied in memory, saved once a second | E05 (about 2,100 new connections/s with counting) | 14.5 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; next is E06 (power cut) |
+
+## Interview line
+
+"Saving every click durably capped us at about 165 per second on this disk, so counts are tallied in memory and written once a second in one transaction: exact under load, and a crash can cost at most about a second of counts."
+
 ## How the counts are checked
 
 The load generator tags every click with its short code, so its own log gives the true count per link per day (successful redirects only). Sixty seconds after the load stops, `load/count-check.py` asks the server for the viral link, the 100 most-clicked links and 1,000 random others, and each must be within 1% of the truth (rounded down, so small counts must be exact). Verified locally before any Hetzner run: 890 clicks over 217 links, server 890, all exact.

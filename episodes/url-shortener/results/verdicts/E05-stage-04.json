@@ -1,0 +1,77 @@
+{
+  "event": "E05",
+  "stage": "stage-04",
+  "verdict": "PASS",
+  "runs": {
+    "e05-03": "PASS",
+    "e05-04": "PASS",
+    "e05-05": "PASS"
+  },
+  "reasons": {
+    "e05-03": [],
+    "e05-04": [],
+    "e05-05": []
+  },
+  "spread": {
+    "redirect_p50_ms": {
+      "best": 5.3,
+      "median": 5.4,
+      "worst": 5.6,
+      "runs": [
+        5.6,
+        5.4,
+        5.3
+      ]
+    },
+    "redirect_p99_ms": {
+      "best": 14.1,
+      "median": 14.5,
+      "worst": 15.4,
+      "runs": [
+        15.4,
+        14.5,
+        14.1
+      ]
+    },
+    "create_p99_ms": {
+      "best": 24.3,
+      "median": 24.7,
+      "worst": 26.1,
+      "runs": [
+        26.1,
+        24.7,
+        24.3
+      ]
+    },
+    "error_pct": {
+      "best": 0.0,
+      "median": 0.0,
+      "worst": 0.0,
+      "runs": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "wrong_redirects": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "checker_problems": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}
