@@ -1,5 +1,7 @@
 // Stage 6: stage 5 in WAL mode, copied off the machine by Litestream (E07),
-// plus GET /health for an outside monitor.
+// plus GET /health for an outside monitor. A new link or name is confirmed only
+// once Litestream has copied it to the Volume (attempt 2: in e07-01 a link
+// confirmed in the last second was lost and its code issued again).
 // Stage 5: stage 4 with synchronous=EXTRA (E06), so a save confirmed just
 // before a power cut is not rolled back on reboot.
 // Stage 4: stage 3 plus click counts (E05). Every redirect adds one to an
@@ -8,7 +10,7 @@
 // about a second of counts; links themselves are still saved immediately.
 // Redirects tell browsers not to remember them, so every click reaches us.
 // nginx terminates HTTPS in front; this program listens only inside the machine.
-import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
+import { createServer, request, type IncomingMessage, type ServerResponse } from "node:http";
 import { DatabaseSync } from "node:sqlite";
 import { decode, encode, MAX_CODE_LENGTH } from "./codes.ts";
 
@@ -16,6 +18,7 @@ const HOST = process.env.HOST ?? "127.0.0.1";
 const PORT = Number(process.env.PORT ?? 8080);
 const DB_PATH = process.env.DB_PATH ?? "/var/lib/shortener/links.db";
 const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://localhost";
+const LITESTREAM_SOCKET = process.env.LITESTREAM_SOCKET ?? "/var/run/litestream.sock";
 
 const MAX_URL_LENGTH = 2048;
 
@@ -133,6 +136,31 @@ function readBody(req: IncomingMessage, limit: number): Promise<string | null> {
   });
 }
 
+// Ask Litestream to copy everything saved so far to the Volume and wait until
+// the copy is on its disk. Resolves true only on success.
+function copiedOffMachine(): Promise<boolean> {
+  return new Promise((resolve) => {
+    const body = JSON.stringify({ path: DB_PATH, wait: true, timeout: 5 });
+    const req = request(
+      { socketPath: LITESTREAM_SOCKET, path: "/sync", method: "POST", timeout: 6000,
+        headers: { "content-type": "application/json", "content-length": Buffer.byteLength(body) } },
+      (res) => {
+        res.resume();
+        res.on("end", () => resolve(res.statusCode === 200));
+      },
+    );
+    req.on("timeout", () => req.destroy());
+    req.on("error", (err) => {
+      console.error("copy to the Volume failed", err);
+      resolve(false);
+    });
+    req.end(body);
+  });
+}
+
+const deleteLink = db.prepare("DELETE FROM links WHERE id = ?");
+const deleteName = db.prepare("DELETE FROM names WHERE name = ?");
+
 async function createLink(req: IncomingMessage, res: ServerResponse) {
   const body = await readBody(req, MAX_URL_LENGTH + MAX_NAME_LENGTH + 512);
   let url: unknown;
@@ -146,9 +174,11 @@ async function createLink(req: IncomingMessage, res: ServerResponse) {
     return send(res, 400, "Send JSON {\"url\": \"https://...\"} with an http or https link of at most 2048 characters\n");
   }
   let code: string;
+  let undo: () => void;
   if (name === undefined) {
     const { lastInsertRowid } = insertLink.run(url, Date.now());
     code = encode(Number(lastInsertRowid));
+    undo = () => deleteLink.run(lastInsertRowid);
   } else {
     if (!isValidName(name)) {
       return send(res, 400, "A name uses letters, digits and hyphens, and contains a hyphen or is longer than 7 characters\n");
@@ -157,6 +187,13 @@ async function createLink(req: IncomingMessage, res: ServerResponse) {
     if (findName.get(name)) return send(res, 409, "That name is taken\n");
     insertName.run(name, url, Date.now());
     code = name;
+    undo = () => deleteName.run(name);
+  }
+  // Confirm only what would survive losing this machine. If the copy fails,
+  // remove the link (nobody was told its code) and ask the creator to retry.
+  if (!(await copiedOffMachine())) {
+    undo();
+    return send(res, 503, "Could not save the link safely; please try again\n");
   }
   res.writeHead(201, { "content-type": "application/json" });
   res.end(JSON.stringify({ code, short_url: `${PUBLIC_BASE}/${code}` }));

@@ -1,6 +1,11 @@
 # Stage 6: copy every change of the database to the Volume mounted at
 # /mnt/copy (E07). Litestream's defaults otherwise: changes sent every second,
 # a full snapshot daily, history kept for a day.
+# The control socket lets the app ask for an immediate copy and wait for it
+# before confirming a new link or name (attempt 2, after e07-01).
+socket:
+  enabled: true
+  path: /var/run/litestream.sock
 dbs:
   - path: /var/lib/shortener/links.db
     replica:
