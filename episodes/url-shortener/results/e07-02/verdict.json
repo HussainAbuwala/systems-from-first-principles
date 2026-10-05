@@ -1,0 +1,54 @@
+{
+  "event": "E07",
+  "verdict": "FAIL",
+  "reasons": [
+    "1 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 1020,
+    "redirects": 80848,
+    "creates": 1617,
+    "redirect_p50_ms": 6.6,
+    "redirect_p99_ms": 10.4,
+    "create_p99_ms": 60.4,
+    "viral_redirects": 0,
+    "viral_redirect_p99_ms": null,
+    "other_redirect_p99_ms": null,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 2759,
+        "median": 3.38,
+        "p99": 5.13
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "back_after_loss_seconds": 204,
+    "old_server_answered_after_delete_command_seconds": 3,
+    "detection_seconds": 78,
+    "alert_seen_to_recovery_start_seconds": -1,
+    "recovery_script_seconds": 132,
+    "recovery_exit_code": 0,
+    "links_acknowledged_before_loss": 822,
+    "links_acknowledged_in_last_5_min": 600,
+    "links_lost_within_last_5_min": 0,
+    "links_redirecting_to_wrong_page": 0,
+    "links_lost_older_or_other_problems": 0,
+    "count_links_checked": 1101,
+    "count_links_outside_1pct": 1,
+    "count_truth_vs_server": "40429 vs 40390"
+  }
+}

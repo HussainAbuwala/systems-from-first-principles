@@ -17,3 +17,4 @@ sfp-iptest,cx23,system,2026-10-05T16:56:20Z,2026-10-05T16:56:59Z,1,0.0088,check:
 sfp-app,cx33,system,2026-10-04T14:53:28Z,2026-10-05T17:06:11Z,27,0.3672,E07 e07-01: machine lost
 sfp-load,cpx42,load,2026-10-05T16:57:28Z,2026-10-05T17:21:07Z,1,0.1114,e07-01 failed; stage 6 needs a fix
 sfp-spare,cx33,system,2026-10-05T17:45:04Z,2026-10-05T17:56:33Z,1,0.0136,attempt 2 checked on spare
+sfp-app,cx33,system,2026-10-05T17:07:29Z,2026-10-05T18:05:56Z,1,0.0136,E07 e07-02: machine lost

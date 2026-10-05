@@ -1,0 +1,12 @@
+{
+  "run_id": "e07-02",
+  "started_utc": "2026-10-05T17:59:04Z",
+  "ended_utc": "2026-10-05T18:17:07Z",
+  "git_commit": "cddd204d75e003a0bc84aa0d79d3e975424242a4",
+  "uncommitted_changes": true,
+  "k6_script": "level.js",
+  "k6_script_sha256": "e5b259dcc98c24e537a272245c8c940a7885ca21377930a2f019df36306b8a98",
+  "k6_args": "-e TARGET=https://2.28.198.178 -e SAMPLE=/opt/sfp/sample.csv -e RUN_ID=e07-02 -e REDIRECTS=100 -e CREATES=2 -e DURATION=18m",
+  "k6_exit_code": 0,
+  "load_machine": "sfp-load"
+}

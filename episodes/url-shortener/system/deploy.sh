@@ -12,7 +12,10 @@ scp_opts=(-q -i "$SFP_SSH_KEY_FILE" -o UserKnownHostsFile="$SFP_ROOT/tools/cloud
 
 sfp_ssh "$ip" "mkdir -p /opt/shortener /var/lib/shortener"
 # Record exactly which code is deployed; runs copy this into their evidence.
-version="$(git -C "$SFP_ROOT" describe --tags --always --dirty)"
+# Only code counts as "dirty": results files (the spend ledger, samples) change
+# during runs, including while recover.sh deploys mid-run (E07).
+version="$(git -C "$SFP_ROOT" describe --tags --always)"
+git -C "$SFP_ROOT" diff --quiet HEAD -- . ':(exclude)episodes/*/results' || version="$version-dirty"
 sfp_ssh "$ip" "echo '$version' > /opt/shortener/VERSION"
 scp "${scp_opts[@]}" "$here"/*.ts "root@$ip:/opt/shortener/"
 scp "${scp_opts[@]}" "$here/shortener.service" "root@$ip:/etc/systemd/system/shortener.service"
