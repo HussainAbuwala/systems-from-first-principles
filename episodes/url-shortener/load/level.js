@@ -40,7 +40,70 @@ const cdf = new SharedArray("zipf", () => {
   return weights.map((w) => w / total);
 });
 
+// From E08 (STORED set): clicks follow the same Zipf curve over every stored
+// link, not just the sample, so the working set is as large as the traffic
+// model makes it. Which links are popular is scattered through the table by a
+// fixed shuffle (rank r -> link ((r - 1) * P mod N) + 1), with no assumption
+// that newer links are hotter. Seeded link i is encode(i) -> seedUrl(i), so no
+// list is needed. The top ranks use exact Zipf weights; beyond them the
+// harmonic numbers are approximated by ln k + gamma + 1 / 2k.
+const stored = Number(__ENV.STORED || 0);
+const ALPHABET = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const GAMMA = 0.5772156649015329;
+const EXACT_RANKS = 10000;
+function encode(id) {
+  let code = "";
+  while (id > 0) {
+    code = ALPHABET[id % 62] + code;
+    id = Math.floor(id / 62);
+  }
+  return code;
+}
+// Must match seed.ts.
+function seedUrl(i) {
+  return `https://news.example.invalid/articles/2026/10/story-${i}?utm_source=share&utm_medium=link&ref=sfp-seed`;
+}
+function harmonic(k) {
+  return Math.log(k) + GAMMA + 1 / (2 * k);
+}
+function gcd(a, b) {
+  return b === 0 ? a : gcd(b, a % b);
+}
+let shuffleStep = 79999999; // under 2^53 / 1e8, so (r - 1) * P stays exact for N up to 1e8
+while (stored > 0 && gcd(shuffleStep, stored) !== 1) shuffleStep -= 2;
+const exactCdf = [];
+if (stored > 0) {
+  let h = 0;
+  for (let k = 1; k <= Math.min(EXACT_RANKS, stored); k++) {
+    h += 1 / k;
+    exactCdf.push(h);
+  }
+}
+const hTotal = stored > EXACT_RANKS ? harmonic(stored) : exactCdf[exactCdf.length - 1];
+
+export function zipfRank(u) {
+  const target = u * hTotal;
+  if (target <= exactCdf[exactCdf.length - 1]) {
+    let lo = 0;
+    let hi = exactCdf.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (exactCdf[mid] < target) lo = mid + 1;
+      else hi = mid;
+    }
+    return lo + 1;
+  }
+  // Solve ln k + gamma = target for k beyond the exact range.
+  return Math.min(stored, Math.max(EXACT_RANKS + 1, Math.ceil(Math.exp(target - GAMMA))));
+}
+
+export function linkForRank(rank) {
+  const id = ((rank - 1) * shuffleStep) % stored + 1;
+  return [encode(id), seedUrl(id)];
+}
+
 function pickLink() {
+  if (stored > 0) return linkForRank(zipfRank(Math.random()));
   const u = Math.random();
   let lo = 0;
   let hi = cdf.length - 1;

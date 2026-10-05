@@ -138,6 +138,7 @@ Stage 0's design is deliberately not decided here. The script says what happens 
 
 | Date | Change | Reason |
 | --- | --- | --- |
+| 2026-10-05 | Skipped the Hetzner support check planned before E08: E04 and E05 had already run about 2,100 new connections per second (twice E08's rate) several times, from inside Hetzner's network to our own server, without any issue. E08's load generator clicks across all stored links on the Zipf curve (`STORED`), not only a 100,000-link sample, so the working set is as large as the traffic model makes it | User decisions (finish E08 the same day; choose a realistic link spread) |
 | 2026-10-03 | **Locked.** Scope E01–E09, budget cap €25. Clarified how E05 and E09 are checked against browser caching (a stricter reading of their existing promises, not a new event) | User go-ahead |
 | 2026-10-03 | Ceiling lowered to 10% of Bitly (E01–E09), one video; Bitly scale and global events moved to "not in this episode"; calibration run added before E01; budget cap €25 | User: first run should validate the setup at production scale rather than chase Bitly, and stay one video |
 | 2026-10-01 | Drafted |  |
