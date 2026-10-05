@@ -1,0 +1,53 @@
+{
+  "event": "E07",
+  "verdict": "FAIL",
+  "reasons": [
+    "1 checked links lost or wrong outside the allowed last 5 minutes",
+    "6 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 1020,
+    "redirects": 82399,
+    "creates": 1648,
+    "redirect_p50_ms": 6.2,
+    "redirect_p99_ms": 10.0,
+    "create_p99_ms": 15.5,
+    "viral_redirects": 0,
+    "viral_redirect_p99_ms": null,
+    "other_redirect_p99_ms": null,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 1,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 2789,
+        "median": 3.11,
+        "p99": 4.86
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "back_after_loss_seconds": 191,
+    "detection_seconds": 72,
+    "alert_seen_to_recovery_start_seconds": 0,
+    "recovery_script_seconds": 124,
+    "recovery_exit_code": 0,
+    "links_acknowledged_before_loss": 812,
+    "links_acknowledged_in_last_5_min": 600,
+    "links_lost_within_last_5_min": 0,
+    "links_lost_older_or_other_problems": 1,
+    "count_links_checked": 1101,
+    "count_links_outside_1pct": 6,
+    "count_truth_vs_server": "41065 vs 41006"
+  }
+}

@@ -134,13 +134,19 @@ if failure is not None and failure["kind"] == "power cut":
     if failure["recovery_seconds"] is None or failure["recovery_seconds"] > 300:
         failures.append(f"redirects not working again within 5 minutes of the power cut (recovery: {failure['recovery_seconds']} s)")
 # E07: back within 1 hour of the loss; at most the last 5 minutes of
-# acknowledged links lost. A checked link that no longer resolves counts as
-# lost; it is allowed only if it was acknowledged within 5 minutes of the loss.
+# acknowledged links lost. A checked link that answers 404 counts as lost; it
+# is allowed only if it was acknowledged within the 5 minutes before the old
+# server stopped answering (deletion takes a few seconds after the command, and
+# the server keeps confirming links meanwhile). A link that redirects to the
+# wrong page is never allowed: no wrong answer may be served.
 lost_links_judged = False
 if failure is not None and failure["kind"] == "machine lost":
     lost = failure["lost_unix"]
     first_after = failure["first_redirect_after_unix"]
     measures["back_after_loss_seconds"] = first_after - lost if first_after else None
+    # Visitors' view of the loss: the old server's last successful redirect.
+    died = max(lost, failure["last_redirect_before_unix"])
+    measures["old_server_answered_after_delete_command_seconds"] = died - lost
     if "incident_started_unix" in failure:
         measures["detection_seconds"] = round(failure["incident_started_unix"] - lost)
         measures["alert_seen_to_recovery_start_seconds"] = round(failure["recovery_started_unix"] - failure["alert_seen_unix"])
@@ -155,16 +161,23 @@ if failure is not None and failure["kind"] == "machine lost":
         for r in csv.DictReader(f):
             if r["metric_name"] == "created_link":
                 acknowledged[tags(r)["code"]] = float(r["timestamp"])
-    measures["links_acknowledged_before_loss"] = sum(1 for t in acknowledged.values() if t < lost)
-    measures["links_acknowledged_in_last_5_min"] = sum(1 for t in acknowledged.values() if lost - 300 <= t < lost)
+    measures["links_acknowledged_before_loss"] = sum(1 for t in acknowledged.values() if t <= died + 1)
+    measures["links_acknowledged_in_last_5_min"] = sum(1 for t in acknowledged.values() if died - 300 <= t <= died + 1)
     if check is not None:
-        missing = check.get("problem_codes", [])
-        allowed = [c for c in missing if c in acknowledged and lost - 300 <= acknowledged[c] < lost]
-        forbidden = [c for c in missing if c not in allowed]
+        problems = check.get("all_problems") or check.get("examples", [])
+        if len(problems) < check["problems"]:
+            failures.append("link checker recorded too few problem details to judge lost links")
+        allowed = [p for p in problems if p.get("status") == 404 and p["code"] in acknowledged
+                   and died - 300 <= acknowledged[p["code"]] <= died + 1]
+        wrong = [p for p in problems if p.get("status") == 301]
+        other = [p for p in problems if p not in allowed and p not in wrong]
         measures["links_lost_within_last_5_min"] = len(allowed)
-        measures["links_lost_older_or_other_problems"] = len(forbidden)
-        if forbidden:
-            failures.append(f"{len(forbidden)} checked links lost or wrong outside the allowed last 5 minutes")
+        measures["links_redirecting_to_wrong_page"] = len(wrong)
+        measures["links_lost_older_or_other_problems"] = len(other)
+        if wrong:
+            failures.append(f"{len(wrong)} checked links redirect to the wrong page: " + ", ".join(p["code"] for p in wrong[:5]))
+        if other:
+            failures.append(f"{len(other)} checked links lost or failing outside the allowed last 5 minutes")
         lost_links_judged = True
 counts_path = os.path.join(out, "counts.json")
 if os.path.exists(counts_path):

@@ -68,6 +68,8 @@ result = {
     "examples": problems[:20],
     # Every problem's code, so a judge can tell which links were lost (E07).
     "problem_codes": [p["code"] for p in problems],
+    # Every problem in full: a lost link (404) and a wrong destination differ.
+    "all_problems": problems,
     "redirect_caching_headers": dict(caching),
     # One request at a time, no other load: what each lookup path costs alone.
     "unloaded_ms": {kind: {"count": len(v), "median": round(statistics.median(v), 2) if v else None,

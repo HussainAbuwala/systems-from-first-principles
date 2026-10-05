@@ -13,3 +13,6 @@ sfp-load,cpx42,load,2026-10-04T23:44:40Z,2026-10-05T00:59:47Z,2,0.2228,stage-05-
 sfp-rehearsal,cx23,system,2026-10-05T15:53:35Z,2026-10-05T15:59:54Z,1,0.0088,E07 rehearsal-e07-01: machine lost
 sfp-rehearsal,cx23,system,2026-10-05T16:01:37Z,2026-10-05T16:12:28Z,1,0.0088,rehearsal done
 sfp-rehearsal-load,cx23,load,2026-10-05T15:56:10Z,2026-10-05T16:12:46Z,1,0.0088,rehearsal done
+sfp-iptest,cx23,system,2026-10-05T16:56:20Z,2026-10-05T16:56:59Z,1,0.0088,check: delete a server whose IP is protected
+sfp-app,cx33,system,2026-10-04T14:53:28Z,2026-10-05T17:06:11Z,27,0.3672,E07 e07-01: machine lost
+sfp-load,cpx42,load,2026-10-05T16:57:28Z,2026-10-05T17:21:07Z,1,0.1114,e07-01 failed; stage 6 needs a fix
