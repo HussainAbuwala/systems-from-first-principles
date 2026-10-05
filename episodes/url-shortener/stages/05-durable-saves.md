@@ -38,7 +38,7 @@
 | E03 |  |  |  |  |  |
 | E04 | (covered by E05) |  |  |  |  |
 | E05 |  |  |  |  |  |
-| E06 |  |  |  |  |  |
+| E06 | e06-02, e06-03, e06-04 | 13.4 / 16.1 / 13.8 ms | 0% | no confirmed link lost; recovery 60–67 s | **PASS** except counts (accepted failure) |
 
 ## Scoreboard row
 
