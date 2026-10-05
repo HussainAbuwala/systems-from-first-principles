@@ -67,7 +67,7 @@ mem = {}
 app = {}  # machine -> process -> window -> max CPU % of that program (100 = one full core)
 steal = {}  # machine -> window -> max % of CPU time taken by the host for other machines
 queue = {}  # machine -> window -> (max connections waiting in the 443 accept queue, connections turned away)
-PROCS = ("node", "nginx")
+PROCS = ("node", "nginx", "litestream")
 for path in glob.glob(os.path.join(out, "metrics-*.csv")):
     m = os.path.basename(path)[len("metrics-"):-len(".csv")]
     per_w = defaultdict(list)

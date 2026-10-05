@@ -47,7 +47,7 @@ if [[ -n "${MACHINE_LOST_AFTER:-}" ]]; then
     "$here/../system/recover.sh" "$system" "$sample" "${RECOVER_TYPE:-cx33}" > "$recovery_log" 2>&1 || recover_exit=$?
     finished=$(date +%s)
     # The recorder ran on the lost machine; record the new one for the rest of the run.
-    sfp_ssh "$(sfp_ip "$system")" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node nginx k6 >/dev/null 2>&1 &" || true
+    sfp_ssh "$(sfp_ip "$system")" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node nginx k6 litestream >/dev/null 2>&1 &" || true
     jq -n --argjson lost "$lost" --argjson alert "$alert" --argjson started "$started" \
       --argjson finished "$finished" --argjson code "$recover_exit" \
       '{kind: "machine lost", lost_unix: $lost} + $alert +

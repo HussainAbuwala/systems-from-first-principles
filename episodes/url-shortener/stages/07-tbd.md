@@ -1,0 +1,22 @@
+# Stage 07: (name when chosen)
+
+Status: **diagnosed, waiting on the user's choice of fix** (2026-10-05).
+
+## Trigger
+
+- **Event:** E08 (Load): 10% of Bitly: 1,000 redirects/s, 20 creates/s, 100 million links stored.
+- **Failed run:** `results/e08-01/` (stage 6): create p99 753.1 ms against 300 ms; everything else passes (redirect p99 17.8 ms, 0% errors, all links and counts correct).
+- **What the user would notice:** creating a short link usually takes a blink, but now and then most of a second, sometimes more.
+
+## Diagnosis
+
+Every create waits for its own copy to the Volume (stage 6 attempt 2), and those copies go through Litestream one at a time. At 20 creates/s Litestream wrote 3,082 small change files in 5 minutes; create p99 rose as they piled up, and spiked to 1–1.5 s when Litestream reorganised its 1.7 GB copies (disk reads up to 17 MB/s, writes up to 36 MB/s, in exactly those windows). Node, nginx, overall CPU and disk wait all had room. See `results/e08-01/NOTES.md`.
+
+## Options considered
+
+| Option | What it fixes | What it costs | Chosen? Why |
+| --- | --- | --- | --- |
+| A. One copy for every create waiting at that moment ("group commit") | While a copy is in progress, newly arriving creates wait for the next one, which confirms all of them together: 20 copies a second become a few, and far fewer small files | A small change in the app; a create may wait for up to about two copies | pending |
+| B. Tune Litestream's reorganising (less often, fewer layers) | The spikes, perhaps | Departs from Litestream's defaults; does not shorten the one-at-a-time queue | pending |
+| C. Stop waiting for the copy; jump the code counter after a restore | Creates as fast as before stage 6 attempt 2 | Reopens the custom-name hole (a name lost in the last second can be registered by someone else) | pending |
+| D. Bigger server | — | The queue through Litestream is one at a time; CPU and disk were not full | No |
