@@ -4,13 +4,14 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 
 ## Position
 
-- **Current design: stage 5** (`url-shortener/stage-05`), deployed on `sfp-app`.
+- **Current design: stage 6 (built, not yet judged)** deployed on `sfp-app`: WAL mode, Litestream copying to Volume `sfp-app-copy`, `GET /health`, `system/recover.sh`. Stage 5 is `url-shortener/stage-05`.
 - **Passed:** E01–E06 (E06 with the accepted count failure below).
 - **Next event: E07, machine lost.** Under E02 load the server and its disk are deleted for good; service back on a new machine within 1 hour, at most the last 5 minutes of acknowledged links lost.
 - **E07 on stage 5: FAIL by construction, no run** (only copy of the data on the deleted disk; no backups, Volumes or snapshots; IPv4 `auto_delete=true`). Recorded in `stages/06-copy-off-the-machine.md`.
 - **Stage 6 chosen, not built:** Litestream (SQLite to WAL mode) copying to a Hetzner Volume in nbg1; `GET /health` with a tiny database read, watched by an external monitoring service (email + phone app); recovery started by a person, then one script (new server, install, attach Volume, restore, move IP, check links); IPv4 set to survive server deletion. Options and prices in the stage log.
 - **Details checked and decided** (stage log): keep `synchronous=EXTRA` under WAL (Litestream suggests NORMAL, which can undo a confirmed save after a power cut); Better Stack free plan for monitoring (personal project); Volume with deletion protection; recovered server needs `keep=true`.
-- **Next steps, each with the user's go-ahead:** build stage 6 (the user signs up for the monitoring service) → rehearse recovery once on a spare server → E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
+- **Part A (build) done 2026-10-05.** Better Stack account exists; its API token is `BETTER_STACK_TOKEN` in `.env`.
+- **Next steps, each with the user's go-ahead:** Part B: create the `/health` monitor through Better Stack's API (no certificate check, email alerts) → rehearse recovery once on a spare server → E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
 - Remaining after E07: E08 (10% of Bitly: 1,000 redirects/s, 20 creates/s, 100 M links, about 12 GB, will not fit in memory) and E09 (takedowns within 60 s; check `Cache-Control` too).
 
 ## Design so far
@@ -30,6 +31,7 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 
 - `sfp-app`: CX33, nbg1, label `keep=true`, about €0.0136/hour. Holds 10 M seeded links.
 - Load machine `sfp-load` (CPX42, nbg1) is created per session with `tools/cloud/create.sh sfp-load cpx42 load 3` and `tools/provision/provision.sh sfp-load load`, and deleted afterwards.
+- Volume `sfp-app-copy` (10 GB) runs all month: about €0.57/month from 2026-10-05, not in the server ledger.
 - Spend so far: about €2.03 of the €25 cap (`tools/cloud/spend.sh`; ledger in `results/spend-ledger.csv`). Hetzner credit is prepaid €25. Account limit: 20 shared + 8 dedicated vCPUs at once.
 - The watchdog (`tools/cloud/install-watchdog.sh`) deletes test machines past their lifetime while the Mac is awake.
 

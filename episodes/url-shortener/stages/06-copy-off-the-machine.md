@@ -1,6 +1,6 @@
 # Stage 06: Copy off the machine
 
-Status: **designing** (options chosen 2026-10-05; nothing built yet).
+Status: **built and deployed on `sfp-app`** (2026-10-05); monitoring, rehearsal and E07 runs to come.
 
 ## Trigger
 
@@ -62,7 +62,15 @@ Two separate choices: what carries the copy (the courier) and where it lives (th
 
 ## Change
 
-Pending.
+- `system/server.ts`: `journal_mode=WAL`, `wal_autocheckpoint=0` (Litestream folds the log), `busy_timeout=5000`, `synchronous=EXTRA` kept; `GET /health` reads one row and answers 200, or 503 if the database cannot be read. Checked before redirects; as a generated code, "health" would be link 15,783,592,667.
+- `system/litestream.yml`: Litestream 0.5.17 copies `links.db` to `/mnt/copy/links` (file replica) with its defaults (changes every second; it keeps recent change files 5 minutes and compacts them into larger ones, with a full snapshot daily).
+- `system/deploy.sh`: mounts the server's one attached Volume at `/mnt/copy`, installs Litestream (pinned, checksum checked), refuses to run Litestream without the Volume mounted, and runs `litestream restore -if-db-not-exists -if-replica-exists` before starting the app, so a new server restores and an existing one is untouched.
+- `system/reset-and-seed.sh`: also stops Litestream and removes the old copy, so the copy restarts with the new database.
+- `system/recover.sh`: refuses if the server still exists; creates it with the kept IPs (`sfp-app-ipv4`, `sfp-app-ipv6`), the Volume (`sfp-app-copy`) and `keep=true`; provisions; deploys (which restores); checks `/health` and 20 seeded links the load generator never clicks.
+- `tools/cloud/create.sh`: passes arguments after `--` to `hcloud server create`.
+- Hetzner: both Primary IPs renamed and set `auto_delete=false`; Volume `sfp-app-copy` (10 GB, nbg1, ext4) created with deletion protection and attached to `sfp-app`.
+
+**First check (2026-10-05, not a judged run):** Litestream's first full copy of the 1.2 GB database is a 169 MB file. A link was created, and 3 s later the copy was restored to a scratch file on the server: restore took 17 s, `integrity_check` ok, 10,001,561 links in both copy and live database, and the new link present.
 
 ## Rerun of every event so far
 
