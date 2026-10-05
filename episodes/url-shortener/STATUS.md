@@ -9,6 +9,8 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 - **Next event: E08, 10% of Bitly:** 1,000 redirects/s, 20 creates/s, 100 M links stored (about 12 GB, will not fit in memory). Not started; nothing designed for it.
 - After that: E09 (takedowns within 60 s; check `Cache-Control` too).
 
+**E08 expectation, stated before the first run (2026-10-05 22:10 UTC):** stage 6 probably passes, with creates closest to their limit. Reasoning: TLS handshakes at 1,000 new connections/s are about half of what this CX33 handled in E04/E05 (about 2,100/s at roughly 70% CPU). The 12 GB database does not fit in about 7 GB of page cache, but on the Zipf curve about three quarters of clicks go to the top 1 million links (at most about 1 million pages, about 4 GB), so most lookups stay in memory; the roughly 12% of clicks beyond the top 10 million read the disk, each blocking Node's single thread briefly. Creates are the unknown: 20/s, each waiting for a local disk sync and for Litestream's copy to the Volume (one sync at a time), against 2/s so far; create p99 could rise from about 60 ms towards a few hundred ms. Setup: `STORED=100000000` (Zipf over every stored link), 10 GB Volume unchanged.
+
 **Things E08 will touch (known, not designed for):** the Volume is 10 GB (Litestream's copy of 100 M real-looking links will be bigger; test data compresses unusually well); every create now waits for the copy (create p99 about 60 ms at 2 creates/s, unmeasured at 20/s); the fallback branch of `recover.sh` has not yet run for real.
 
 ## Design so far
