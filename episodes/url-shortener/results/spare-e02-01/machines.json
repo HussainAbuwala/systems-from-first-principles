@@ -1,0 +1,22 @@
+[
+{
+  "name": "sfp-load",
+  "role": "load",
+  "type": "cpx42",
+  "cores": 8,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 16,
+  "location": null
+}
+,{
+  "name": "sfp-spare",
+  "role": "system",
+  "type": "cx33",
+  "cores": 4,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 8,
+  "location": null
+}
+]
