@@ -10,3 +10,6 @@ sfp-load,cpx42,load,2026-10-04T17:25:53Z,2026-10-04T17:46:34Z,1,0.1114,e05-attem
 sfp-load,cpx42,load,2026-10-04T21:19:06Z,2026-10-04T23:03:54Z,2,0.2228,stage-04-tests-done
 sfp-load,cpx42,load,2026-10-04T23:13:54Z,2026-10-04T23:27:25Z,1,0.1114,e06-discussion
 sfp-load,cpx42,load,2026-10-04T23:44:40Z,2026-10-05T00:59:47Z,2,0.2228,stage-05-tests-done
+sfp-rehearsal,cx23,system,2026-10-05T15:53:35Z,2026-10-05T15:59:54Z,1,0.0088,E07 rehearsal-e07-01: machine lost
+sfp-rehearsal,cx23,system,2026-10-05T16:01:37Z,2026-10-05T16:12:28Z,1,0.0088,rehearsal done
+sfp-rehearsal-load,cx23,load,2026-10-05T15:56:10Z,2026-10-05T16:12:46Z,1,0.0088,rehearsal done

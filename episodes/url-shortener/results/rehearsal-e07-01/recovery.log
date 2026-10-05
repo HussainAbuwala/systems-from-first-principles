@@ -1,0 +1,27 @@
+[2 s] creating sfp-rehearsal (cx23) with its kept addresses and the copy's Volume
+Waiting for create_server (server: 168851980, image: 161547269) ...
+Waiting for attach_volume (volume: 107046035, server: 168851980) ...
+Waiting for start_server (server: 168851980) ...
+Waiting for attach_volume (volume: 107046035, server: 168851980) ... done
+Waiting for create_server (server: 168851980, image: 161547269) ... done
+Waiting for start_server (server: 168851980) ... done
+Server 168851980 created
+[44 s] installing base software
+v24.21.0
+[54 s] installing the shortener and restoring the database from the copy
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+restore step: 1 s
+active
+active
+active
+[107 s] checking
+[116 s] done: /health and 20 seeded links answer correctly on https://2.28.192.194

@@ -1,0 +1,22 @@
+[
+{
+  "name": "sfp-rehearsal-load",
+  "role": "load",
+  "type": "cx23",
+  "cores": 2,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 4,
+  "location": null
+}
+,{
+  "name": "sfp-rehearsal",
+  "role": "system",
+  "type": "cx23",
+  "cores": 2,
+  "cpu_type": "shared",
+  "architecture": "x86",
+  "memory_gb": 4,
+  "location": null
+}
+]

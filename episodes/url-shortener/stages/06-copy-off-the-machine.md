@@ -1,6 +1,6 @@
 # Stage 06: Copy off the machine
 
-Status: **built and deployed on `sfp-app`, monitored** (2026-10-05); rehearsal and E07 runs to come.
+Status: **built and deployed on `sfp-app`, monitored, rehearsed** (2026-10-05); E07 runs to come.
 
 ## Trigger
 
@@ -72,6 +72,8 @@ Two separate choices: what carries the copy (the courier) and where it lives (th
 - Hetzner: both Primary IPs renamed and set `auto_delete=false`; Volume `sfp-app-copy` (10 GB, nbg1, ext4) created with deletion protection and attached to `sfp-app`.
 
 **First check (2026-10-05, not a judged run):** Litestream's first full copy of the 1.2 GB database is a 169 MB file. A link was created, and 3 s later the copy was restored to a scratch file on the server: restore took 17 s, `integrity_check` ok, 10,001,561 links in both copy and live database, and the new link present. **Caveat:** the seeded links are almost identical (same URL text apart from the story number, same creation time), so they compress far better than real links would; a real database of this size would make a larger copy and restore more slowly. Not measured.
+
+**Rehearsal (`results/rehearsal-e07-01/`, not a judged run):** the whole E07 path on a spare CX23 with 10,000 links: deleted at 150 s, Better Stack incident after 98 s, `recover.sh` 116 s, links back 206 s after the loss, none of 137 confirmed links lost. Lessons: detection waits out Better Stack's 30 s request timeout (a deleted server does not answer at all); real runs must lose the machine more than 5 minutes into link creation so the 5-minute rule is exercised.
 
 ## Rerun of every event so far
 

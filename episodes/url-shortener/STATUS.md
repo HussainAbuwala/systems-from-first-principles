@@ -12,7 +12,7 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 - **Details checked and decided** (stage log): keep `synchronous=EXTRA` under WAL (Litestream suggests NORMAL, which can undo a confirmed save after a power cut); Better Stack free plan for monitoring (personal project); Volume with deletion protection; recovered server needs `keep=true`.
 - **Part A (build) done 2026-10-05.** Better Stack account exists; its API token is `BETTER_STACK_TOKEN` in `.env`.
 - **Part B (monitoring) done 2026-10-05:** Better Stack monitor `5022545` checks `/health` every 30 s; incidents readable via `/api/v3/incidents`. Expect alert emails whenever a test stops the app (resets, power cuts, E07).
-- **Next steps, each with the user's go-ahead:** rehearse recovery once on a spare server → E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
+- **Next steps, each with the user's go-ahead:** E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
 - Remaining after E07: E08 (10% of Bitly: 1,000 redirects/s, 20 creates/s, 100 M links, about 12 GB, will not fit in memory) and E09 (takedowns within 60 s; check `Cache-Control` too).
 
 ## Design so far
