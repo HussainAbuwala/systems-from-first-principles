@@ -1,0 +1,11 @@
+{
+  "kind": "machine lost",
+  "lost_unix": 1791224861,
+  "incident_id": "1027479738",
+  "incident_cause": "Timeout (no headers received)",
+  "incident_started_unix": 1791224944.3,
+  "alert_seen_unix": 1791224948.0,
+  "recovery_started_unix": 1791224947,
+  "recovery_finished_unix": 1791225072,
+  "recovery_exit_code": 0
+}
