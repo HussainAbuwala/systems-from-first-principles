@@ -17,3 +17,4 @@ tools/cloud/watchdog.log
 # Raw per-request load output: large, kept locally (see docs/MEASUREMENT.md)
 episodes/*/results/*/k6.csv.gz
 episodes/*/results/*/k6-output.txt.gz
+__pycache__/
