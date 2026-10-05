@@ -4,20 +4,12 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 
 ## Position
 
-- **Current design: stage 6 (built, not yet judged)** deployed on `sfp-app`: WAL mode, Litestream copying to Volume `sfp-app-copy`, `GET /health`, `system/recover.sh`. Stage 5 is `url-shortener/stage-05`.
-- **Passed:** E01–E06 (E06 with the accepted count failure below).
-- **Next event: E07, machine lost.** Under E02 load the server and its disk are deleted for good; service back on a new machine within 1 hour, at most the last 5 minutes of acknowledged links lost.
-- **E07 on stage 5: FAIL by construction, no run** (only copy of the data on the deleted disk; no backups, Volumes or snapshots; IPv4 `auto_delete=true`). Recorded in `stages/06-copy-off-the-machine.md`.
-- **Stage 6 chosen, not built:** Litestream (SQLite to WAL mode) copying to a Hetzner Volume in nbg1; `GET /health` with a tiny database read, watched by an external monitoring service (email + phone app); recovery started by a person, then one script (new server, install, attach Volume, restore, move IP, check links); IPv4 set to survive server deletion. Options and prices in the stage log.
-- **Details checked and decided** (stage log): keep `synchronous=EXTRA` under WAL (Litestream suggests NORMAL, which can undo a confirmed save after a power cut); Better Stack free plan for monitoring (personal project); Volume with deletion protection; recovered server needs `keep=true`.
-- **Part A (build) done 2026-10-05.** Better Stack account exists; its API token is `BETTER_STACK_TOKEN` in `.env`.
-- **Part B (monitoring) done 2026-10-05:** Better Stack monitor `5022545` checks `/health` every 30 s; incidents readable via `/api/v3/incidents`. Expect alert emails whenever a test stops the app (resets, power cuts, E07).
-- **Part C done 2026-10-05:** E07 tooling (`MACHINE_LOST_AFTER`, `MONITOR_ID`, `RECOVER_TYPE` in `run-event.sh`; `wait-for-alert.py`; judge rules) and a passing rehearsal (`results/rehearsal-e07-01/NOTES.md`). For real runs: lose the machine more than 5 min into the run; decide the Better Stack request timeout and whether click counts are checked through E07.
-- **E07 run 1 (`e07-01`) FAILED on stage 6 (2026-10-05):** recovery fine (back 191 s after the delete command), but the link confirmed in the old server's last second was not in the copy and its code was reissued to a new link after the restore (wrong page). Runs 2–3 not started. Click counts short as expected (user agreed to extend the accepted failure). Judge corrected (loss = old server's last answer; wrong page never allowed). `sfp-app` is now the rebuilt server (id 168867038). **Waiting on the user's choice of fix for reissued codes.**
-- **Attempt 2 (2026-10-05):** a new link or name is confirmed only once Litestream has copied it to the Volume (`litestream sync` with wait over its control socket). Create p99 rose to about 45–63 ms; redirects unchanged. `e07-02`, `e07-03`: every E07 rule passes (counts short, accepted). **`e07-04`: automated recovery failed — Hetzner had no CX33 anywhere in Europe (`resource_unavailable`)**; recovered by hand onto a **CPX32** (4 vCPU/8 GB AMD, €35.49/month vs €8.49) 15.5 min after the loss; no confirmed link lost. **`sfp-app` currently runs on that CPX32** — about €0.05/hour; decide whether to keep it or move back when CX33 returns. No load machine running. **Waiting on the user:** add a type fallback to `recover.sh` (attempt 3) and rerun E07 × 3?
-- **Attempt 3 (2026-10-05, user chose option A):** `recover.sh` asks for CX33 every minute for `RETRY_MINUTES` (20), then falls back to `FALLBACK_TYPES` (cpx32 cx43 cpx42) and says so. Tested once on a throwaway server: Hetzner's type list still said CX33 unavailable, but the create succeeded, so **the fallback branch has not yet run for real**. **`sfp-app` moved back to a CX33** at 19:22–19:25 UTC by deleting the CPX32 and running `recover.sh` (same IP, database restored). User's rule: tests run only on the stage's own type (CX33).
-- **Next steps, each with the user's go-ahead:** E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
-- Remaining after E07: E08 (10% of Bitly: 1,000 redirects/s, 20 creates/s, 100 M links, about 12 GB, will not fit in memory) and E09 (takedowns within 60 s; check `Cache-Control` too).
+- **Current design: stage 6** (`url-shortener/stage-06`), deployed on `sfp-app` (CX33, rebuilt by `recover.sh` several times; same IP 2.28.198.178).
+- **Passed:** E01–E07 (E06 and E07 with the accepted count failure below). Stage log: `stages/06-copy-off-the-machine.md`.
+- **Next event: E08, 10% of Bitly:** 1,000 redirects/s, 20 creates/s, 100 M links stored (about 12 GB, will not fit in memory). Not started; nothing designed for it.
+- After that: E09 (takedowns within 60 s; check `Cache-Control` too).
+
+**Things E08 will touch (known, not designed for):** the Volume is 10 GB (Litestream's copy of 100 M real-looking links will be bigger; test data compresses unusually well); every create now waits for the copy (create p99 about 60 ms at 2 creates/s, unmeasured at 20/s); the fallback branch of `recover.sh` has not yet run for real.
 
 ## Design so far
 
@@ -29,21 +21,24 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 | 3 | Same software on a CX33 (4 vCPU, AMD EPYC as assigned), moved to nbg1 | E04 ran out of CPU |
 | 4 | Click counts tallied in memory per (link, day), saved once a second; `Cache-Control: no-store` on redirects; `GET /links/<code>/stats` (attempt 1, saving every click, collapsed at about 166 saves/s) | E05 |
 | 5 | `PRAGMA synchronous = EXTRA` | E06: SQLite's default undid the last confirmed save after a power cut, and the counting-up code was reissued |
+| 6 | WAL mode; Litestream copies to a protected 10 GB Volume; a new link or name is confirmed only once it is in the copy (attempt 1, copying in the background, reissued a lost link's code); `GET /health` watched by Better Stack (free, email); kept, protected Primary IPs; `system/recover.sh` rebuilds on a new server, retrying CX33 for 20 min before falling back (attempt 2 stopped when Hetzner had no CX33) | E07 (machine lost) |
 
-**Accepted failure (won't fix):** a sudden power cut can lose up to about one second of click counts; E06's per-link 1% rule (exact for links under 100 clicks) stays recorded as FAIL. Exact counts would need every redirect to wait for the disk.
+**Accepted failure (won't fix):** a sudden power cut or losing the machine can lose up to about one second of click counts; the per-link 1% rule (exact for links under 100 clicks) stays recorded as FAIL in E06 and E07. Exact counts would need every redirect to wait for the disk (or the copy).
 
 ## Machines and money
 
-- `sfp-app`: CX33, nbg1, label `keep=true`, about €0.0136/hour. Holds 10 M seeded links.
+- `sfp-app`: CX33, nbg1, label `keep=true`, about €0.0136/hour. Holds 10 M seeded links. Kept resources: Primary IPs `sfp-app-ipv4`/`-ipv6` (`auto_delete=false`, deletion-protected), Volume `sfp-app-copy` (deletion-protected). Better Stack monitor `5022545` (token `BETTER_STACK_TOKEN` in `.env`) emails on every outage, including test resets.
+- Stage 6 runs on CX33 only (user's rule): if a recovery falls back to another type, move back with `delete.sh sfp-app` + `recover.sh` before testing.
 - Load machine `sfp-load` (CPX42, nbg1) is created per session with `tools/cloud/create.sh sfp-load cpx42 load 3` and `tools/provision/provision.sh sfp-load load`, and deleted afterwards.
 - Volume `sfp-app-copy` (10 GB) runs all month: about €0.57/month from 2026-10-05, not in the server ledger.
-- Spend so far: about €2.03 of the €25 cap (`tools/cloud/spend.sh`; ledger in `results/spend-ledger.csv`). Hetzner credit is prepaid €25. Account limit: 20 shared + 8 dedicated vCPUs at once.
+- Spend so far: about €3.00 of the €25 cap (2026-10-05 21:20 UTC) (`tools/cloud/spend.sh`; ledger in `results/spend-ledger.csv`). Hetzner credit is prepaid €25. Account limit: 20 shared + 8 dedicated vCPUs at once.
 - The watchdog (`tools/cloud/install-watchdog.sh`) deletes test machines past their lifetime while the Mac is awake.
 
 ## How a run works
 
 - Seed: `system/reset-and-seed.sh sfp-app 10000000 results/seed-10m/sample.csv` (or `1000 … seed-1k … 1000`).
-- Run: `load/run-event.sh EVENT RUN_ID sfp-load sfp-app SAMPLE k6-args…`, with `CHECK_COUNTS=1` from E05 on, `CONTENTION_ROUNDS=1000` for E03, `POWERCUT_AFTER=150 POWERCUT_OFF=30` for E06.
+- Run: `load/run-event.sh EVENT RUN_ID sfp-load sfp-app SAMPLE k6-args…`, with `CHECK_COUNTS=1` from E05 on, `CONTENTION_ROUNDS=1000` for E03, `POWERCUT_AFTER=150 POWERCUT_OFF=30` for E06, `MACHINE_LOST_AFTER=420 MONITOR_ID=5022545 RECOVER_TYPE=cx33` for E07 (with `-e DURATION=18m`).
+- After a reseed, wait for Litestream's "snapshot complete" before starting a run.
 - Typical arguments: E01 `-e REDIRECTS=1 -e CREATES=0.02 -e DURATION=6m`; E02 `-e REDIRECTS=100 -e CREATES=2 -e DURATION=6m`; E04/E05 add `-e DURATION=13m -e VIRAL_RATE=2000 -e VIRAL_RAMP=60 -e VIRAL_HOLD=600 -e WARMUP=60`.
 - Each run writes `results/<run-id>/` (judge verdict, windows, metrics, NOTES.md). Combine repeats with `load/combine.py EVENT STAGE RUN_IDS…`.
 - Keep each background job under about 25 minutes (the session stops longer ones).
@@ -53,4 +48,6 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 - Repeats (`docs/MEASUREMENT.md`): a new event gets 3 runs unless the first is far past a limit; regression checks get 1 unless within 25% of a limit; correctness failures count after one run.
 - Accepted failures (`docs/FORMAT.md`): allowed only in the open; losing a confirmed link or giving a name two owners can never be accepted.
 - Every design change gets a stage log in `stages/`, a tag, a measured trigger, and regression runs of earlier events.
-- Mistakes in the tooling are recorded in the run notes (e.g. `e05-02` INVALID: the link checker's own clicks were counted).
+- Mistakes in the tooling are recorded in the run notes (e.g. `e05-02` INVALID: the link checker's own clicks were counted; `e07-01`/`e07-04` judge corrections).
+- Machine type is part of the design: no tests on a different type unless a failure forces the change.
+- E07 on stage 6 used one new run plus two from attempt 2 (user's decision to save time; the change only affected an unused path).

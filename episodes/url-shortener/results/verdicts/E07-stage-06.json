@@ -1,0 +1,83 @@
+{
+  "event": "E07",
+  "stage": "stage-06",
+  "verdict": "FAIL",
+  "runs": {
+    "e07-02": "FAIL",
+    "e07-03": "FAIL",
+    "e07-05": "FAIL"
+  },
+  "reasons": {
+    "e07-02": [
+      "1 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+    ],
+    "e07-03": [
+      "3 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+    ],
+    "e07-05": [
+      "2 of 1101 links' click counts more than 1% off, 60 s after the load stopped"
+    ]
+  },
+  "spread": {
+    "redirect_p50_ms": {
+      "best": 6.1,
+      "median": 6.6,
+      "worst": 6.7,
+      "runs": [
+        6.6,
+        6.1,
+        6.7
+      ]
+    },
+    "redirect_p99_ms": {
+      "best": 9.3,
+      "median": 10.3,
+      "worst": 10.4,
+      "runs": [
+        10.4,
+        9.3,
+        10.3
+      ]
+    },
+    "create_p99_ms": {
+      "best": 60.4,
+      "median": 62.6,
+      "worst": 66.8,
+      "runs": [
+        60.4,
+        62.6,
+        66.8
+      ]
+    },
+    "error_pct": {
+      "best": 0.0,
+      "median": 0.0,
+      "worst": 0.0,
+      "runs": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "wrong_redirects": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    },
+    "checker_problems": {
+      "best": 0,
+      "median": 0,
+      "worst": 0,
+      "runs": [
+        0,
+        0,
+        0
+      ]
+    }
+  }
+}
