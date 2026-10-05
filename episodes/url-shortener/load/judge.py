@@ -34,8 +34,9 @@ with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
     rows = [r for r in csv.DictReader(f) if r["metric_name"] in ("visit_duration", "http_reqs", "http_req_failed", "wrong_redirect", "name_round")]
 rounds = [r for r in rows if r["metric_name"] == "name_round"]
 
-# E06: a failure during the run. Recovery = first successful redirect after
-# the power cut. Latency and error rules apply outside [cut, recovery].
+# E06 (power cut) and E07 (machine lost): a failure during the run. Recovery =
+# first successful redirect after the failure. Latency and error rules apply
+# outside [failure, recovery].
 failure = None
 failure_path = os.path.join(out, "failure.json")
 if os.path.exists(failure_path):
@@ -46,8 +47,9 @@ if os.path.exists(failure_path):
     with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
         ok = sorted(int(float(r["timestamp"])) for r in csv.DictReader(f)
                     if r["metric_name"] == "http_reqs" and r["status"] == "301")
-    gaps = [(b - a, a, b) for a, b in zip(ok, ok[1:]) if abs(a - failure["poweroff_unix"]) <= 60]
-    _, last_before, first_after = max(gaps) if gaps else (None, failure["poweroff_unix"], None)
+    cut = failure["poweroff_unix"] if failure["kind"] == "power cut" else failure["lost_unix"]
+    gaps = [(b - a, a, b) for a, b in zip(ok, ok[1:]) if abs(a - cut) <= 60]
+    _, last_before, first_after = max(gaps) if gaps else (None, cut, None)
     failure["last_redirect_before_unix"] = last_before
     failure["first_redirect_after_unix"] = first_after
     failure["recovery_seconds"] = first_after - last_before if first_after else None
@@ -126,11 +128,44 @@ if "name_rounds" in measures:
         failures.append(f"only {measures['name_rounds']} of {expected_rounds} contention rounds completed")
     if measures["rounds_exactly_one_winner"] != measures["name_rounds"]:
         failures.append(f"only {measures['rounds_exactly_one_winner']} of {measures['name_rounds']} rounds had exactly one winner and {contenders - 1} 'taken'")
-if failure is not None:
+if failure is not None and failure["kind"] == "power cut":
     measures["power_cut_recovery_seconds"] = failure["recovery_seconds"]
     measures["power_off_seconds"] = failure["poweron_unix"] - failure["poweroff_unix"]
     if failure["recovery_seconds"] is None or failure["recovery_seconds"] > 300:
         failures.append(f"redirects not working again within 5 minutes of the power cut (recovery: {failure['recovery_seconds']} s)")
+# E07: back within 1 hour of the loss; at most the last 5 minutes of
+# acknowledged links lost. A checked link that no longer resolves counts as
+# lost; it is allowed only if it was acknowledged within 5 minutes of the loss.
+lost_links_judged = False
+if failure is not None and failure["kind"] == "machine lost":
+    lost = failure["lost_unix"]
+    first_after = failure["first_redirect_after_unix"]
+    measures["back_after_loss_seconds"] = first_after - lost if first_after else None
+    if "incident_started_unix" in failure:
+        measures["detection_seconds"] = round(failure["incident_started_unix"] - lost)
+        measures["alert_seen_to_recovery_start_seconds"] = round(failure["recovery_started_unix"] - failure["alert_seen_unix"])
+    measures["recovery_script_seconds"] = failure["recovery_finished_unix"] - failure["recovery_started_unix"]
+    measures["recovery_exit_code"] = failure["recovery_exit_code"]
+    if measures["back_after_loss_seconds"] is None or measures["back_after_loss_seconds"] > 3600:
+        failures.append(f"service not back within 1 hour of the loss (back after: {measures['back_after_loss_seconds']} s)")
+    if "incident_started_unix" not in failure:
+        failures.append("Better Stack raised no alert")
+    acknowledged = {}
+    with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
+        for r in csv.DictReader(f):
+            if r["metric_name"] == "created_link":
+                acknowledged[tags(r)["code"]] = float(r["timestamp"])
+    measures["links_acknowledged_before_loss"] = sum(1 for t in acknowledged.values() if t < lost)
+    measures["links_acknowledged_in_last_5_min"] = sum(1 for t in acknowledged.values() if lost - 300 <= t < lost)
+    if check is not None:
+        missing = check.get("problem_codes", [])
+        allowed = [c for c in missing if c in acknowledged and lost - 300 <= acknowledged[c] < lost]
+        forbidden = [c for c in missing if c not in allowed]
+        measures["links_lost_within_last_5_min"] = len(allowed)
+        measures["links_lost_older_or_other_problems"] = len(forbidden)
+        if forbidden:
+            failures.append(f"{len(forbidden)} checked links lost or wrong outside the allowed last 5 minutes")
+        lost_links_judged = True
 counts_path = os.path.join(out, "counts.json")
 if os.path.exists(counts_path):
     counts = json.load(open(counts_path))
@@ -148,7 +183,7 @@ if event in ("E05",) and check is not None:
         failures.append(f"{reusable} checked redirects let browsers reuse them without asking the server")
 if check is None:
     failures.append("link checker did not run")
-elif check["problems"]:
+elif check["problems"] and not lost_links_judged:
     failures.append(f"link checker found {check['problems']} problems")
 
 if invalid:

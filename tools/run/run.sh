@@ -60,9 +60,11 @@ set -e
 ended=$(date -u +%FT%TZ)
 
 for m in "${machines[@]}"; do
-  ip="$(sfp_ip "$m")"
-  stop_recorder "$ip"
-  scp_from "$ip" /opt/sfp/metrics.csv "$out/metrics-$m.csv"
+  # A machine lost during the run (E07) may be gone, or replaced by one that
+  # recorded only part of the run; keep whatever exists.
+  ip="$(sfp_ip "$m" 2>/dev/null)" || { echo "no resource record from $m: server not found" >&2; continue; }
+  stop_recorder "$ip" || true
+  scp_from "$ip" /opt/sfp/metrics.csv "$out/metrics-$m.csv" || echo "no resource record from $m" >&2
 done
 scp_from "$load_ip" /opt/sfp/k6.csv.gz "$out/k6.csv.gz"
 scp_from "$load_ip" /opt/sfp/summary.json "$out/k6-summary.json" || true

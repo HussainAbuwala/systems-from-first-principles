@@ -29,10 +29,36 @@ if [[ -n "${POWERCUT_AFTER:-}" ]]; then
     printf '{"kind": "power cut", "poweroff_unix": %s, "poweron_unix": %s}\n' "$off" "$on" > "$failure_log"
   ) &
 fi
+
+# E07: delete the system server MACHINE_LOST_AFTER seconds from now (its disk
+# goes with it), wait for Better Stack (monitor MONITOR_ID) to raise its alert,
+# as a person would from the email, then run the recovery script. The person's
+# reaction time is not simulated: recovery starts as soon as the alert is seen.
+recovery_log=""
+if [[ -n "${MACHINE_LOST_AFTER:-}" ]]; then
+  : "${MONITOR_ID:?MONITOR_ID (the Better Stack monitor of $system) is required for MACHINE_LOST_AFTER}"
+  failure_log="$(mktemp)" recovery_log="$(mktemp)"
+  (
+    sleep "$MACHINE_LOST_AFTER"
+    lost=$(date +%s); "$SFP_ROOT/tools/cloud/delete.sh" "$system" "E07 $run_id: machine lost" >/dev/null
+    alert="$(python3 "$here/wait-for-alert.py" "$MONITOR_ID" "$lost")" || alert='{}'
+    started=$(date +%s)
+    recover_exit=0
+    "$here/../system/recover.sh" "$system" "$sample" "${RECOVER_TYPE:-cx33}" > "$recovery_log" 2>&1 || recover_exit=$?
+    finished=$(date +%s)
+    # The recorder ran on the lost machine; record the new one for the rest of the run.
+    sfp_ssh "$(sfp_ip "$system")" "nohup python3 /opt/sfp/recorder.py /opt/sfp/metrics.csv node nginx k6 >/dev/null 2>&1 &" || true
+    jq -n --argjson lost "$lost" --argjson alert "$alert" --argjson started "$started" \
+      --argjson finished "$finished" --argjson code "$recover_exit" \
+      '{kind: "machine lost", lost_unix: $lost} + $alert +
+       {recovery_started_unix: $started, recovery_finished_unix: $finished, recovery_exit_code: $code}' > "$failure_log"
+  ) &
+fi
 "$SFP_ROOT/tools/run/run.sh" "$run_id" "$load" "$system" "$here/level.js" \
   -e "TARGET=https://$system_ip" -e SAMPLE=/opt/sfp/sample.csv -e "RUN_ID=$run_id" "$@"
 cp "$sample" "$out/sample.csv"
 if [[ -n "$failure_log" ]]; then wait; cp "$failure_log" "$out/failure.json"; fi
+if [[ -n "$recovery_log" ]]; then cp "$recovery_log" "$out/recovery.log"; fi
 
 # E05 onward: compare the server's click counts with what the load generator sent.
 # This must run before the link checker below: every link it opens is a real
