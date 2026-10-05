@@ -33,18 +33,20 @@
 
 | Event | Run ID | Redirect p99 | Errors | Correct | Pass |
 | --- | --- | ---: | ---: | --- | --- |
-| E01 |  |  |  |  |  |
-| E02 |  |  |  |  |  |
-| E03 |  |  |  |  |  |
-| E04 | (covered by E05) |  |  |  |  |
-| E05 |  |  |  |  |  |
+| E01 | e01-07 | 15.1 ms | 0% | yes; counts exact | PASS |
+| E02 | e02-07 | 34.2 ms (create p99 123.8 ms) | 0% | yes; counts exact | PASS |
+| E03 | e03-13 | 29.9 ms (name p99 52.5 ms) | 0% | every round exactly one winner; counts exact | PASS |
+| E04 | (covered by E05) | 14.2 ms | 0% | yes | PASS |
+| E05 | e05-06 | 14.2 ms | 0% | counts exact (1,356,002 = 1,356,002) | PASS |
 | E06 | e06-02, e06-03, e06-04 | 13.4 / 16.1 / 13.8 ms | 0% | no confirmed link lost; recovery 60–67 s | **PASS** except counts (accepted failure) |
+
+**Did `EXTRA` slow things down?** Not steadily. Most of every regression run matches stage 4. E02 (`e02-07`) had four short disk stalls (10-second windows where CPU waiting for disk reached 4–8% and everything took 100–150 ms), which set its p99s; E03 on stage 5 (`e03-13`), which saves more, had none, and stage 4's E03 (`e03-12`) had one. Whether the extra directory sync makes stalls more likely or the shared disk had a bad few minutes is **not established** from single runs; every run passes with a wide margin.
 
 ## Scoreboard row
 
 | Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 05 | Stage 4 with durable saves (`synchronous=EXTRA`) |  |  |  |  | €8.49 + €0.50 IPv4 |  |
+| 05 | Stage 4 with durable saves (`synchronous=EXTRA`) | E05 (about 2,100 new connections/s with counting) and E06 (power cut, recovery 60–67 s) | 14.2 ms (E05) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; next is E07 (machine lost). Accepted: a power cut can lose up to about 1 s of click counts |
 
 ## Interview line
 
