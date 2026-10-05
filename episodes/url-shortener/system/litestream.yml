@@ -1,0 +1,8 @@
+# Stage 6: copy every change of the database to the Volume mounted at
+# /mnt/copy (E07). Litestream's defaults otherwise: changes sent every second,
+# a full snapshot daily, history kept for a day.
+dbs:
+  - path: /var/lib/shortener/links.db
+    replica:
+      type: file
+      path: /mnt/copy/links

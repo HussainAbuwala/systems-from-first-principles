@@ -7,8 +7,10 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 - **Current design: stage 5** (`url-shortener/stage-05`), deployed on `sfp-app`.
 - **Passed:** E01–E06 (E06 with the accepted count failure below).
 - **Next event: E07, machine lost.** Under E02 load the server and its disk are deleted for good; service back on a new machine within 1 hour, at most the last 5 minutes of acknowledged links lost.
-- **Expected:** stage 5 fails E07 for certain (the only copy of the data is on that disk), so no load run is needed to show it; record that and design stage 6 (a copy of the data elsewhere).
-- **Stage 6 options to research before deciding:** Hetzner daily backups (fails the 5-minute rule), copying the SQLite file every few minutes to separate storage, streaming every change (Litestream; needs WAL mode), a live replica. Check current Hetzner Object Storage / Storage Box prices first.
+- **E07 on stage 5: FAIL by construction, no run** (only copy of the data on the deleted disk; no backups, Volumes or snapshots; IPv4 `auto_delete=true`). Recorded in `stages/06-copy-off-the-machine.md`.
+- **Stage 6 chosen, not built:** Litestream (SQLite to WAL mode) copying to a Hetzner Volume in nbg1; `GET /health` with a tiny database read, watched by an external monitoring service (email + phone app); recovery started by a person, then one script (new server, install, attach Volume, restore, move IP, check links); IPv4 set to survive server deletion. Options and prices in the stage log.
+- **Details checked and decided** (stage log): keep `synchronous=EXTRA` under WAL (Litestream suggests NORMAL, which can undo a confirmed save after a power cut); Better Stack free plan for monitoring (personal project); Volume with deletion protection; recovered server needs `keep=true`.
+- **Next steps, each with the user's go-ahead:** build stage 6 (the user signs up for the monitoring service) → rehearse recovery once on a spare server → E07 × 3 → rerun E01–E06 (E06 carefully: WAL changes the durability path) → write-up.
 - Remaining after E07: E08 (10% of Bitly: 1,000 redirects/s, 20 creates/s, 100 M links, about 12 GB, will not fit in memory) and E09 (takedowns within 60 s; check `Cache-Control` too).
 
 ## Design so far

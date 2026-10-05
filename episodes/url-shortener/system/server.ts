@@ -1,3 +1,5 @@
+// Stage 6: stage 5 in WAL mode, copied off the machine by Litestream (E07),
+// plus GET /health for an outside monitor.
 // Stage 5: stage 4 with synchronous=EXTRA (E06), so a save confirmed just
 // before a power cut is not rolled back on reboot.
 // Stage 4: stage 3 plus click counts (E05). Every redirect adds one to an
@@ -18,9 +20,16 @@ const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://localhost";
 const MAX_URL_LENGTH = 2048;
 
 const db = new DatabaseSync(DB_PATH);
-// SQLite's default (FULL) does not sync the deletion of the rollback journal,
-// so the last transaction before a power cut can be rolled back on reboot
-// (seen in e06-01). EXTRA syncs it before a save returns.
+// WAL mode: Litestream copies each change from the write-ahead log (E07).
+db.exec("PRAGMA journal_mode = WAL");
+// Litestream folds the log into the database itself; if we did it too, it
+// could miss a change.
+db.exec("PRAGMA wal_autocheckpoint = 0");
+// Litestream briefly locks the database while folding; wait instead of failing.
+db.exec("PRAGMA busy_timeout = 5000");
+// EXTRA (same as FULL in WAL mode) syncs every save before it returns, so a
+// confirmed save survives a power cut (E06). Litestream's tips suggest NORMAL,
+// which SQLite documents as able to roll back a confirmed save; we keep EXTRA.
 db.exec("PRAGMA synchronous = EXTRA");
 db.exec(`CREATE TABLE IF NOT EXISTS links (
   id         INTEGER PRIMARY KEY,
@@ -76,6 +85,7 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
     process.exit(0);
   });
 }
+const healthRead = db.prepare("SELECT 1 FROM links LIMIT 1");
 const readClicks = db.prepare("SELECT day, count FROM clicks WHERE code = ? ORDER BY day");
 const findName = db.prepare("SELECT url FROM names WHERE name = ?");
 
@@ -166,6 +176,16 @@ function redirect(code: string, res: ServerResponse) {
   send(res, 301, "", { location: row.url, "cache-control": "no-store" });
 }
 
+// For the outside monitor: answers only if the database can be read.
+function health(res: ServerResponse) {
+  try {
+    healthRead.get();
+  } catch {
+    return send(res, 503, "Database unreadable\n", { "cache-control": "no-store" });
+  }
+  send(res, 200, "OK\n", { "cache-control": "no-store" });
+}
+
 function stats(code: string, res: ServerResponse) {
   const days: Record<string, number> = {};
   for (const r of readClicks.all(code) as { day: string; count: number }[]) days[r.day] = r.count;
@@ -178,6 +198,10 @@ const server = createServer(
     const path = (req.url ?? "/").split("?")[0];
     if (req.method === "POST" && path === "/links") {
       createLink(req, res).catch(() => send(res, 500, "Internal error\n"));
+    } else if (req.method === "GET" && path === "/health") {
+      // Checked before redirects. As a generated code, "health" would be link
+      // number 15 billion or so, far beyond anything this episode stores.
+      health(res);
     } else if (req.method === "GET" && /^\/links\/[A-Za-z0-9-]+\/stats$/.test(path)) {
       stats(path.split("/")[2], res);
     } else if (req.method === "GET" && path.length > 1) {
@@ -189,6 +213,9 @@ const server = createServer(
 );
 
 const syncMode = (db.prepare("PRAGMA synchronous").get() as { synchronous: number }).synchronous;
+const journalMode = (db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode;
 server.listen(PORT, HOST, () =>
-  console.log(`shortener stage 5 listening on ${HOST}:${PORT}, database ${DB_PATH}, synchronous=${syncMode} (3 = EXTRA)`),
+  console.log(
+    `shortener stage 6 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
+  ),
 );

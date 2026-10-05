@@ -1,13 +1,18 @@
 #!/usr/bin/env bash
 # Create a labelled server, wait until SSH answers, print its IPv4 address.
 #
-#   create.sh NAME TYPE ROLE HOURS [USER_DATA_FILE]
+#   create.sh NAME TYPE ROLE HOURS [USER_DATA_FILE] [-- HCLOUD_ARGS...]
 #
 # HOURS is the lifetime: the watchdog deletes the server after it. Use "keep"
-# for a server that must stay up (stage 0 while friends use it).
+# for a server that must stay up (stage 0 while friends use it). Anything after
+# "--" goes to `hcloud server create` (e.g. --primary-ipv4, --volume).
 source "$(dirname "$0")/lib.sh"
 
-name="$1" type="$2" role="$3" hours="$4" user_data="${5:-}"
+name="$1" type="$2" role="$3" hours="$4"
+shift 4
+user_data=""
+if [[ $# -gt 0 && "$1" != "--" ]]; then user_data="$1"; shift; fi
+[[ "${1:-}" == "--" ]] && shift
 
 labels=(--label "$SFP_SELECTOR" --label "episode=$SFP_EPISODE" --label "role=$role")
 if [[ "$hours" == "keep" ]]; then
@@ -16,7 +21,7 @@ else
   labels+=(--label "delete-after=$(( $(date +%s) + hours * 3600 ))")
 fi
 
-extra=()
+extra=("$@")
 [[ -n "$user_data" ]] && extra+=(--user-data-from-file "$user_data")
 
 hcloud server create --name "$name" --type "$type" --image "$SFP_IMAGE" \
