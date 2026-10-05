@@ -23,3 +23,4 @@ sfp-app,cx33,system,2026-10-05T18:29:11Z,2026-10-05T18:49:31Z,1,0.0136,E07 e07-0
 sfp-load,cpx42,load,2026-10-05T17:47:22Z,2026-10-05T19:07:53Z,2,0.2228,e07-04 recovery failed on capacity; waiting on decision
 sfp-fbtest,cx33,system,2026-10-05T19:20:32Z,2026-10-05T19:22:28Z,1,0.0136,fallback test (got cx33 directly)
 sfp-app,cpx32,system,2026-10-05T19:03:02Z,2026-10-05T19:22:45Z,1,0.0569,move back from emergency cpx32 to the stage type cx33
+sfp-app,cx33,system,2026-10-05T19:23:01Z,2026-10-05T20:09:10Z,1,0.0136,E07 e07-05: machine lost
