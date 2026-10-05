@@ -1,6 +1,6 @@
 # Stage 06: Copy off the machine
 
-Status: **built and deployed on `sfp-app`** (2026-10-05); monitoring, rehearsal and E07 runs to come.
+Status: **built and deployed on `sfp-app`, monitored** (2026-10-05); rehearsal and E07 runs to come.
 
 ## Trigger
 
@@ -68,9 +68,10 @@ Two separate choices: what carries the copy (the courier) and where it lives (th
 - `system/reset-and-seed.sh`: also stops Litestream and removes the old copy, so the copy restarts with the new database.
 - `system/recover.sh`: refuses if the server still exists; creates it with the kept IPs (`sfp-app-ipv4`, `sfp-app-ipv6`), the Volume (`sfp-app-copy`) and `keep=true`; provisions; deploys (which restores); checks `/health` and 20 seeded links the load generator never clicks.
 - `tools/cloud/create.sh`: passes arguments after `--` to `hcloud server create`.
+- Better Stack (free plan): monitor `5022545` "sfp-app health" checks `https://2.28.198.178/health` every 30 s from four regions (eu, us, as, au), certificate check off, 30 s timeout, alerts by email only (the free plan has no phone app, calls or texts; those are in the paid plan at $29 per person per month). It opens an incident on the first confirmed failure (`confirmation_period` 0) and needs 180 s of success to close it. Incidents are readable through the API (`/api/v3/incidents`, with `started_at`, `resolved_at` and the monitor), which is how E07 runs time detection.
 - Hetzner: both Primary IPs renamed and set `auto_delete=false`; Volume `sfp-app-copy` (10 GB, nbg1, ext4) created with deletion protection and attached to `sfp-app`.
 
-**First check (2026-10-05, not a judged run):** Litestream's first full copy of the 1.2 GB database is a 169 MB file. A link was created, and 3 s later the copy was restored to a scratch file on the server: restore took 17 s, `integrity_check` ok, 10,001,561 links in both copy and live database, and the new link present.
+**First check (2026-10-05, not a judged run):** Litestream's first full copy of the 1.2 GB database is a 169 MB file. A link was created, and 3 s later the copy was restored to a scratch file on the server: restore took 17 s, `integrity_check` ok, 10,001,561 links in both copy and live database, and the new link present. **Caveat:** the seeded links are almost identical (same URL text apart from the story number, same creation time), so they compress far better than real links would; a real database of this size would make a larger copy and restore more slowly. Not measured.
 
 ## Rerun of every event so far
 
