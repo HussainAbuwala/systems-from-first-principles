@@ -19,3 +19,5 @@ sfp-load,cpx42,load,2026-10-05T16:57:28Z,2026-10-05T17:21:07Z,1,0.1114,e07-01 fa
 sfp-spare,cx33,system,2026-10-05T17:45:04Z,2026-10-05T17:56:33Z,1,0.0136,attempt 2 checked on spare
 sfp-app,cx33,system,2026-10-05T17:07:29Z,2026-10-05T18:05:56Z,1,0.0136,E07 e07-02: machine lost
 sfp-app,cx33,system,2026-10-05T18:07:21Z,2026-10-05T18:27:42Z,1,0.0136,E07 e07-03: machine lost
+sfp-app,cx33,system,2026-10-05T18:29:11Z,2026-10-05T18:49:31Z,1,0.0136,E07 e07-04: machine lost
+sfp-load,cpx42,load,2026-10-05T17:47:22Z,2026-10-05T19:07:53Z,2,0.2228,e07-04 recovery failed on capacity; waiting on decision

@@ -50,6 +50,10 @@ if os.path.exists(failure_path):
     cut = failure["poweroff_unix"] if failure["kind"] == "power cut" else failure["lost_unix"]
     gaps = [(b - a, a, b) for a, b in zip(ok, ok[1:]) if abs(a - cut) <= 60]
     _, last_before, first_after = max(gaps) if gaps else (None, cut, None)
+    # No successful redirect after the failure at all: the outage was still
+    # open when the load stopped (e07-04), not a short gap before it.
+    if ok and ok[-1] <= cut + 60:
+        last_before, first_after = ok[-1], None
     failure["last_redirect_before_unix"] = last_before
     failure["first_redirect_after_unix"] = first_after
     failure["recovery_seconds"] = first_after - last_before if first_after else None
@@ -153,7 +157,10 @@ if failure is not None and failure["kind"] == "machine lost":
     measures["recovery_script_seconds"] = failure["recovery_finished_unix"] - failure["recovery_started_unix"]
     measures["recovery_exit_code"] = failure["recovery_exit_code"]
     if measures["back_after_loss_seconds"] is None or measures["back_after_loss_seconds"] > 3600:
-        failures.append(f"service not back within 1 hour of the loss (back after: {measures['back_after_loss_seconds']} s)")
+        if measures["back_after_loss_seconds"] is None:
+            failures.append("service not back before the load stopped (recovery during the run failed)")
+        else:
+            failures.append(f"service not back within 1 hour of the loss (back after: {measures['back_after_loss_seconds']} s)")
     if "incident_started_unix" not in failure:
         failures.append("Better Stack raised no alert")
     acknowledged = {}
