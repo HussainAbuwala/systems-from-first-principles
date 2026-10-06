@@ -46,6 +46,7 @@ summary = {
     "clicks_truth_total": sum(r["truth"] for r in results),
     "clicks_server_total": sum(r["server"] for r in results),
     "worst": sorted(results, key=lambda r: -abs(r["diff"]))[:10],
+    "outside_1pct": bad,
 }
 json.dump(summary, open(out_path, "w"), indent=2)
 print(f"counts: {len(results)} links checked, {len(bad)} outside 1%; "
