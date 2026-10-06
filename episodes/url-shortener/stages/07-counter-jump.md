@@ -35,3 +35,16 @@ Earlier reading from `e08-01`: every create waits for its own copy to the Volume
 - `system/deploy.sh`: after a real restore (no database before, database after), runs `jump.ts` before the app starts. Not after a power cut (nothing confirmed is lost then) or a normal deploy.
 
 **First check (2026-10-06, not a judged run):** the 100 M copy restored to a scratch file on `sfp-app` in **177 s** (about 20 s at 10 M); `jump.ts` on it: highest restored link 100,007,160, placeholder 101,007,160, and the next inserted link got 101,007,161.
+
+## E08 on stage 7 (in progress)
+
+| Run | Create p99 | Redirect p99 | Errors | Counts | Verdict | First minute (warm-up) |
+| --- | ---: | ---: | ---: | --- | --- | --- |
+| `e08-03` | 42.3 ms | 32.3 ms | 0% | 2 links over by 1–2 | FAIL (counts) | stall: p99 10 s, 6.6% errors |
+| `e08-04` | 28.0 ms | 17.8 ms | 0% | exact | PASS | smooth: p99 11 ms, 0% errors |
+
+**Creates are fixed** (stage 6: 753–848 ms). The runs disagree on counts, so the verdict is INCONSISTENT until explained:
+
+**The start-of-run stall, diagnosed (runs `e08-01` to `e08-03`, not `e08-04`).** For 15–20 s Node used 0% CPU while nginx turned connections away and Litestream used over two cores; at 10:17:08 the app logged `database is locked` (its once-a-second click save gave up after the 5 s `busy_timeout`). Litestream's source (v0.5.17, `checkpointWithExecutor`): even its PASSIVE checkpoint first takes the database's write lock (a write to `_litestream_lock`) while it copies the latest WAL changes. Normally that is milliseconds; right after a fresh full copy, while Litestream also rewrites its 1.7 GB copy (first level 1 merge finished 10:17:15) and the disk is saturated, the copy is slow and the lock is held for seconds. The app's saves (click counts, new links) are synchronous on Node's only thread, so waiting for that lock stops every request, redirects included. Clicks that timed out on the client (10 s) but were later answered were counted by the server: the over-counts. In `e08-04` Litestream's heavy phase (217% CPU) finished at the very start of the run and nothing stalled: the stall depends on timing.
+
+**Why it matters beyond the warm-up:** the same happens after every fresh full copy, i.e. **after every recovery from a machine loss**, and possibly around the daily full copy and the first hourly merge (not yet observed under load).
