@@ -1,3 +1,9 @@
+// Stage 7: a generated link is confirmed once it is on this machine's disk
+// again; after a restore, deploy.sh inserts a placeholder (empty URL, see
+// jump.ts) a million numbers ahead, so a link lost in the machine's last moment
+// is never reissued. Custom names still wait for the copy: no counter protects
+// a lost name. (E08: waiting for every link reached 0.8 s while Litestream
+// rewrote its whole copy.)
 // Stage 6: stage 5 in WAL mode, copied off the machine by Litestream (E07),
 // plus GET /health for an outside monitor. A new link or name is confirmed only
 // once Litestream has copied it to the Volume (attempt 2: in e07-01 a link
@@ -158,7 +164,6 @@ function copiedOffMachine(): Promise<boolean> {
   });
 }
 
-const deleteLink = db.prepare("DELETE FROM links WHERE id = ?");
 const deleteName = db.prepare("DELETE FROM names WHERE name = ?");
 
 async function createLink(req: IncomingMessage, res: ServerResponse) {
@@ -174,11 +179,9 @@ async function createLink(req: IncomingMessage, res: ServerResponse) {
     return send(res, 400, "Send JSON {\"url\": \"https://...\"} with an http or https link of at most 2048 characters\n");
   }
   let code: string;
-  let undo: () => void;
   if (name === undefined) {
     const { lastInsertRowid } = insertLink.run(url, Date.now());
     code = encode(Number(lastInsertRowid));
-    undo = () => deleteLink.run(lastInsertRowid);
   } else {
     if (!isValidName(name)) {
       return send(res, 400, "A name uses letters, digits and hyphens, and contains a hyphen or is longer than 7 characters\n");
@@ -187,13 +190,12 @@ async function createLink(req: IncomingMessage, res: ServerResponse) {
     if (findName.get(name)) return send(res, 409, "That name is taken\n");
     insertName.run(name, url, Date.now());
     code = name;
-    undo = () => deleteName.run(name);
-  }
-  // Confirm only what would survive losing this machine. If the copy fails,
-  // remove the link (nobody was told its code) and ask the creator to retry.
-  if (!(await copiedOffMachine())) {
-    undo();
-    return send(res, 503, "Could not save the link safely; please try again\n");
+    // Confirm a name only once it would survive losing this machine. If the
+    // copy fails, remove it (nobody was told) and ask the creator to retry.
+    if (!(await copiedOffMachine())) {
+      deleteName.run(name);
+      return send(res, 503, "Could not save the link safely; please try again\n");
+    }
   }
   res.writeHead(201, { "content-type": "application/json" });
   res.end(JSON.stringify({ code, short_url: `${PUBLIC_BASE}/${code}` }));
@@ -205,7 +207,8 @@ function redirect(code: string, res: ServerResponse) {
   let row: { url: string } | undefined;
   if (id !== null) row = findLink.get(id) as { url: string } | undefined;
   else if (isValidName(code)) row = findName.get(code) as { url: string } | undefined;
-  if (!row) return send(res, 404, "Not found\n");
+  // An empty URL is a placeholder left after a restore (jump.ts), not a link.
+  if (!row || row.url === "") return send(res, 404, "Not found\n");
   const key = `${code}\t${new Date().toISOString().slice(0, 10)}`;
   pending.set(key, (pending.get(key) ?? 0) + 1);
   // no-store: a browser must ask us again next time, so every click is counted
@@ -253,6 +256,6 @@ const syncMode = (db.prepare("PRAGMA synchronous").get() as { synchronous: numbe
 const journalMode = (db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode;
 server.listen(PORT, HOST, () =>
   console.log(
-    `shortener stage 6 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
+    `shortener stage 7 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
   ),
 );

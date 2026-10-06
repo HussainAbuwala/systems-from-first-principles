@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Install the current stage on a provisioned "system" server and (re)start it.
 # From stage 6 the server needs one attached Volume for the copy; on a new
-# server with no database, the database is first restored from that copy.
+# server with no database, the database is first restored from that copy, and
+# (stage 7) the link counter jumps a million ahead.
 #   deploy.sh SERVER_NAME
 source "$(dirname "$0")/../../../tools/cloud/lib.sh"
 
@@ -49,9 +50,16 @@ PUBLIC_BASE=https://$ip
 ENV
 systemctl daemon-reload"
 # Does nothing unless the database is missing and the Volume holds a copy.
+# After a real restore (stage 7), jump the counter before the app starts, so no
+# link lost with the old machine has its code issued again (jump.ts).
 restore_start=$(date +%s)
-sfp_ssh "$ip" "litestream restore -if-db-not-exists -if-replica-exists /var/lib/shortener/links.db"
-echo "restore step: $(( $(date +%s) - restore_start )) s"
+restored="$(sfp_ssh "$ip" "if [ -e /var/lib/shortener/links.db ]; then echo existing; else \
+  litestream restore -if-replica-exists /var/lib/shortener/links.db >&2 && \
+  { [ -e /var/lib/shortener/links.db ] && echo restored || echo new; }; fi")"
+echo "restore step: $(( $(date +%s) - restore_start )) s ($restored database)"
+if [[ "$restored" == restored ]]; then
+  sfp_ssh "$ip" "cd /opt/shortener && node --no-warnings jump.ts /var/lib/shortener/links.db"
+fi
 sfp_ssh "$ip" "systemctl enable --quiet shortener && systemctl restart shortener && \
 systemctl enable --quiet litestream && systemctl restart litestream && \
 nginx -t -q && systemctl reload-or-restart nginx && sleep 1 && systemctl is-active shortener litestream nginx"
