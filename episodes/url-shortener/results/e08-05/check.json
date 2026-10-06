@@ -1,0 +1,22 @@
+{
+  "links_checked": 8200,
+  "problems": 0,
+  "examples": [],
+  "problem_codes": [],
+  "all_problems": [],
+  "redirect_caching_headers": {
+    "Cache-Control='no-store' Expires=None": 8200
+  },
+  "unloaded_ms": {
+    "generated": {
+      "count": 8200,
+      "median": 3.83,
+      "p99": 7.63
+    },
+    "name": {
+      "count": 0,
+      "median": null,
+      "p99": null
+    }
+  }
+}
