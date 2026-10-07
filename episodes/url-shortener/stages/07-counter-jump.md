@@ -1,6 +1,6 @@
 # Stage 07: Counter jump
 
-Status: **built** (2026-10-06); E08 and reruns to come.
+Status: **attempt 2 (heartbeat) built and probe-tested** (2026-10-07); E08 and reruns to come.
 
 ## Trigger
 
@@ -50,3 +50,13 @@ Earlier reading from `e08-01`: every create waits for its own copy to the Volume
 **The start-of-run stall, diagnosed (runs `e08-01` to `e08-03`, not `e08-04`).** For 15–20 s Node used 0% CPU while nginx turned connections away and Litestream used over two cores; at 10:17:08 the app logged `database is locked` (its once-a-second click save gave up after the 5 s `busy_timeout`). Litestream's source (v0.5.17, `checkpointWithExecutor`): even its PASSIVE checkpoint first takes the database's write lock (a write to `_litestream_lock`) while it copies the latest WAL changes. Normally that is milliseconds. **Corrected by the investigation (`e08-06`):** the slow part is not the disk but a check inside the checkpoint, `lastPageMatch`, which decodes the most recent LTX file page by page while the lock is held; right after a fresh full copy with no writes since, that file is the whole 1.7 GB copy, so the lock is held for about 30 s of CPU work. (The earlier reading, "the disk is saturated", was wrong.) The app's saves (click counts, new links) are synchronous on Node's only thread, so waiting for that lock stops every request, redirects included. Clicks that timed out on the client (10 s) but were later answered were counted by the server: the over-counts. In `e08-04` Litestream's heavy phase (217% CPU) finished at the very start of the run and nothing stalled: the stall depends on timing.
 
 **Why it matters beyond the warm-up:** the same happens after every fresh full copy, i.e. **after every recovery from a machine loss**, and possibly around the daily full copy and the first hourly merge (not yet observed under load).
+
+## Attempt 2: heartbeat
+
+**Why the runs differed (all of them):** it is a race after each fresh full copy between the first save (a click-count batch once traffic arrives) and Litestream's first fold. If the fold comes first, the newest LTX file is still the full copy and the check scans it for about 30 s holding the lock (`e08-01`, `e08-02`, `e08-03` froze, gaps of about 33, 20 and 21 s between the copy finishing and the run starting); if traffic comes first, the check reads a small file (`e08-04`, `e08-05`, gaps of about 18 and 20 s). The fold's timing varies by several seconds, hence the same gap gave different results.
+
+**Change (`fc2a12c`):** the once-a-second save in `system/server.ts` always happens and updates a one-row `heartbeat` table (when busy it rides along with the click-count save; when quiet it is the only change). Litestream therefore writes a small change file every second (196 bytes when idle), so the first save after a full copy always comes within a round of it. Cost: one tiny save per second when quiet; nothing extra when busy.
+
+**Alternatives considered:** fixing the check inside Litestream (the LTX format has a page index, `ltx.DecodePageIndex` in `superfly/ltx` v0.5.2, so the page could be looked up directly instead of scanning; the clean fix, but it means patching or reporting upstream); `checkpoint-interval: 0` (no time-based folds; a size-triggered fold right after a full copy under heavy traffic could still scan); a readiness gate after recovery (wait for the first fold before admitting visitors; does not help the daily full copy); the dedicated writer thread (contains freezes but writes would still wait 30 s; kept for a later level). No setting turns the check off (`skip-verify` concerns S3 TLS).
+
+**Probe test (`results/heartbeat-probe-01/`):** same quiet scenario as `e08-06`: no hold of 500 ms or more in 12 minutes (5 isolated checks of 2,880 found the lock taken, each under 250 ms), against 30.5 s without the heartbeat. Remaining theoretical gap, not observed: a fold triggered at the very end of the full-copy round, before the next round turns the heartbeats into a small file.
