@@ -45,7 +45,7 @@ sfp_ssh "$ip" "mkdir -p /etc/systemd/system/litestream.service.d && printf '[Uni
 # Settings, including the operator secret for takedowns (stage 8, from .env),
 # sent over SSH's input so the secret never appears in a command line; the file
 # is readable by root only.
-sfp_ssh "$ip" "umask 077 && cat > /etc/shortener.env && systemctl daemon-reload" <<ENV
+sfp_ssh "$ip" "umask 077 && cat > /etc/shortener.env && chmod 600 /etc/shortener.env && systemctl daemon-reload" <<ENV
 DB_PATH=/var/lib/shortener/links.db
 HOST=127.0.0.1
 PORT=8080
