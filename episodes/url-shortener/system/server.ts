@@ -1,3 +1,7 @@
+// Stage 7 attempt 2: the once-a-second save always happens, with a heartbeat
+// row, so Litestream always has a recent small change file. Otherwise, after a
+// fresh full copy and a quiet spell, its checkpoint scanned the whole copy for
+// about 30 s while holding the write lock, freezing the app (e08-03, e08-06).
 // Stage 7: a generated link is confirmed once it is on this machine's disk
 // again; after a restore, deploy.sh inserts a placeholder (empty URL, see
 // jump.ts) a million numbers ahead, so a link lost in the machine's last moment
@@ -62,17 +66,23 @@ const insertName = db.prepare("INSERT INTO names (name, url, created_at) VALUES 
 const addClicks = db.prepare(
   "INSERT INTO clicks (code, day, count) VALUES (?, ?, ?) ON CONFLICT (code, day) DO UPDATE SET count = count + excluded.count",
 );
+db.exec("CREATE TABLE IF NOT EXISTS heartbeat (id INTEGER PRIMARY KEY CHECK (id = 1), at INTEGER NOT NULL)");
+const beat = db.prepare("INSERT INTO heartbeat (id, at) VALUES (1, ?) ON CONFLICT (id) DO UPDATE SET at = excluded.at");
 
 // Clicks not yet saved, keyed by "code<TAB>day". The day is the day the click
 // happened, not the day it is saved.
 let pending = new Map<string, number>();
 
+// Once a second, always one save: the heartbeat plus any clicks tallied since
+// the last save. When busy the heartbeat rides along in the save that happens
+// anyway; when quiet it is the only change, so Litestream still writes a small
+// change file every second.
 function saveClicks() {
-  if (pending.size === 0) return;
   const batch = pending;
   pending = new Map();
   try {
     db.exec("BEGIN");
+    beat.run(Date.now());
     for (const [key, n] of batch) {
       const [code, day] = key.split("\t");
       addClicks.run(code, day, n);
