@@ -300,7 +300,6 @@ export function viral() {
 
 export function takedown() {
   const i = exec.scenario.iterationInTest;
-  if (i >= takedowns) return; // the arrival-rate schedule can start one extra iteration
   const rank = i < Math.round(takedowns * 0.6) ? i + 1 : 1 + Math.floor(Math.random() * stored);
   const [code] = linkForRank(rank);
   const res = http.post(`${target}/links/${code}/takedown`, null, {

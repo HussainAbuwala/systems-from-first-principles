@@ -1,0 +1,50 @@
+{
+  "event": "E09",
+  "verdict": "FAIL",
+  "reasons": [
+    "only 0 of 101 takedowns confirmed"
+  ],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 300,
+    "redirects": 300190,
+    "creates": 6003,
+    "redirect_p50_ms": 3.5,
+    "redirect_p99_ms": 16.4,
+    "create_p99_ms": 26.8,
+    "viral_redirects": 0,
+    "viral_redirect_p99_ms": null,
+    "other_redirect_p99_ms": null,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.033,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 8200,
+        "median": 2.75,
+        "p99": 4.96
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "count_links_checked": 1101,
+    "count_links_outside_1pct": 0,
+    "count_truth_vs_server": "99448 vs 99448",
+    "takedowns_requested": 101,
+    "takedowns_confirmed": 0,
+    "redirects_after_takedown": 0,
+    "latest_redirect_after_takedown_seconds": 0.0,
+    "redirects_more_than_60s_after_takedown": 0,
+    "gone_answers_for_live_links": 0,
+    "redirects_browsers_may_reuse": 0
+  }
+}

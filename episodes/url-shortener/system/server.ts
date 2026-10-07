@@ -1,3 +1,7 @@
+// Stage 8: takedowns (E09). POST /links/<code>/takedown with the operator
+// secret marks a link or name taken down; it answers 410 Gone at once, and the
+// operator is told "done" only once the takedown is in Litestream's copy, so it
+// survives losing the machine. A taken-down code or name is never reused.
 // Stage 7 attempt 2: the once-a-second save always happens, with a heartbeat
 // row, so Litestream always has a recent small change file. Otherwise, after a
 // fresh full copy and a quiet spell, its checkpoint scanned the whole copy for
@@ -21,6 +25,7 @@
 // Redirects tell browsers not to remember them, so every click reaches us.
 // nginx terminates HTTPS in front; this program listens only inside the machine.
 import { createServer, request, type IncomingMessage, type ServerResponse } from "node:http";
+import { timingSafeEqual } from "node:crypto";
 import { DatabaseSync } from "node:sqlite";
 import { decode, encode, MAX_CODE_LENGTH } from "./codes.ts";
 
@@ -29,6 +34,7 @@ const PORT = Number(process.env.PORT ?? 8080);
 const DB_PATH = process.env.DB_PATH ?? "/var/lib/shortener/links.db";
 const PUBLIC_BASE = process.env.PUBLIC_BASE ?? "https://localhost";
 const LITESTREAM_SOCKET = process.env.LITESTREAM_SOCKET ?? "/var/run/litestream.sock";
+const TAKEDOWN_SECRET = process.env.TAKEDOWN_SECRET ?? "";
 
 const MAX_URL_LENGTH = 2048;
 
@@ -55,7 +61,14 @@ db.exec(`CREATE TABLE IF NOT EXISTS names (
   created_at INTEGER NOT NULL
 )`);
 const insertLink = db.prepare("INSERT INTO links (url, created_at) VALUES (?, ?)");
-const findLink = db.prepare("SELECT url FROM links WHERE id = ?");
+// Stage 8: when a link or name was taken down (empty while live). Adding a
+// column with no default is instant in SQLite, even with 100 million rows.
+for (const table of ["links", "names"]) {
+  const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
+  if (!columns.some((c) => c.name === "taken_down_at")) db.exec(`ALTER TABLE ${table} ADD COLUMN taken_down_at INTEGER`);
+}
+const findLink = db.prepare("SELECT url, taken_down_at FROM links WHERE id = ?");
+const takeDownLink = db.prepare("UPDATE links SET taken_down_at = coalesce(taken_down_at, ?) WHERE id = ? AND url != ''");
 db.exec(`CREATE TABLE IF NOT EXISTS clicks (
   code  TEXT    NOT NULL,
   day   TEXT    NOT NULL,
@@ -106,7 +119,8 @@ for (const signal of ["SIGTERM", "SIGINT"] as const) {
 }
 const healthRead = db.prepare("SELECT 1 FROM links LIMIT 1");
 const readClicks = db.prepare("SELECT day, count FROM clicks WHERE code = ? ORDER BY day");
-const findName = db.prepare("SELECT url FROM names WHERE name = ?");
+const findName = db.prepare("SELECT url, taken_down_at FROM names WHERE name = ?");
+const takeDownName = db.prepare("UPDATE names SET taken_down_at = coalesce(taken_down_at, ?) WHERE name = ?");
 
 const MAX_NAME_LENGTH = 64;
 
@@ -214,11 +228,13 @@ async function createLink(req: IncomingMessage, res: ServerResponse) {
 // The address's format alone decides which table to read.
 function redirect(code: string, res: ServerResponse) {
   const id = decode(code);
-  let row: { url: string } | undefined;
-  if (id !== null) row = findLink.get(id) as { url: string } | undefined;
-  else if (isValidName(code)) row = findName.get(code) as { url: string } | undefined;
+  let row: { url: string; taken_down_at: number | null } | undefined;
+  if (id !== null) row = findLink.get(id) as typeof row;
+  else if (isValidName(code)) row = findName.get(code) as typeof row;
   // An empty URL is a placeholder left after a restore (jump.ts), not a link.
   if (!row || row.url === "") return send(res, 404, "Not found\n");
+  // Taken down (E09): gone for good, not counted, never stored by browsers.
+  if (row.taken_down_at) return send(res, 410, "This link was removed\n", { "cache-control": "no-store" });
   const key = `${code}\t${new Date().toISOString().slice(0, 10)}`;
   pending.set(key, (pending.get(key) ?? 0) + 1);
   // no-store: a browser must ask us again next time, so every click is counted
@@ -236,6 +252,30 @@ function health(res: ServerResponse) {
   send(res, 200, "OK\n", { "cache-control": "no-store" });
 }
 
+function isOperator(req: IncomingMessage): boolean {
+  const given = Buffer.from(req.headers.authorization ?? "");
+  const expected = Buffer.from(`Bearer ${TAKEDOWN_SECRET}`);
+  return TAKEDOWN_SECRET !== "" && given.length === expected.length && timingSafeEqual(given, expected);
+}
+
+// E09: take a link or name down. It answers 410 from the next click; the
+// operator gets 200 only once the takedown is in Litestream's copy. If the
+// copy fails the link stays down and the operator is asked to repeat (safe).
+async function takedown(code: string, req: IncomingMessage, res: ServerResponse) {
+  if (!isOperator(req)) return send(res, 401, "Not allowed\n");
+  const at = Date.now();
+  const id = decode(code);
+  let changed = 0;
+  if (id !== null) changed = Number(takeDownLink.run(at, id).changes);
+  else if (isValidName(code)) changed = Number(takeDownName.run(at, code).changes);
+  if (!changed) return send(res, 404, "Not found\n");
+  if (!(await copiedOffMachine())) {
+    return send(res, 503, "Taken down here, but not yet safely copied; please repeat\n");
+  }
+  res.writeHead(200, { "content-type": "application/json" });
+  res.end(JSON.stringify({ code, taken_down: true }));
+}
+
 function stats(code: string, res: ServerResponse) {
   const days: Record<string, number> = {};
   for (const r of readClicks.all(code) as { day: string; count: number }[]) days[r.day] = r.count;
@@ -248,6 +288,8 @@ const server = createServer(
     const path = (req.url ?? "/").split("?")[0];
     if (req.method === "POST" && path === "/links") {
       createLink(req, res).catch(() => send(res, 500, "Internal error\n"));
+    } else if (req.method === "POST" && /^\/links\/[A-Za-z0-9-]+\/takedown$/.test(path)) {
+      takedown(path.split("/")[2], req, res).catch(() => send(res, 500, "Internal error\n"));
     } else if (req.method === "GET" && path === "/health") {
       // Checked before redirects. As a generated code, "health" would be link
       // number 15 billion or so, far beyond anything this episode stores.
@@ -266,6 +308,6 @@ const syncMode = (db.prepare("PRAGMA synchronous").get() as { synchronous: numbe
 const journalMode = (db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode;
 server.listen(PORT, HOST, () =>
   console.log(
-    `shortener stage 7 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
+    `shortener stage 8 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
   ),
 );

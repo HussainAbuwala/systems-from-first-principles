@@ -42,13 +42,16 @@ sfp_ssh "$ip" "[ \"\$(dpkg-query -W -f='\${Version}' litestream 2>/dev/null)\" =
 scp "${scp_opts[@]}" "$here/litestream.yml" "root@$ip:/etc/litestream.yml"
 # Never copy into the server's own disk if the Volume is missing.
 sfp_ssh "$ip" "mkdir -p /etc/systemd/system/litestream.service.d && printf '[Unit]\nRequiresMountsFor=/mnt/copy\n' > /etc/systemd/system/litestream.service.d/volume.conf"
-sfp_ssh "$ip" "cat > /etc/shortener.env <<ENV
+# Settings, including the operator secret for takedowns (stage 8, from .env),
+# sent over SSH's input so the secret never appears in a command line; the file
+# is readable by root only.
+sfp_ssh "$ip" "umask 077 && cat > /etc/shortener.env && systemctl daemon-reload" <<ENV
 DB_PATH=/var/lib/shortener/links.db
 HOST=127.0.0.1
 PORT=8080
 PUBLIC_BASE=https://$ip
+TAKEDOWN_SECRET=${TAKEDOWN_SECRET:?TAKEDOWN_SECRET missing from .env}
 ENV
-systemctl daemon-reload"
 # Does nothing unless the database is missing and the Volume holds a copy.
 # After a real restore (stage 7), jump the counter before the app starts, so no
 # link lost with the old machine has its code issued again (jump.ts).

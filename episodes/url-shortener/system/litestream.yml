@@ -2,7 +2,8 @@
 # /mnt/copy (E07). Litestream's defaults otherwise: changes sent every second,
 # a full snapshot daily, history kept for a day.
 # The control socket lets the app ask for an immediate copy and wait for it
-# before confirming a new link or name (attempt 2, after e07-01).
+# before confirming a new custom name or a takedown (stage 6 attempt 2 did it
+# for every new link; from stage 7 generated links rely on the counter jump).
 socket:
   enabled: true
   path: /var/run/litestream.sock
