@@ -1,0 +1,191 @@
+goroutine 81 [running]:
+runtime/pprof.writeGoroutineStacks({0x1d052c0, 0xc00050a000})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/pprof/pprof.go:756 +0x6b
+runtime/pprof.writeGoroutine({0x1d052c0?, 0xc00050a000?}, 0x30?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/pprof/pprof.go:745 +0x25
+runtime/pprof.(*Profile).WriteTo(0x28f7b00?, {0x1d052c0?, 0xc00050a000?}, 0xc?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/pprof/pprof.go:371 +0x14b
+net/http/pprof.handler.ServeHTTP({0xc0002aa011, 0x9}, {0x1d19ca8, 0xc00050a000}, 0xc0002b8000)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/pprof/pprof.go:272 +0x52a
+net/http/pprof.Index({0x1d19ca8, 0xc00050a000}, 0xc0002b8000?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/pprof/pprof.go:389 +0xda
+net/http.HandlerFunc.ServeHTTP(0xc0001d4000?, {0x1d19ca8?, 0xc00050a000?}, 0x80ebd6?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:2322 +0x29
+net/http.(*ServeMux).ServeHTTP(0x47dc19?, {0x1d19ca8, 0xc00050a000}, 0xc0002b8000)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:2861 +0x1c7
+net/http.serverHandler.ServeHTTP({0xc00029c800?}, {0x1d19ca8?, 0xc00050a000?}, 0x1?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:3340 +0x8e
+net/http.(*conn).serve(0xc00039e000, {0x1d1b928, 0xc000092a50})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:2103 +0x6a5
+created by net/http.(*Server).Serve in goroutine 66
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:3493 +0x485
+
+goroutine 1 [select, 3 minutes]:
+main.(*Main).Run(0x1d042e0?, {0x1d1b8f0, 0x2951280}, {0xc0001b2010, 0x1, 0x1})
+	/home/runner/work/litestream/litestream/cmd/litestream/main.go:165 +0x6cf
+main.main()
+	/home/runner/work/litestream/litestream/cmd/litestream/main.go:88 +0x8e
+
+goroutine 19 [select]:
+go.opencensus.io/stats/view.(*worker).start(0xc0001ad700)
+	/home/runner/go/pkg/mod/go.opencensus.io@v0.24.0/stats/view/worker.go:292 +0x9f
+created by go.opencensus.io/stats/view.init.0 in goroutine 1
+	/home/runner/go/pkg/mod/go.opencensus.io@v0.24.0/stats/view/worker.go:34 +0x8d
+
+goroutine 25 [syscall, 3 minutes]:
+os/signal.signal_recv()
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/sigqueue.go:152 +0x29
+os/signal.loop()
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/os/signal/signal_unix.go:23 +0x13
+created by os/signal.Notify.func1.1 in goroutine 1
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/os/signal/signal.go:152 +0x1f
+
+goroutine 29 [select]:
+github.com/benbjohnson/litestream.(*Store).monitorCompactionLevel(0xc0000940d0, {0x1d1b960, 0xc00033c280}, 0xc00018a3d0)
+	/home/runner/work/litestream/litestream/store.go:570 +0x239
+github.com/benbjohnson/litestream.(*Store).Open.func3()
+	/home/runner/work/litestream/litestream/store.go:224 +0x55
+created by github.com/benbjohnson/litestream.(*Store).Open in goroutine 1
+	/home/runner/work/litestream/litestream/store.go:222 +0x44e
+
+goroutine 28 [runnable]:
+syscall.Syscall(0x0, 0xc, 0xc0004261b0, 0x6)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/syscall/syscall_linux.go:74 +0x25
+syscall.read(0xc006ad6120?, {0xc0004261b0?, 0x42b55e?, 0xc0005c0d90?})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/syscall/zsyscall_linux_amd64.go:736 +0x38
+syscall.Read(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/syscall/syscall_unix.go:183
+internal/poll.ignoringEINTRIO(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_unix.go:738
+internal/poll.(*FD).Read(0xc006ad6120, {0xc0004261b0, 0x6, 0x6})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_unix.go:161 +0x2ae
+os.(*File).read(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/os/file_posix.go:30
+os.(*File).Read(0xc000456070, {0xc0004261b0?, 0xc0005c0e30?, 0x4834c9?})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/os/file.go:144 +0x4f
+io.ReadAtLeast({0x1d045c0, 0xc000456070}, {0xc0004261b0, 0x6, 0x6}, 0x6)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/io/io.go:335 +0x8e
+io.ReadFull(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/io/io.go:354
+github.com/superfly/ltx.(*Decoder).DecodePage(0xc002fa0000, 0xc0005c0f5c, {0xc00ab26000, 0x1000, 0x1000})
+	/home/runner/go/pkg/mod/github.com/superfly/ltx@v0.5.2/decoder.go:164 +0x172
+github.com/benbjohnson/litestream.(*DB).lastPageMatch(0xc0004e83e0?, {0x1d1b8f0?, 0x2951280?}, 0xc002fa0000, 0x90f8, 0x1018)
+	/home/runner/work/litestream/litestream/db.go:1847 +0x29b
+github.com/benbjohnson/litestream.(*DB).verifyWithExecutor(0xc000281c08, {0x1d1b960, 0xc00033c370}, 0xc000560040)
+	/home/runner/work/litestream/litestream/db.go:1788 +0xd9d
+github.com/benbjohnson/litestream.(*DB).verifyAndSyncWithExecutor(0xc000281c08, {0x1d1b960, 0xc00033c370}, 0x1, 0xc000560040, 0x0)
+	/home/runner/work/litestream/litestream/db.go:1376 +0x19d
+github.com/benbjohnson/litestream.(*DB).checkpointWithExecutor(0xc000281c08, {0x1d1b960, 0xc00033c370}, {0x1a398c3, 0x7}, 0xc000560040)
+	/home/runner/work/litestream/litestream/db.go:2507 +0x8d5
+github.com/benbjohnson/litestream.(*DB).checkpointIfNeeded(0xc000281c08, {0x1d1b960, 0xc00033c370}, 0xc000560040, 0x1?, 0xa110)
+	/home/runner/work/litestream/litestream/db.go:1480 +0x5f5
+github.com/benbjohnson/litestream.(*DB).syncLocked(0xc000281c08, {0x1d1b960, 0xc00033c370}, 0x4000000)
+	/home/runner/work/litestream/litestream/db.go:1319 +0x61b
+github.com/benbjohnson/litestream.(*DB).syncOnce(0xc000281c08, {0x1d1b960, 0xc00033c370}, 0x4000000)
+	/home/runner/work/litestream/litestream/db.go:1244 +0x114
+github.com/benbjohnson/litestream.(*DB).Sync(0xc000281c08, {0x1d1b960, 0xc00033c370})
+	/home/runner/work/litestream/litestream/db.go:1229 +0x72
+github.com/benbjohnson/litestream.(*DB).monitor(0xc000281c08)
+	/home/runner/work/litestream/litestream/db.go:3185 +0x1e5
+github.com/benbjohnson/litestream.(*DB).Open.func1()
+	/home/runner/work/litestream/litestream/db.go:804 +0x4c
+created by github.com/benbjohnson/litestream.(*DB).Open in goroutine 27
+	/home/runner/work/litestream/litestream/db.go:804 +0x1ce
+
+goroutine 30 [select, 1 minutes]:
+github.com/benbjohnson/litestream.(*Store).monitorCompactionLevel(0xc0000940d0, {0x1d1b960, 0xc00033c280}, 0xc00018a3e0)
+	/home/runner/work/litestream/litestream/store.go:570 +0x239
+github.com/benbjohnson/litestream.(*Store).Open.func3()
+	/home/runner/work/litestream/litestream/store.go:224 +0x55
+created by github.com/benbjohnson/litestream.(*Store).Open in goroutine 1
+	/home/runner/work/litestream/litestream/store.go:222 +0x44e
+
+goroutine 31 [select, 3 minutes]:
+github.com/benbjohnson/litestream.(*Store).monitorCompactionLevel(0xc0000940d0, {0x1d1b960, 0xc00033c280}, 0xc00018a3f0)
+	/home/runner/work/litestream/litestream/store.go:570 +0x239
+github.com/benbjohnson/litestream.(*Store).Open.func3()
+	/home/runner/work/litestream/litestream/store.go:224 +0x55
+created by github.com/benbjohnson/litestream.(*Store).Open in goroutine 1
+	/home/runner/work/litestream/litestream/store.go:222 +0x44e
+
+goroutine 32 [select, 1 minutes]:
+github.com/benbjohnson/litestream.(*Store).monitorCompactionLevel(0xc0000940d0, {0x1d1b960, 0xc00033c280}, 0xc0002affa8)
+	/home/runner/work/litestream/litestream/store.go:570 +0x239
+github.com/benbjohnson/litestream.(*Store).Open.func4()
+	/home/runner/work/litestream/litestream/store.go:232 +0x75
+created by github.com/benbjohnson/litestream.(*Store).Open in goroutine 1
+	/home/runner/work/litestream/litestream/store.go:230 +0x4bd
+
+goroutine 65 [select]:
+github.com/benbjohnson/litestream.(*Store).monitorL0Retention(0xc0000940d0, {0x1d1b960, 0xc00033c280})
+	/home/runner/work/litestream/litestream/store.go:638 +0x1e5
+github.com/benbjohnson/litestream.(*Store).Open.func5()
+	/home/runner/work/litestream/litestream/store.go:240 +0x51
+created by github.com/benbjohnson/litestream.(*Store).Open in goroutine 1
+	/home/runner/work/litestream/litestream/store.go:238 +0x34f
+
+goroutine 66 [IO wait, 3 minutes]:
+internal/poll.runtime_pollWait(0x79f732b69000, 0x72)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/netpoll.go:351 +0x85
+internal/poll.(*pollDesc).wait(0xc000412080?, 0x3b8c39a?, 0x0)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_poll_runtime.go:84 +0x27
+internal/poll.(*pollDesc).waitRead(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Accept(0xc000412080)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_unix.go:613 +0x28c
+net.(*netFD).accept(0xc000412080)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/fd_unix.go:161 +0x29
+net.(*UnixListener).accept(0xc0001e9df0?)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/unixsock_posix.go:172 +0x16
+net.(*UnixListener).Accept(0xc0000928d0)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/unixsock.go:260 +0x30
+net/http.(*Server).Serve(0xc000142100, {0x1d19b28, 0xc0000928d0})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:3463 +0x30c
+github.com/benbjohnson/litestream.(*Server).Start.func1()
+	/home/runner/work/litestream/litestream/server.go:136 +0x6f
+created by github.com/benbjohnson/litestream.(*Server).Start in goroutine 1
+	/home/runner/work/litestream/litestream/server.go:134 +0x3cf
+
+goroutine 38 [select, 3 minutes]:
+database/sql.(*DB).connectionOpener(0xc0003080d0, {0x1d1b960, 0xc00030a000})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:1261 +0x87
+created by database/sql.OpenDB in goroutine 28
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:841 +0x130
+
+goroutine 44 [chan receive, 3 minutes]:
+database/sql.(*Tx).awaitDone(0xc000312100)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:2212 +0x29
+created by database/sql.(*DB).beginDC in goroutine 28
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:1925 +0x1ef
+
+goroutine 48 [select]:
+github.com/benbjohnson/litestream.(*Replica).monitor(0xc0001e5a70, {0x1d1b960, 0xc00030a1e0})
+	/home/runner/work/litestream/litestream/replica.go:405 +0xca9
+github.com/benbjohnson/litestream.(*Replica).Start.func1()
+	/home/runner/work/litestream/litestream/replica.go:118 +0x51
+created by github.com/benbjohnson/litestream.(*Replica).Start in goroutine 28
+	/home/runner/work/litestream/litestream/replica.go:118 +0xec
+
+goroutine 883 [IO wait]:
+internal/poll.runtime_pollWait(0x79f732b68e00, 0x72)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/runtime/netpoll.go:351 +0x85
+internal/poll.(*pollDesc).wait(0xc000412100?, 0xc00029c821?, 0x0)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_poll_runtime.go:84 +0x27
+internal/poll.(*pollDesc).waitRead(...)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_poll_runtime.go:89
+internal/poll.(*FD).Read(0xc000412100, {0xc00029c821, 0x1, 0x1})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/internal/poll/fd_unix.go:165 +0x279
+net.(*netFD).Read(0xc000412100, {0xc00029c821?, 0x28f6160?, 0xc000063770?})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/fd_posix.go:68 +0x25
+net.(*conn).Read(0xc000456030, {0xc00029c821?, 0xc0001863f0?, 0xc00ab0c9d0?})
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/net.go:196 +0x45
+net/http.(*connReader).backgroundRead(0xc00029c800)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:702 +0x33
+created by net/http.(*connReader).startBackgroundRead in goroutine 81
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/net/http/server.go:698 +0xb6
+
+goroutine 738 [chan receive]:
+database/sql.(*Tx).awaitDone(0xc0001acf80)
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:2212 +0x29
+created by database/sql.(*DB).beginDC in goroutine 28
+	/home/runner/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.25.14.linux-amd64/src/database/sql/sql.go:1925 +0x1ef
