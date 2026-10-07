@@ -1,0 +1,12 @@
+{
+  "run_id": "e09-04",
+  "started_utc": "2026-10-07T21:32:45Z",
+  "ended_utc": "2026-10-07T21:38:48Z",
+  "git_commit": "89e0adb253f5bfab90f7b334c9d9f3b037d46206",
+  "uncommitted_changes": true,
+  "k6_script": "level.js",
+  "k6_script_sha256": "e7b2a2287bf1564c27bfca55d8c92d8d830e89a847eab5bebd6f8405fc06ec6c",
+  "k6_args": "-e TARGET=https://2.28.198.178 -e SAMPLE=/opt/sfp/sample.csv -e RUN_ID=e09-04 -e REDIRECTS=1000 -e CREATES=20 -e DURATION=6m -e STORED=100000000 -e TAKEDOWNS=100 -e TAKEDOWN_SECRET_FILE=/opt/sfp/takedown-secret",
+  "k6_exit_code": 0,
+  "load_machine": "sfp-load"
+}

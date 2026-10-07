@@ -205,7 +205,9 @@ if event == "E09":
         if r["metric_name"] == "takedown":
             requested += 1
             t = tags(r)
-            if t.get("status") == "200":
+            # k6 stores a tag named "status" in its own status column, not in
+            # extra_tags (found in e09-02..04: the first judgement saw none).
+            if (r.get("status") or t.get("status")) == "200":
                 confirmed[t["code"]] = float(r["timestamp"])
     measures["takedowns_requested"] = requested
     measures["takedowns_confirmed"] = len(confirmed)
@@ -222,6 +224,13 @@ if event == "E09":
                 late += 1
         if status == "410" and (code not in confirmed or ts < confirmed[code] - 1):
             wrong_gone += 1
+    # A checked link that answers 410 is right if it was taken down; the checker
+    # could only know this if the runner recognised the takedown (see above).
+    if check is not None and lost_links_judged is False:
+        wrongly_flagged = [p for p in check.get("all_problems", []) if p.get("status") == 410 and p["code"] in confirmed]
+        if wrongly_flagged:
+            measures["checker_410s_for_taken_down_links_ignored"] = len(wrongly_flagged)
+            check["problems"] -= len(wrongly_flagged)
     measures["redirects_after_takedown"] = after
     measures["latest_redirect_after_takedown_seconds"] = round(worst, 1)
     measures["redirects_more_than_60s_after_takedown"] = late

@@ -112,7 +112,7 @@ with gzip.open(f"{out}/k6.csv.gz", "rt") as f:
     for r in csv.DictReader(f):
         if r["metric_name"] == "takedown":
             tags = dict(t.split("=", 1) for t in (r["extra_tags"] or "").split("&") if "=" in t)
-            if tags.get("status") == "200":
+            if (r["status"] or tags.get("status")) == "200":  # k6 puts a "status" tag in its own column
                 gone.add(tags["code"])
 created = len(pairs) - 1
 # The first 1,000 sampled links are enough to show stored links still resolve.
