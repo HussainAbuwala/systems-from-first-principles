@@ -1,0 +1,7 @@
+# e08-07: E08 10% of Bitly, against stage 7 attempt 2 (counter jump + heartbeat)
+
+**Verdict: PASS.** Create p99 39.6 ms, redirect p99 18.7 ms, 0% errors, no wrong redirects, all checked links correct, counts exact (100,779 = 100,779). First minute (warm-up, reported separately): redirect p99 8.8 ms, 0% errors; no freeze.
+
+**Timing chosen to reproduce the freeze:** full copy finished 13:59:49 UTC; the run started 14:00:06 and traffic began about 14:00:26, about 37 s after the copy, a quiet gap like those of the runs that froze (`e08-01` to `e08-03`).
+
+**Lock probe during the run** (`probe/`, started as a systemd unit so the SSH call returned at once): nine stretches where 2–10 consecutive 250 ms checks found the lock taken. **This does not mean a long hold under load:** our app takes the lock about 20 times a second for creates plus the click save, so consecutive checks can each catch a different short save. Evidence that nothing waited: no goroutine dump shows `lastPageMatch` (the full-copy scan); in most dumps Litestream was idle (`monitor`), so the lock holder was the app's own saves; the longest streaks (at about +313–321 s) coincide with Litestream compacting its whole copy at level 2 (about 119% CPU), which slowed the app's saves slightly; the app logged no `database is locked`; create p99 39.6 ms. The probe is reliable when idle (`heartbeat-probe-01`), not as a measure of hold length under load.
