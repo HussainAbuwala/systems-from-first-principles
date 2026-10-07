@@ -4,7 +4,7 @@
     check.py TARGET PAIRS.csv OUT.json
 
 PAIRS.csv has code,url rows: every link created during the run plus a sample
-of seeded ones. Each must answer 301 with exactly its URL; a few codes that
+of seeded ones; url GONE means the link was taken down (E09) and must answer 410. Each must answer 301 with exactly its URL; a few codes that
 were never issued must answer 404. Also records the caching instructions on
 redirects (Cache-Control, Expires), used to judge levels 5 and 9. Runs on the
 load machine, one request at a time, no redirects followed.
@@ -53,7 +53,10 @@ for p in pairs:
         problems.append({"code": p["code"], "error": str(e)})
         continue
     caching[f"Cache-Control={cache_control!r} Expires={expires!r}"] += 1
-    if status != 301 or location != p["url"]:
+    if p["url"] == "GONE":  # taken down during the run (E09): must answer 410
+        if status != 410:
+            problems.append({"code": p["code"], "status": status, "location": location, "expected": "410 Gone"})
+    elif status != 301 or location != p["url"]:
         problems.append({"code": p["code"], "status": status, "location": location, "expected": p["url"]})
 
 # Codes far beyond anything issued must not resolve.

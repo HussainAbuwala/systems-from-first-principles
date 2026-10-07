@@ -186,6 +186,34 @@ if (viralRate > 0) {
   };
 }
 
+// E09: TAKEDOWNS links are taken down, spread evenly over the measured period
+// (after WARMUP): the first 60% are the most popular links (Zipf ranks 1, 2,
+// 3, ...), so clicks keep arriving after their takedown; the rest are random
+// stored links. Each takedown is recorded with the time it was confirmed, so
+// the judge can check that no click on it was redirected afterwards. Needs
+// STORED (links are computed, not taken from the sample) and the operator
+// secret in the file TAKEDOWN_SECRET_FILE (a file, so the secret never appears
+// in the recorded k6 arguments).
+const takedowns = Number(__ENV.TAKEDOWNS || 0);
+const takedownSecret = takedowns > 0 && __ENV.TAKEDOWN_SECRET_FILE ? open(__ENV.TAKEDOWN_SECRET_FILE).trim() : "";
+if (takedowns > 0) {
+  const warmup = Number(__ENV.WARMUP || 60);
+  const measured = Number(__ENV.MEASURED || 300);
+  scenarios.takedowns = {
+    executor: "constant-arrival-rate",
+    exec: "takedown",
+    rate: takedowns,
+    timeUnit: `${measured}s`,
+    duration: `${measured}s`,
+    startTime: `${warmup}s`,
+    preAllocatedVUs: 5,
+    maxVUs: 20,
+  };
+}
+const takedownMetric = new Counter("takedown");
+// Taken-down links answer 410 Gone; that is a correct answer, not an error.
+const redirectStatuses = http.expectedStatuses({ min: 200, max: 399 }, 410);
+
 export const options = {
   noConnectionReuse: true,
   insecureSkipTLSVerify: true, // self-made certificate; the handshake work is unchanged
@@ -203,6 +231,7 @@ export function redirect() {
     tags: { kind: "redirect", name: "redirect", code },  // code: per-link truth for E05
     timeout: "10s",
     responseType: "none",
+    responseCallback: redirectStatuses,
   });
   record(res, "redirect");
   // A redirect to the wrong address. Error answers (5xx) count as errors, not here.
@@ -267,4 +296,18 @@ export function viral() {
   if (res.status === 301 && res.headers["Location"] !== url) {
     wrongRedirect.add(1, { code, status: String(res.status) });
   }
+}
+
+export function takedown() {
+  const i = exec.scenario.iterationInTest;
+  const rank = i < Math.round(takedowns * 0.6) ? i + 1 : 1 + Math.floor(Math.random() * stored);
+  const [code] = linkForRank(rank);
+  const res = http.post(`${target}/links/${code}/takedown`, null, {
+    headers: { authorization: `Bearer ${takedownSecret}` },
+    tags: { kind: "takedown", name: "takedown" },
+    timeout: "10s",
+    responseCallback: http.expectedStatuses(200),
+  });
+  record(res, "takedown");
+  takedownMetric.add(1, { code, rank: String(rank), status: String(res.status) });
 }

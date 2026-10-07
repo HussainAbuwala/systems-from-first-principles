@@ -194,8 +194,49 @@ if os.path.exists(counts_path):
     measures["count_truth_vs_server"] = f"{counts['clicks_truth_total']} vs {counts['clicks_server_total']}"
     if counts["links_outside_1pct"]:
         failures.append(f"{counts['links_outside_1pct']} of {counts['links_checked']} links' click counts more than 1% off, 60 s after the load stopped")
-# From E05 on, every redirect must stop browsers reusing it, or repeat clicks go uncounted.
-if event in ("E05",) and check is not None:
+# E09: every takedown confirmed; no click on a taken-down link redirected more
+# than 60 s after its takedown was confirmed; no link answers 410 unless it
+# was taken down. Times are the load generator's (one clock for both).
+if event == "E09":
+    requested, confirmed = 0, {}
+    with gzip.open(os.path.join(out, "k6.csv.gz"), "rt") as f:
+        rows_all = list(csv.DictReader(f))
+    for r in rows_all:
+        if r["metric_name"] == "takedown":
+            requested += 1
+            t = tags(r)
+            if t.get("status") == "200":
+                confirmed[t["code"]] = float(r["timestamp"])
+    measures["takedowns_requested"] = requested
+    measures["takedowns_confirmed"] = len(confirmed)
+    after = late = wrong_gone = 0
+    worst = 0.0
+    for r in rows_all:
+        if r["metric_name"] != "http_reqs" or r.get("name") != "redirect":
+            continue
+        code, ts, status = tags(r).get("code"), float(r["timestamp"]), r["status"]
+        if status == "301" and code in confirmed and ts > confirmed[code]:
+            after += 1
+            worst = max(worst, ts - confirmed[code])
+            if ts > confirmed[code] + 60:
+                late += 1
+        if status == "410" and (code not in confirmed or ts < confirmed[code] - 1):
+            wrong_gone += 1
+    measures["redirects_after_takedown"] = after
+    measures["latest_redirect_after_takedown_seconds"] = round(worst, 1)
+    measures["redirects_more_than_60s_after_takedown"] = late
+    measures["gone_answers_for_live_links"] = wrong_gone
+    if requested == 0:
+        failures.append("no takedowns were sent")
+    elif len(confirmed) < requested:
+        failures.append(f"only {len(confirmed)} of {requested} takedowns confirmed")
+    if late:
+        failures.append(f"{late} redirects of taken-down links more than 60 s after the takedown")
+    if wrong_gone:
+        failures.append(f"{wrong_gone} links answered 410 without having been taken down")
+# From E05 on, every redirect must stop browsers reusing it, or repeat clicks go
+# uncounted; E09 also forbids browser reuse beyond 60 s.
+if event in ("E05", "E09") and check is not None:
     headers = check.get("redirect_caching_headers", {})
     reusable = sum(n for h, n in headers.items() if not any(x in h for x in ("no-store", "no-cache", "max-age=0")))
     measures["redirects_browsers_may_reuse"] = reusable
