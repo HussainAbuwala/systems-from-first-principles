@@ -1,0 +1,39 @@
+{
+  "links_checked": 2570,
+  "problems": 1,
+  "examples": [
+    {
+      "code": "FXFx",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-07/2-818?utm_source=share&ref=pqt1mbrm"
+    }
+  ],
+  "problem_codes": [
+    "FXFx"
+  ],
+  "all_problems": [
+    {
+      "code": "FXFx",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-07/2-818?utm_source=share&ref=pqt1mbrm"
+    }
+  ],
+  "redirect_caching_headers": {
+    "Cache-Control='no-store' Expires=None": 2569,
+    "Cache-Control=None Expires=None": 1
+  },
+  "unloaded_ms": {
+    "generated": {
+      "count": 2570,
+      "median": 2.28,
+      "p99": 3.8
+    },
+    "name": {
+      "count": 0,
+      "median": null,
+      "p99": null
+    }
+  }
+}

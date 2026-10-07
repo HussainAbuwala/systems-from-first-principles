@@ -1,0 +1,100 @@
+{
+  "checked_at_unix": 1791411144,
+  "links_checked": 1101,
+  "links_outside_1pct": 0,
+  "clicks_truth_total": 17217,
+  "clicks_server_total": 17217,
+  "worst": [
+    {
+      "code": "wpu0",
+      "day": "2026-10-07",
+      "truth": 2985,
+      "server": 2985,
+      "diff": 0,
+      "allowed": 29,
+      "ok": true
+    },
+    {
+      "code": "gG9t",
+      "day": "2026-10-07",
+      "truth": 1486,
+      "server": 1486,
+      "diff": 0,
+      "allowed": 14,
+      "ok": true
+    },
+    {
+      "code": "yiAR",
+      "day": "2026-10-07",
+      "truth": 1000,
+      "server": 1000,
+      "diff": 0,
+      "allowed": 10,
+      "ok": true
+    },
+    {
+      "code": "kKL9",
+      "day": "2026-10-07",
+      "truth": 725,
+      "server": 725,
+      "diff": 0,
+      "allowed": 7,
+      "ok": true
+    },
+    {
+      "code": "E38Y",
+      "day": "2026-10-07",
+      "truth": 596,
+      "server": 596,
+      "diff": 0,
+      "allowed": 5,
+      "ok": true
+    },
+    {
+      "code": "jGP6",
+      "day": "2026-10-07",
+      "truth": 481,
+      "server": 481,
+      "diff": 0,
+      "allowed": 4,
+      "ok": true
+    },
+    {
+      "code": "bfEd",
+      "day": "2026-10-07",
+      "truth": 421,
+      "server": 421,
+      "diff": 0,
+      "allowed": 4,
+      "ok": true
+    },
+    {
+      "code": "ls0C",
+      "day": "2026-10-07",
+      "truth": 400,
+      "server": 400,
+      "diff": 0,
+      "allowed": 4,
+      "ok": true
+    },
+    {
+      "code": "cxTO",
+      "day": "2026-10-07",
+      "truth": 326,
+      "server": 326,
+      "diff": 0,
+      "allowed": 3,
+      "ok": true
+    },
+    {
+      "code": "eHGP",
+      "day": "2026-10-07",
+      "truth": 301,
+      "server": 301,
+      "diff": 0,
+      "allowed": 3,
+      "ok": true
+    }
+  ],
+  "outside_1pct": []
+}

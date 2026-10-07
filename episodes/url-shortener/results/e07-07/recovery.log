@@ -1,0 +1,22 @@
+[3 s] creating sfp-app (cx33) with its kept addresses and the copy's Volume
+[40 s] created sfp-app as cx33
+[40 s] installing base software
+v24.21.0
+[52 s] installing the shortener and restoring the database from the copy
+
+Running kernel seems to be up-to-date.
+
+No services need to be restarted.
+
+No containers need to be restarted.
+
+No user sessions are running outdated binaries.
+
+No VM guests are running outdated hypervisor (qemu) binaries on this host.
+restore step: 17 s (restored database)
+counter jump: highest restored link 10000818 (FXFw), newest real link created 294 s ago; placeholder 11000818 (K9Oy); next new link 11000819 (K9Oz)
+active
+active
+active
+[123 s] checking
+[133 s] done: /health and 20 seeded links answer correctly on https://2.28.198.178

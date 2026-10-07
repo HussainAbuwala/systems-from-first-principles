@@ -31,3 +31,5 @@ sfp-load,cpx42,load,2026-10-07T10:49:23Z,2026-10-07T11:54:55Z,2,0.2228,watchdog
 sfp-load,cpx42,load,2026-10-07T13:53:35Z,2026-10-07T14:40:52Z,1,0.1114,E08 on stage 7 attempt 2 done
 sfp-app,cx33,system,2026-10-05T20:13:06Z,2026-10-07T15:52:26Z,44,0.5984,E07 e07-06: machine lost
 sfp-load,cpx42,load,2026-10-07T14:51:21Z,2026-10-07T16:05:15Z,2,0.2228,stage 7 regressions done
+sfp-app,cx33,system,2026-10-07T15:56:06Z,2026-10-07T22:59:09Z,8,0.1088,E07 e07-07: machine lost
+sfp-load,cpx42,load,2026-10-07T20:37:42Z,2026-10-07T23:12:01Z,3,0.3342,stage 8 runs done

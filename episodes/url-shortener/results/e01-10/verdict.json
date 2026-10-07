@@ -1,0 +1,41 @@
+{
+  "event": "E01",
+  "verdict": "PASS",
+  "reasons": [],
+  "rules": {
+    "redirect_p99_ms": 100.0,
+    "create_p99_ms": 300.0,
+    "error_pct": 0.1
+  },
+  "measures": {
+    "measured_seconds": 300,
+    "redirects": 301,
+    "creates": 6,
+    "redirect_p50_ms": 5.8,
+    "redirect_p99_ms": 10.8,
+    "create_p99_ms": 9.4,
+    "viral_redirects": 0,
+    "viral_redirect_p99_ms": null,
+    "other_redirect_p99_ms": null,
+    "name_create_requests": 0,
+    "name_create_p99_ms": null,
+    "error_pct": 0.0,
+    "wrong_redirects": 0,
+    "checker_problems": 0,
+    "checker_unloaded_ms": {
+      "generated": {
+        "count": 1008,
+        "median": 2.63,
+        "p99": 4.27
+      },
+      "name": {
+        "count": 0,
+        "median": null,
+        "p99": null
+      }
+    },
+    "count_links_checked": 163,
+    "count_links_outside_1pct": 0,
+    "count_truth_vs_server": "361 vs 361"
+  }
+}

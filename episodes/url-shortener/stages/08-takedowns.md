@@ -46,7 +46,15 @@ A missing feature, not an exhausted resource. The 60-second rule is aimed at cac
 | Event | Run ID | Redirect p99 | Errors | Correct | Pass |
 | --- | --- | ---: | ---: | --- | --- |
 | E08 | `e08-10` | 12.7 ms (create 18.5 ms) | 0% | counts exact | PASS |
-| E01–E07 | (in progress) | | | | |
+| E01 | `e01-10` | 10.8 ms (create 9.4 ms) | 0% | yes; counts exact | PASS |
+| E02 | `e02-10` | 7.8 ms (create 10.9 ms) | 0% | yes; counts exact | PASS |
+| E03 | `e03-16` | 29.5 ms (create 29.6 ms) | 0% | exactly one winner in all 1,001 rounds; counts exact | PASS |
+| E04 | (covered by E05) | 6.4 ms | 0% | yes | PASS |
+| E05 | `e05-09` | 6.4 ms (create 10.9 ms) | 0% | counts exact (1,355,475 = 1,355,475) | PASS |
+| E06 | `e06-07` | 7.8 ms | 0% | no confirmed link lost; back 55 s after the power cut; 8 of 1,101 links' counts short | **PASS** except counts (accepted) |
+| E07 | `e07-07` (+ `e07-08`, `e07-09` in progress) | **97.9 ms** | 0% | back 298 s after the loss; 1 link lost (confirmed in the old server's last moment, 404, allowed), 0 to the wrong page; counter jumped 10,000,818 → 11,000,819; 8 links' counts short | **PASS** except counts (accepted); redirect p99 within 25% of its limit, so two more runs |
+
+**`e07-07`'s redirect p99 (97.9 ms, against 7.5–10.4 ms in every earlier E07 run):** before the loss redirects were as usual; on the rebuilt server, every 10 s window had redirect p99 110–120 ms while its CPU was about 6%. Split by phase (load generator, after recovery): server answer p99 3.6 ms and TLS handshake p99 4.2 ms, as before, but **TCP connect p99 53 ms** (stage 7's rebuilt server in `e07-06`: 0.7 ms). The delay is in opening the connection, before nginx or the app sees the request, which stage 8's change does not touch. On the rebuilt server, idle: `fsync` 1.4 ms median, `/health` p99 1.7 ms with no stalls. Measured next: plain TCP connects to that server, and two more E07 runs, each on a freshly built server.
 
 ## Scoreboard row
 
