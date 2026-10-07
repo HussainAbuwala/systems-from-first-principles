@@ -1,0 +1,52 @@
+{
+  "links_checked": 2487,
+  "problems": 2,
+  "examples": [
+    {
+      "code": "FXFy",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-06/8-819?utm_source=share&ref=b11h7k4w"
+    },
+    {
+      "code": "FXFz",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-06/5-820?utm_source=share&ref=m3th2q4w"
+    }
+  ],
+  "problem_codes": [
+    "FXFy",
+    "FXFz"
+  ],
+  "all_problems": [
+    {
+      "code": "FXFy",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-06/8-819?utm_source=share&ref=b11h7k4w"
+    },
+    {
+      "code": "FXFz",
+      "status": 404,
+      "location": null,
+      "expected": "https://made.example.invalid/e07-06/5-820?utm_source=share&ref=m3th2q4w"
+    }
+  ],
+  "redirect_caching_headers": {
+    "Cache-Control='no-store' Expires=None": 2485,
+    "Cache-Control=None Expires=None": 2
+  },
+  "unloaded_ms": {
+    "generated": {
+      "count": 2487,
+      "median": 2.87,
+      "p99": 4.13
+    },
+    "name": {
+      "count": 0,
+      "median": null,
+      "p99": null
+    }
+  }
+}

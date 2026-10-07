@@ -1,6 +1,6 @@
-# Stage 07: Counter jump
+# Stage 07: Counter jump and heartbeat
 
-Status: **attempt 2 (heartbeat) built and probe-tested** (2026-10-07); E08 and reruns to come.
+Status: **done** (2026-10-07). E08 passes on attempt 2 (`e08-07`, `e08-08`, `e08-09`); every earlier event rerun.
 
 ## Trigger
 
@@ -60,3 +60,42 @@ Earlier reading from `e08-01`: every create waits for its own copy to the Volume
 **Alternatives considered:** fixing the check inside Litestream (the LTX format has a page index, `ltx.DecodePageIndex` in `superfly/ltx` v0.5.2, so the page could be looked up directly instead of scanning; the clean fix, but it means patching or reporting upstream); `checkpoint-interval: 0` (no time-based folds; a size-triggered fold right after a full copy under heavy traffic could still scan); a readiness gate after recovery (wait for the first fold before admitting visitors; does not help the daily full copy); the dedicated writer thread (contains freezes but writes would still wait 30 s; kept for a later level). No setting turns the check off (`skip-verify` concerns S3 TLS).
 
 **Probe test (`results/heartbeat-probe-01/`):** same quiet scenario as `e08-06`: no hold of 500 ms or more in 12 minutes (5 isolated checks of 2,880 found the lock taken, each under 250 ms), against 30.5 s without the heartbeat. Remaining theoretical gap, not observed: a fold triggered at the very end of the full-copy round, before the next round turns the heartbeats into a small file.
+
+## E08 on the final design (attempt 2)
+
+Traffic started about 20 s after each fresh full copy finished (the timing that froze `e08-01` to `e08-03`). Combined: `results/verdicts/E08-stage-07.json`.
+
+| Run | Create p99 | Redirect p99 | Errors | Counts | First minute (warm-up) | App lock waits |
+| --- | ---: | ---: | ---: | --- | --- | ---: |
+| `e08-07` | 39.6 ms | 18.7 ms | 0% | exact | p99 8.8 ms, 0% errors | 0 |
+| `e08-08` | 22.3 ms | 14.5 ms | 0% | exact | p99 9.6 ms, 0% errors | 0 |
+| `e08-09` | 20.0 ms | 13.7 ms | 0% | exact | p99 8.8 ms, 0% errors | 0 |
+
+**Resources during E08 (after warm-up):** server CPU about 52% on average (peaks 65–66%, busiest core up to 82%): nginx (TLS for 1,000 new connections/s) about 1.2 cores, Litestream about 0.5 cores on average and up to 1.4 during its whole-copy merges, Node about a quarter of a core. Load generator under 46% (valid). The 12 GB database does not fit in about 7 GB of page cache; redirects still p99 under 19 ms.
+
+## Rerun of every event so far
+
+| Event | Run ID | Redirect p99 | Errors | Correct | Pass |
+| --- | --- | ---: | ---: | --- | --- |
+| E01 | `e01-09` | 11.6 ms (create 9.2 ms) | 0% | yes; counts exact | PASS |
+| E02 | `e02-09` | 7.5 ms (create 10.9 ms) | 0% | yes; counts exact | PASS |
+| E03 | `e03-15` | 33.7 ms (create 30.2 ms) | 0% | exactly one winner in all 1,001 rounds; counts exact | PASS |
+| E04 | (covered by E05) | 6.3 ms | 0% | yes | PASS |
+| E05 | `e05-08` | 6.3 ms (create 12.3 ms) | 0% | counts exact (1,355,748 = 1,355,748) | PASS |
+| E06 | `e06-06` | 7.7 ms | 0% | no confirmed link lost (checker 0 problems); back 61 s after the power cut; 8 of 1,101 links' counts short | **PASS** except counts (accepted) |
+| E07 | `e07-06` | 7.5 ms | 0% | back 340 s after the delete command (detection 215 s, `recover.sh` 134 s); 821 links confirmed before the loss, **2 lost** (confirmed in the old server's last moment; answer 404, allowed) and **0 redirecting to the wrong page**; counter jumped from 10,000,819 to 11,000,820; 17 of 1,101 links' counts short | **PASS** except counts (accepted) |
+| E08 | `e08-07`, `e08-08`, `e08-09` | 18.7 / 14.5 / 13.7 ms | 0% | counts exact | PASS |
+
+## Accepted failures (unchanged)
+
+A power cut or the loss of the machine can lose up to about a second of click counts (E06 and E07 runs recorded FAIL on the per-link 1% rule). Stage 7 also gives up stage 6's "no confirmed link lost" on machine loss, within E07's rule: links confirmed in the machine's last moment are lost and answer 404; their codes are never reissued.
+
+## Scoreboard row
+
+| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 07 | Stage 6, but generated links confirmed on the server's disk with a counter jump after any restore; names still wait for the copy; a heartbeat save every second | E08: 1,000 redirects/s, 20 creates/s, 100 M links (12 GB, larger than memory) | 14.5 ms (median of 3; creates 22.3 ms) | 0% | 12 GB | €8.49 + €0.50 IPv4 + €0.57 Volume = €9.56 (Better Stack free) | not yet broken; next is E09. Closest to a limit in E08: CPU about 52% (nginx TLS about 1.2 cores, Litestream up to 1.4 during whole-copy merges). Accepted: about 1 s of click counts in a power cut or machine loss; links confirmed in the last moment before a machine loss |
+
+## Interview line
+
+"At 100 million links, waiting for every new link to reach the backup cost up to 0.8 s while the backup tool rewrote itself, so we confirm links on local disk and jump the code counter after any restore so a lost code is never reused; the backup tool's own safety check could then still lock the database for 30 s after a fresh copy, which a one-row heartbeat write every second prevents."

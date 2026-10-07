@@ -1,0 +1,173 @@
+{
+  "checked_at_unix": 1791386783,
+  "links_checked": 1101,
+  "links_outside_1pct": 8,
+  "clicks_truth_total": 19965,
+  "clicks_server_total": 19933,
+  "worst": [
+    {
+      "code": "egbp",
+      "day": "2026-10-07",
+      "truth": 3474,
+      "server": 3469,
+      "diff": -5,
+      "allowed": 34,
+      "ok": true
+    },
+    {
+      "code": "6k0Z",
+      "day": "2026-10-07",
+      "truth": 1252,
+      "server": 1249,
+      "diff": -3,
+      "allowed": 12,
+      "ok": true
+    },
+    {
+      "code": "9hIO",
+      "day": "2026-10-07",
+      "truth": 687,
+      "server": 685,
+      "diff": -2,
+      "allowed": 6,
+      "ok": true
+    },
+    {
+      "code": "q8lT",
+      "day": "2026-10-07",
+      "truth": 617,
+      "server": 615,
+      "diff": -2,
+      "allowed": 6,
+      "ok": true
+    },
+    {
+      "code": "cdTf",
+      "day": "2026-10-07",
+      "truth": 302,
+      "server": 300,
+      "diff": -2,
+      "allowed": 3,
+      "ok": true
+    },
+    {
+      "code": "l9ZH",
+      "day": "2026-10-07",
+      "truth": 272,
+      "server": 270,
+      "diff": -2,
+      "allowed": 2,
+      "ok": true
+    },
+    {
+      "code": "BP4c",
+      "day": "2026-10-07",
+      "truth": 1719,
+      "server": 1718,
+      "diff": -1,
+      "allowed": 17,
+      "ok": true
+    },
+    {
+      "code": "nWKA",
+      "day": "2026-10-07",
+      "truth": 416,
+      "server": 415,
+      "diff": -1,
+      "allowed": 4,
+      "ok": true
+    },
+    {
+      "code": "q5Gg",
+      "day": "2026-10-07",
+      "truth": 404,
+      "server": 403,
+      "diff": -1,
+      "allowed": 4,
+      "ok": true
+    },
+    {
+      "code": "blLt",
+      "day": "2026-10-07",
+      "truth": 223,
+      "server": 222,
+      "diff": -1,
+      "allowed": 2,
+      "ok": true
+    }
+  ],
+  "outside_1pct": [
+    {
+      "code": "kVO2",
+      "day": "2026-10-07",
+      "truth": 95,
+      "server": 94,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "FxNJ",
+      "day": "2026-10-07",
+      "truth": 76,
+      "server": 75,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "Ej5m",
+      "day": "2026-10-07",
+      "truth": 71,
+      "server": 70,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "kC3k",
+      "day": "2026-10-07",
+      "truth": 45,
+      "server": 44,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "oGce",
+      "day": "2026-10-07",
+      "truth": 45,
+      "server": 44,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "mb0L",
+      "day": "2026-10-07",
+      "truth": 37,
+      "server": 36,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "gBiQ",
+      "day": "2026-10-07",
+      "truth": 7,
+      "server": 6,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "wD8j",
+      "day": "2026-10-07",
+      "truth": 11,
+      "server": 10,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    }
+  ]
+}
