@@ -1,0 +1,119 @@
+{
+  "checked_at_unix": 1791417494,
+  "links_checked": 1101,
+  "links_outside_1pct": 2,
+  "clicks_truth_total": 32969,
+  "clicks_server_total": 32939,
+  "worst": [
+    {
+      "code": "Dhii",
+      "day": "2026-10-07",
+      "truth": 5865,
+      "server": 5859,
+      "diff": -6,
+      "allowed": 58,
+      "ok": true
+    },
+    {
+      "code": "b6K7",
+      "day": "2026-10-07",
+      "truth": 2968,
+      "server": 2962,
+      "diff": -6,
+      "allowed": 29,
+      "ok": true
+    },
+    {
+      "code": "n0W1",
+      "day": "2026-10-07",
+      "truth": 1955,
+      "server": 1952,
+      "diff": -3,
+      "allowed": 19,
+      "ok": true
+    },
+    {
+      "code": "E25V",
+      "day": "2026-10-07",
+      "truth": 1467,
+      "server": 1465,
+      "diff": -2,
+      "allowed": 14,
+      "ok": true
+    },
+    {
+      "code": "xsJh",
+      "day": "2026-10-07",
+      "truth": 823,
+      "server": 822,
+      "diff": -1,
+      "allowed": 8,
+      "ok": true
+    },
+    {
+      "code": "ae9J",
+      "day": "2026-10-07",
+      "truth": 266,
+      "server": 265,
+      "diff": -1,
+      "allowed": 2,
+      "ok": true
+    },
+    {
+      "code": "sJS3",
+      "day": "2026-10-07",
+      "truth": 259,
+      "server": 258,
+      "diff": -1,
+      "allowed": 2,
+      "ok": true
+    },
+    {
+      "code": "u5bc",
+      "day": "2026-10-07",
+      "truth": 189,
+      "server": 188,
+      "diff": -1,
+      "allowed": 1,
+      "ok": true
+    },
+    {
+      "code": "4bqB",
+      "day": "2026-10-07",
+      "truth": 175,
+      "server": 174,
+      "diff": -1,
+      "allowed": 1,
+      "ok": true
+    },
+    {
+      "code": "F8V2",
+      "day": "2026-10-07",
+      "truth": 166,
+      "server": 165,
+      "diff": -1,
+      "allowed": 1,
+      "ok": true
+    }
+  ],
+  "outside_1pct": [
+    {
+      "code": "xwN5",
+      "day": "2026-10-07",
+      "truth": 85,
+      "server": 84,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    },
+    {
+      "code": "unMY",
+      "day": "2026-10-07",
+      "truth": 16,
+      "server": 15,
+      "diff": -1,
+      "allowed": 0,
+      "ok": false
+    }
+  ]
+}

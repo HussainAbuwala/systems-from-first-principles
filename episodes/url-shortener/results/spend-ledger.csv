@@ -33,3 +33,6 @@ sfp-app,cx33,system,2026-10-05T20:13:06Z,2026-10-07T15:52:26Z,44,0.5984,E07 e07-
 sfp-load,cpx42,load,2026-10-07T14:51:21Z,2026-10-07T16:05:15Z,2,0.2228,stage 7 regressions done
 sfp-app,cx33,system,2026-10-07T15:56:06Z,2026-10-07T22:59:09Z,8,0.1088,E07 e07-07: machine lost
 sfp-load,cpx42,load,2026-10-07T20:37:42Z,2026-10-07T23:12:01Z,3,0.3342,stage 8 runs done
+sfp-app,cx33,system,2026-10-07T23:02:09Z,2026-10-07T23:24:09Z,1,0.0136,E07 e07-08: machine lost
+sfp-app,cx33,system,2026-10-07T23:26:08Z,2026-10-07T23:46:00Z,1,0.0136,E07 e07-09: machine lost
+sfp-load,cpx42,load,2026-10-07T23:14:32Z,2026-10-07T23:59:55Z,1,0.1114,E07 extra runs done

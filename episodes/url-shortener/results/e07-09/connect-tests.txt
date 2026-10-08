@@ -1,0 +1,6 @@
+== connect test to the server rebuilt in e07-07 (169287111)
+TCP connect to 2.28.198.178:443 x1150: p50 0.54 ms, p99 60.33 ms, max 66.0 ms, over 20 ms: 18
+== connect test to the server rebuilt in e07-08 (169288932)
+TCP connect to 2.28.198.178:443 x1151: p50 0.56 ms, p99 61.04 ms, max 68.9 ms, over 20 ms: 17
+== connect test to the server rebuilt in e07-09 (169290623)
+TCP connect to 2.28.198.178:443 x1182: p50 0.64 ms, p99 0.84 ms, max 5.0 ms, over 20 ms: 0
