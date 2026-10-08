@@ -1,6 +1,6 @@
 # URL shortener
 
-**Status:** Event script locked 2026-10-03 (E01–E09, 10% of Bitly, one video); building tools and stage 0
+**Status:** all events played (E01–E09) on stage 8, 2026-10-08; scoreboard, final claim and interview cut written; script and storyboard next
 
 ## Central question
 

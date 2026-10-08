@@ -1,6 +1,6 @@
 # Stage 08: Takedowns
 
-Status: **built, E09 passes 3/3, E08 rerun passes; reruns of E01–E07 in progress** (2026-10-07).
+Status: **done** (2026-10-08). E09 passes 3/3; every earlier event rerun; E07's latency on some hosts accepted (below).
 
 ## Trigger
 
@@ -52,14 +52,18 @@ A missing feature, not an exhausted resource. The 60-second rule is aimed at cac
 | E04 | (covered by E05) | 6.4 ms | 0% | yes | PASS |
 | E05 | `e05-09` | 6.4 ms (create 10.9 ms) | 0% | counts exact (1,355,475 = 1,355,475) | PASS |
 | E06 | `e06-07` | 7.8 ms | 0% | no confirmed link lost; back 55 s after the power cut; 8 of 1,101 links' counts short | **PASS** except counts (accepted) |
-| E07 | `e07-07`, `e07-08`, `e07-09` | 97.9 / **117.8** / **100.2** ms | 0% | E07's own rules pass in all three: back 236–367 s after the loss; 1–3 links lost from the old server's last moment (404, allowed), 0 to the wrong page; counter jump each time; counts short (accepted) | **FAIL** on redirect p99 in two of three runs: host network, see below; **decision pending** |
+| E07 | `e07-07`, `e07-08`, `e07-09` | 97.9 / **117.8** / **100.2** ms | 0% | E07's own rules pass in all three: back 236–367 s after the loss; 1–3 links lost from the old server's last moment (404, allowed), 0 to the wrong page; counter jump each time; counts short (accepted) | **FAIL** on redirect p99 in two of three runs: host network, see below; **accepted (won't fix)** |
 **E07's slow redirects come from some Hetzner hosts' network, not the design.** Splitting every redirect by phase: the server's answer stayed about 3 ms p99 in all runs; the tail is in **opening the TCP connection**, and it follows the machine. Servers built by `recover.sh` in `e07-07` (A) and `e07-08` (B) had TCP connect p99 53–61 ms, about 1.5% of connects taking an extra 50–60 ms, measured both under load and with a plain connect test against the idle server (no HTTP, no app). The servers built in `e07-06` and `e07-09` had 0.7–0.84 ms. So: `e07-07` fast before the loss, slow after (A); `e07-08` slow before (A) and after (B); `e07-09` slow before (B), fast after (C). Stage 8's change cannot touch TCP connects. Every other stage 8 run (E01–E06, E08, E09) happened to run on fast machines.
+
+## Accepted failure: slow connects on some Hetzner hosts
+
+**E07's runs stay recorded as FAIL on redirect p99 (117.8 and 100.2 ms against 100 ms), accepted as won't fix (decided by the user, 2026-10-08):** on some Hetzner hosts about 1.5% of new TCP connections take an extra 50–60 ms to open, which puts redirect p99 at about 100–118 ms; the server's own answer time stays about 3 ms. The host is assigned by Hetzner (a rebuild after a machine loss can land on one), and the fixes would be choosing hosts (not offered on Hetzner Cloud), another location, or another provider. E07's own rules (back within an hour, at most the last 5 minutes of links lost, no code reissued) pass in all three runs. A question to Hetzner support could follow up.
 
 ## Scoreboard row
 
 | Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 08 | Stage 7 + operator takedowns (`410 Gone`, confirmed once in the copy) | E09 (E08 load + 100 takedowns) | 14.8 ms (median of 3; creates 26.2 ms) | 0% | 12 GB | €9.56 | not broken by the script; CPU closest to its limit (about 50% average) |
+| 08 | Stage 7 + operator takedowns (`410 Gone`, confirmed once in the copy) | E09 (E08 load + 100 takedowns) | 14.8 ms (median of 3; creates 26.2 ms) | 0% | 12 GB | €9.56 | not broken by the script; CPU closest to its limit (about 50% average). Accepted: on some Hetzner hosts slow TCP connects put redirect p99 at about 100–118 ms (E07) |
 
 ## Interview line
 
