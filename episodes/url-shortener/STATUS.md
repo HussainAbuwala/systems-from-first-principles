@@ -4,9 +4,9 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 
 ## Position
 
-- **All events played (E01–E09). Current design: stage 8** (`url-shortener/stage-08`), deployed on `sfp-app` (CX33, nbg1, IP 2.28.198.178; rebuilt by `recover.sh` in `e07-09`, a host with normal networking).
+- **All events played (E01–E09). Final design: stage 8** (`url-shortener/stage-08`). **Shut down 2026-10-08:** `sfp-app`, Volume `sfp-app-copy` and both kept IPs deleted (protection removed first); the Hetzner account holds nothing. The Better Stack monitor `5022545` is paused, not deleted. To bring the system back: `tools/cloud/create.sh`, `tools/provision/provision.sh`, a new Volume and Primary IPs named as `system/recover.sh` expects, then `system/deploy.sh` (all at the stage 8 tag); the data was test data.
 - **Write-up done:** stage logs `stages/01`–`08`, [scoreboard.md](scoreboard.md) with the final claim, [interview-cut.md](interview-cut.md).
-- **Next (README "order of work" step 5):** write `script.md` and `storyboard.md` from what actually happened. Then decide what to do with the running system (it costs about €9.56 a month: CX33, IPv4, Volume; Better Stack is free).
+- **Next (README "order of work" step 5):** write `script.md` and `storyboard.md` from what actually happened.
 
 **Accepted failures (won't fix):** about 1 s of click counts in a power cut or machine loss; links confirmed in the machine's last moment (E07 allows it; 404, codes never reused); on some Hetzner hosts slow TCP connects put redirect p99 at about 100–118 ms (E07 on stage 8).
 
@@ -30,11 +30,11 @@ Handoff notes for picking the work up in a new session. Last updated 2026-10-05.
 
 ## Machines and money
 
-- `sfp-app`: CX33, nbg1, label `keep=true`, about €0.0136/hour. Holds 10 M seeded links. Kept resources: Primary IPs `sfp-app-ipv4`/`-ipv6` (`auto_delete=false`, deletion-protected), Volume `sfp-app-copy` (deletion-protected). Better Stack monitor `5022545` (token `BETTER_STACK_TOKEN` in `.env`) emails on every outage, including test resets.
+- (deleted 2026-10-08) `sfp-app`: CX33, nbg1, label `keep=true`, about €0.0136/hour. Holds 10 M seeded links. Kept resources: Primary IPs `sfp-app-ipv4`/`-ipv6` (`auto_delete=false`, deletion-protected), Volume `sfp-app-copy` (deletion-protected). Better Stack monitor `5022545` (token `BETTER_STACK_TOKEN` in `.env`) emails on every outage, including test resets.
 - Stage 6 runs on CX33 only (user's rule): if a recovery falls back to another type, move back with `delete.sh sfp-app` + `recover.sh` before testing.
 - Load machine `sfp-load` (CPX42, nbg1) is created per session with `tools/cloud/create.sh sfp-load cpx42 load 3` and `tools/provision/provision.sh sfp-load load`, and deleted afterwards.
 - Volume `sfp-app-copy` (10 GB) runs all month: about €0.57/month from 2026-10-05, not in the server ledger.
-- Spend so far: about €5.39 of the €25 cap (2026-10-08 00:05 UTC) (`tools/cloud/spend.sh`; ledger in `results/spend-ledger.csv`). Hetzner credit is prepaid €25. Account limit: 20 shared + 8 dedicated vCPUs at once.
+- **Final spend: €5.53 of the €25 cap** (Hetzner servers, from the ledger; excludes the IPv4 and Volume fees, a few cents) (`tools/cloud/spend.sh`; ledger in `results/spend-ledger.csv`). Hetzner credit is prepaid €25. Account limit: 20 shared + 8 dedicated vCPUs at once.
 - The watchdog (`tools/cloud/install-watchdog.sh`) deletes test machines past their lifetime while the Mac is awake.
 
 ## How a run works
