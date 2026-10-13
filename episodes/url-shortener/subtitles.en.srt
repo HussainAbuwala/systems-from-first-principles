@@ -1,0 +1,5820 @@
+1
+00:00:00,000 --> 00:00:03,280
+Hey guys, it's really good to see you.
+
+2
+00:00:03,440 --> 00:00:07,700
+And so today we are going to start
+another system design episode.
+
+3
+00:00:07,700 --> 00:00:10,580
+So this is about the URL shortener.
+
+4
+00:00:10,700 --> 00:00:16,040
+It's a common question that's also asked
+in like normal system design interviews.
+
+5
+00:00:16,280 --> 00:00:22,720
+What I'm trying to do possibly different
+for this system design series is
+
+6
+00:00:22,720 --> 00:00:26,140
+that I want to try and make
+the system from scratch.
+
+7
+00:00:26,140 --> 00:00:29,980
+So we actually try and
+build it and and see it.
+
+8
+00:00:30,000 --> 00:00:36,360
+see why we need each part so we will
+start with like the simplest version of a
+
+9
+00:00:36,360 --> 00:00:41,560
+system and then based on failures we will
+try and add things that we need right
+
+10
+00:00:41,560 --> 00:00:47,340
+rather than building the most optimized
+version at at once right so we want to
+
+11
+00:00:47,340 --> 00:00:52,080
+understand like the motivation behind each
+failure and why we introduce something
+
+12
+00:00:52,080 --> 00:00:57,840
+new so that's essentially the goal of the
+series and today we'll start with the URL
+
+13
+00:00:57,840 --> 00:01:04,320
+shortener version for the system
+design right so what's so what's a
+
+14
+00:01:04,320 --> 00:01:10,680
+URL shortener essentially what
+it does is you have let me yeah
+
+15
+00:01:10,680 --> 00:01:16,540
+so essentially you have a normal
+URL right you have a long link
+
+16
+00:01:16,540 --> 00:01:22,620
+and what you do is you want to convert it
+into a shorter URL right so that's the
+
+17
+00:01:22,620 --> 00:01:28,980
+essential goal and when once
+the service converts that
+
+18
+00:01:28,980 --> 00:01:35,260
+shorter URL when a user clicks on
+it the server returns a 301 status
+
+19
+00:01:35,260 --> 00:01:41,460
+code saying that hey this page is moved
+permanently and this is the longer
+
+20
+00:01:41,460 --> 00:01:46,200
+link that you need to go to and the user
+is redirected directly to that longer link
+
+21
+00:01:46,200 --> 00:01:51,840
+right so So that's the idea
+of the URL shortener service.
+
+22
+00:01:52,160 --> 00:01:55,400
+It essentially takes a longer link
+and gives you a shorter link.
+
+23
+00:01:55,560 --> 00:01:57,320
+So this is what we are
+trying to build today.
+
+24
+00:01:57,520 --> 00:01:58,680
+So that's the goal.
+
+25
+00:01:59,580 --> 00:02:04,480
+So why do we need this? You may be thinking
+like, why do we need a URL shortener?
+
+26
+00:02:04,560 --> 00:02:07,420
+If a website has a longer link,
+why do we need a shorter link?
+
+27
+00:02:07,880 --> 00:02:10,040
+So here are a few reasons.
+
+28
+00:02:10,800 --> 00:02:14,740
+So sometimes the longer link doesn't
+fit where you're trying to send it.
+
+29
+00:02:14,740 --> 00:02:19,980
+For example, you're trying to put that longer
+link in a post or maybe a text message
+
+30
+00:02:19,980 --> 00:02:25,680
+or somewhere else and the size
+of that link doesn't fit.
+
+31
+00:02:25,860 --> 00:02:27,920
+So you can use a shorter
+link in that case.
+
+32
+00:02:28,760 --> 00:02:34,700
+Although sometimes you want just a more
+simpler and a shorter name that is much more
+
+33
+00:02:34,700 --> 00:02:38,660
+readable. So you can use
+a URL shortener for that.
+
+34
+00:02:39,600 --> 00:02:45,040
+Also, it allows you to also count the
+number of people that are clicking on that
+
+35
+00:02:45,040 --> 00:02:51,540
+shorter link. So if the original like the
+longer link that domain, let's say you
+
+36
+00:02:51,540 --> 00:02:57,040
+do not own that. So how do you how do we
+count how many people are visiting that if
+
+37
+00:02:57,040 --> 00:03:01,580
+you don't own that thing, what you can do
+is you can have a URL shortener, give you
+
+38
+00:03:01,580 --> 00:03:05,760
+a shorter link. And when people click on
+the shorter link, you will be able to count
+
+39
+00:03:05,760 --> 00:03:08,260
+how many people are actually
+going to that original link.
+
+40
+00:03:08,260 --> 00:03:10,180
+So that's another reason where people use.
+
+41
+00:03:10,700 --> 00:03:17,200
+And also, let's say the
+original link, it's a spam
+
+42
+00:03:17,200 --> 00:03:22,800
+link, right? And you want to
+take out that link very quickly.
+
+43
+00:03:23,680 --> 00:03:30,080
+So if you use a URL shortener, what
+you can do is you can just remove or
+
+44
+00:03:30,080 --> 00:03:36,300
+just terminate that shorter link so that
+anyone that has the shorter link now cannot
+
+45
+00:03:36,300 --> 00:03:38,200
+be redirected to the original link.
+
+46
+00:03:38,260 --> 00:03:42,620
+right if the original link is a spam what
+you can do is if you have a URL shortener
+
+47
+00:03:42,620 --> 00:03:48,940
+so you can immediately cancel out or
+terminate that shorter link so no one
+
+48
+00:03:48,940 --> 00:03:55,420
+is now redirected to that spam
+link so this is I think very
+
+49
+00:03:55,420 --> 00:04:01,200
+useful for like services like for example
+X in Twitter what they do is like any link
+
+50
+00:04:01,200 --> 00:04:02,260
+you post
+
+51
+00:04:03,120 --> 00:04:08,000
+or add on their website so that they
+wrap it in their own short link.
+
+52
+00:04:08,720 --> 00:04:14,820
+So if let's say for some reason, the
+original link that you posted is spam, what
+
+53
+00:04:14,820 --> 00:04:17,760
+they can do is easily
+remove that spam link
+
+54
+00:04:18,620 --> 00:04:22,540
+because they have wrapped it in the
+shorter link, they can just terminate that
+
+55
+00:04:22,540 --> 00:04:25,640
+shorter link and no one gets
+redirected to the longer link.
+
+56
+00:04:26,080 --> 00:04:31,380
+So that's another reason. So these are a
+few reasons why why a shorter link can be
+
+57
+00:04:31,380 --> 00:04:32,180
+useful.
+
+58
+00:04:33,880 --> 00:04:38,960
+So what we're trying to do is, we're trying
+to answer one question, like how far
+
+59
+00:04:38,960 --> 00:04:42,240
+does one file on a five
+euro server get you?
+
+60
+00:04:42,660 --> 00:04:49,160
+So we'll start with like a very
+simple server that takes like around
+
+61
+00:04:49,160 --> 00:04:55,560
+five to six euros to rent on the cloud
+and we'll see how much traffic it can
+
+62
+00:04:55,560 --> 00:05:01,580
+handle. right and the question I'm trying
+to ask is if it's able to like let's
+
+63
+00:05:01,580 --> 00:05:06,520
+handle somewhere around like a billion
+clicks a month on that URL so it's like a
+
+64
+00:05:06,520 --> 00:05:10,900
+proper scale we are trying to see but we'll
+try to build it from scratch from a very
+
+65
+00:05:10,900 --> 00:05:15,780
+simple architecture and see where it
+breaks and slowly improve it right
+
+66
+00:05:15,780 --> 00:05:21,820
+okay so for the episode
+
+67
+00:05:21,820 --> 00:05:27,360
+we'll we'll have what I call
+events for our system right
+
+68
+00:05:28,320 --> 00:05:34,360
+there there will be different events that
+our system will face and we'll see how our
+
+69
+00:05:34,360 --> 00:05:40,280
+system responds to those events right and
+the events will flow in this order I will
+
+70
+00:05:40,280 --> 00:05:46,280
+explain each event as it goes or as it
+comes in this episode but just to say that
+
+71
+00:05:46,280 --> 00:05:50,400
+we'll have multiple events that our system
+will face it's like in real life you're
+
+72
+00:05:50,400 --> 00:05:56,520
+gonna think about as features or traffic
+or different things that a system can
+
+73
+00:05:56,520 --> 00:06:02,820
+go through like during its
+whole evolution so every time
+
+74
+00:06:02,820 --> 00:06:04,100
+we'll introduce a new
+
+75
+00:06:05,160 --> 00:06:10,420
+event we'll see if our system our current
+system is able to handle that if it's able
+
+76
+00:06:10,420 --> 00:06:16,180
+to handle that we'll use the same architecture
+or the same version of the system in
+
+77
+00:06:16,180 --> 00:06:20,520
+the for the next event as well we'll keep
+it we'll keep using it until something
+
+78
+00:06:20,520 --> 00:06:26,860
+breaks and only then we'll introduce
+a new architecture or something new
+
+79
+00:06:26,860 --> 00:06:30,700
+to that system to evolve it so that it's
+able to deal with that failure right so
+
+80
+00:06:30,700 --> 00:06:34,140
+that's that's the idea
+okay let's move on next
+
+81
+00:06:36,820 --> 00:06:42,940
+So these are some things
+that are sort of always true
+
+82
+00:06:42,940 --> 00:06:44,540
+for any event, right?
+
+83
+00:06:45,460 --> 00:06:51,920
+So firstly, if you paste a link, you will
+get a code, which is at most seven letters
+
+84
+00:06:51,920 --> 00:06:54,660
+and digits. So this is something
+that will always be true.
+
+85
+00:06:55,320 --> 00:06:57,940
+Then if you let's say, so what's a code?
+
+86
+00:06:58,040 --> 00:06:59,400
+A code is essentially the,
+
+87
+00:07:00,240 --> 00:07:02,180
+what contains in the short link, right?
+
+88
+00:07:02,500 --> 00:07:03,740
+So that's the code.
+
+89
+00:07:05,520 --> 00:07:07,800
+So it should be at most
+seven letters and digits.
+
+90
+00:07:07,980 --> 00:07:12,660
+So this is something we'll sort of prerequisite
+that's always true for every event.
+
+91
+00:07:13,540 --> 00:07:19,740
+For any link or any short URL that
+you open, the server returns a
+
+92
+00:07:19,740 --> 00:07:21,900
+301 to the original link.
+
+93
+00:07:23,340 --> 00:07:28,000
+And also if it's an unknown link or unknown
+code, it will return not found, right?
+
+94
+00:07:28,140 --> 00:07:34,540
+So 404. and we'll be using HTTPS
+because that's what in real life we use
+
+95
+00:07:34,540 --> 00:07:40,940
+right so that so so we use the same
+thing to keep the test like fair and like
+
+96
+00:07:40,940 --> 00:07:44,680
+accurate right to mimic
+like real world behavior
+
+97
+00:07:45,920 --> 00:07:52,260
+also what we'll never lose we will never
+lose a confirmed link so once a link is
+
+98
+00:07:52,260 --> 00:07:57,280
+confirmed that will always stay and the
+user will always be able to go to the right
+
+99
+00:07:57,280 --> 00:07:58,080
+page.
+
+100
+00:07:58,460 --> 00:08:03,900
+Right. And, and, and one link can't be
+given to the same two people, right?
+
+101
+00:08:04,120 --> 00:08:06,360
+It should only be given
+to the same person.
+
+102
+00:08:06,680 --> 00:08:08,000
+Two people can't have the same link.
+
+103
+00:08:08,100 --> 00:08:08,900
+Right.
+
+104
+00:08:09,180 --> 00:08:15,600
+And in terms of performance, we, we want
+to have a redirect speed of, which is P
+
+105
+00:08:15,600 --> 00:08:17,520
+99 to be less than a hundred milliseconds.
+
+106
+00:08:17,520 --> 00:08:23,380
+So p99 is like the 99 percentile, like after
+a hundred requests, we want 99 requests
+
+107
+00:08:23,380 --> 00:08:26,880
+to be less than a hundred
+milliseconds for creating new links.
+
+108
+00:08:27,000 --> 00:08:32,180
+We want it to be less than 300 milliseconds
+p99 and errors should be less than 0.1%.
+
+109
+00:08:32,840 --> 00:08:39,300
+So the reason for choosing these
+numbers, uh, like 0.1%, it's like very,
+
+110
+00:08:39,300 --> 00:08:45,560
+uh, what most systems do
+like having a accuracy
+
+111
+00:08:45,560 --> 00:08:51,200
+or having no errors for like 99.9 percent
+so we want to have errors which are less
+
+112
+00:08:51,200 --> 00:08:57,700
+than 0.1 percent in terms of p99
+uh redirects we want it to be less
+
+113
+00:08:57,700 --> 00:09:03,940
+than 100 milliseconds so there's a there's
+a researcher called jacob nielsen and
+
+114
+00:09:03,940 --> 00:09:10,300
+essentially what he found out that if
+something is under 0.1 seconds it feels
+
+115
+00:09:10,300 --> 00:09:12,100
+instant to the human being right.
+
+116
+00:09:13,600 --> 00:09:17,580
+So you clicked on something
+it happens immediately.
+
+117
+00:09:17,940 --> 00:09:23,780
+So when a user clicks on a shorter link if
+it's less than 100 milliseconds and if it
+
+118
+00:09:23,780 --> 00:09:29,440
+gets redirected in less than 100 milliseconds
+it will feel very instant for that
+
+119
+00:09:29,440 --> 00:09:32,640
+user right. So that's why it's
+less than 100 milliseconds
+
+120
+00:09:33,920 --> 00:09:40,360
+and uh yeah so that so that is for
+redirects or clicks and for create it's
+
+121
+00:09:40,360 --> 00:09:46,620
+less than 300 milliseconds the idea
+is if if something is uh under a
+
+122
+00:09:46,620 --> 00:09:52,280
+second the researcher says that the
+user is still able to keep the flow
+
+123
+00:09:52,280 --> 00:09:58,740
+like he doesn't lose track of what he's
+doing so i so i think i thought that
+
+124
+00:09:58,740 --> 00:10:05,220
+like 300 milliseconds seems reasonable
+so so it's still under one second
+
+125
+00:10:05,220 --> 00:10:11,720
+right so the user is still able to ask
+for a new link if we click the button to
+
+126
+00:10:11,720 --> 00:10:17,420
+create a new link and in less than 300
+milliseconds we give it an shorter link right
+
+127
+00:10:17,420 --> 00:10:23,260
+so it so the user wouldn't break its flow
+when it's doing that so that's sort of the
+
+128
+00:10:23,260 --> 00:10:29,720
+idea you can think about yeah so so these
+are some things that will always be true
+
+129
+00:10:29,720 --> 00:10:36,220
+regardless of any event right so we need
+to take care of this always okay now in
+
+130
+00:10:36,220 --> 00:10:42,240
+terms of the amount of traffic that
+we will handle right so we are
+
+131
+00:10:42,240 --> 00:10:48,660
+deriving this from there's a famous
+URL shortener service called
+
+132
+00:10:48,660 --> 00:10:54,800
+Bitly right so I think it's one of the more
+standard services that everyone uses so
+
+133
+00:10:54,800 --> 00:11:01,280
+it's very popular so so i've tried to derive
+the numbers that our system will handle
+
+134
+00:11:01,280 --> 00:11:07,600
+based on the numbers Bitly has or at least
+what i could find right so they say that
+
+135
+00:11:07,600 --> 00:11:13,780
+they can handle about 100 billion clicks
+and 2 billion new links uh every year
+
+136
+00:11:13,780 --> 00:11:19,700
+right and And 1% of that
+
+137
+00:11:19,700 --> 00:11:25,940
+is 1 billion clicks, 20 million
+links created and 10% of Bitly is
+
+138
+00:11:25,940 --> 00:11:28,260
+10 billion links and 200 million links.
+
+139
+00:11:30,420 --> 00:11:36,780
+So these are two things that our system
+will be able to handle, which is 1% of
+
+140
+00:11:36,780 --> 00:11:42,700
+Bitly and 10% of Bitly. right so if we
+
+141
+00:11:42,700 --> 00:11:48,900
+go forward so one person of Bitly we have
+these number of clicks and links if you
+
+142
+00:11:48,900 --> 00:11:54,660
+convert it to this this was per year if
+you convert it to seconds it becomes 32
+
+143
+00:11:54,660 --> 00:12:00,660
+clicks per second and 0.63 new links created
+per second similar for 10 percent right
+
+144
+00:12:00,660 --> 00:12:01,520
+these are the numbers
+
+145
+00:12:02,820 --> 00:12:09,200
+and so this these numbers are the average
+numbers right but the system usual
+
+146
+00:12:09,200 --> 00:12:13,900
+system in production they don't always behave
+like that right there there are always
+
+147
+00:12:13,900 --> 00:12:18,940
+like peaks and then quiet times right and
+there's some like average traffic that
+
+148
+00:12:18,940 --> 00:12:24,980
+flows through right so it varies so what
+we've so what i've tried to do is take
+
+149
+00:12:24,980 --> 00:12:31,080
+these numbers and and for for calculating
+the peak i'm using a factor of three so if
+
+150
+00:12:31,080 --> 00:12:36,380
+you if you multiply these numbers by three
+you'll roughly get these numbers so this
+
+151
+00:12:36,380 --> 00:12:42,680
+is the peak peak traffic and what we test
+is I have rounded out these numbers 200
+
+152
+00:12:42,680 --> 00:12:49,000
+per second two per second
+similar 951 to 1019 to 20 right
+
+153
+00:12:49,000 --> 00:12:52,880
+so ours so our system we
+are testing it at the peak
+
+154
+00:12:52,880 --> 00:12:59,380
+and not on not at the average the reason
+being if you're able to handle at
+
+155
+00:12:59,380 --> 00:13:03,940
+the peak we should be able to handle at the
+average as well right so so this is what
+
+156
+00:13:03,940 --> 00:13:07,820
+our system handles we'll be hand we'll
+be handling it at the peak so this is
+
+157
+00:13:07,820 --> 00:13:13,640
+something to remember uh yeah so
+
+158
+00:13:13,640 --> 00:13:17,900
+in terms of the number of links stored
+
+159
+00:13:20,260 --> 00:13:26,600
+six months of new links is approximately
+like 10 million and 100 million for 10
+
+160
+00:13:26,600 --> 00:13:32,100
+percent so what this means is when we are
+testing traffic let's say at one percent
+
+161
+00:13:32,100 --> 00:13:32,980
+of Bitly traffic
+
+162
+00:13:33,700 --> 00:13:39,960
+what we are doing is we are pre-filling
+our system with 10 million links already
+
+163
+00:13:39,960 --> 00:13:46,200
+in the database and then we are trying to
+handle the traffic to keep and 10 million
+
+164
+00:13:46,200 --> 00:13:52,640
+is essentially six months of new links why
+we are doing is why we are doing this is
+
+165
+00:13:52,640 --> 00:13:58,820
+because to keep the tests fair because if
+a if a system has been running for let's
+
+166
+00:13:58,820 --> 00:14:04,900
+say six months at one percent of traffic it
+would have 10 million links in stored in
+
+167
+00:14:04,900 --> 00:14:05,700
+the database.
+
+168
+00:14:06,580 --> 00:14:12,960
+And what that helps us to
+see is if the database
+
+169
+00:14:12,960 --> 00:14:17,980
+has a lot of things already in there, we'll
+be able to have a fairer comparison of
+
+170
+00:14:17,980 --> 00:14:19,540
+what happens to our
+
+171
+00:14:20,720 --> 00:14:26,080
+redirects and creates, right? Because if
+there's less things stored in the database,
+
+172
+00:14:26,340 --> 00:14:27,740
+our retrieval
+
+173
+00:14:28,500 --> 00:14:34,540
+can be faster and our creates may be
+faster too right so to have a much more
+
+174
+00:14:34,540 --> 00:14:40,660
+fairer comparison we try to pre-fill
+the database with six months of
+
+175
+00:14:40,660 --> 00:14:46,120
+traffic in the database six months of
+links stored in the database so for one
+
+176
+00:14:46,120 --> 00:14:52,180
+percent Bitly traffic six months of links
+are 10 million and for 10 percent Bitly
+
+177
+00:14:52,180 --> 00:14:57,060
+traffic it's 100 million links so these
+this amount of links will already be stored
+
+178
+00:14:57,060 --> 00:14:57,860
+in the database.
+
+179
+00:14:58,440 --> 00:15:02,500
+So this is just something I'm trying to say
+that to keep the test fair, we are doing
+
+180
+00:15:02,500 --> 00:15:08,220
+this. We could have not done this, but
+this helps us to sort of mimic real world
+
+181
+00:15:08,220 --> 00:15:10,660
+systems, right? To mimic that behavior.
+
+182
+00:15:11,860 --> 00:15:15,360
+And if you just convert
+the numbers to a month,
+
+183
+00:15:16,320 --> 00:15:22,100
+if you have these number of
+clicks on average, and if you
+
+184
+00:15:22,100 --> 00:15:25,820
+multiply it by these number of seconds,
+so these are number of seconds in a month
+
+185
+00:15:25,820 --> 00:15:31,500
+you get approximately let's say 877 million
+clicks so this is just to show what this
+
+186
+00:15:31,500 --> 00:15:37,880
+is per month right uh so
+this 333 is essentially 1000
+
+187
+00:15:37,880 --> 00:15:42,940
+divided by three so this was at peak so
+you wanted so we calculated it on average
+
+188
+00:15:42,940 --> 00:15:46,900
+and if you multiply it with the number of
+seconds in a month you get these number of
+
+189
+00:15:46,900 --> 00:15:52,140
+clicks so just sort of sort of showing
+what our system can be would be able to
+
+190
+00:15:52,140 --> 00:15:58,220
+handle at 10% Bitly which is around
+877 million clicks in a month right
+
+191
+00:15:58,220 --> 00:16:04,640
+so this is just to show the how the numbers
+are being derived and so so later i'll
+
+192
+00:16:04,640 --> 00:16:08,360
+just save if it's one person of Bitly you'll
+understand what what it means if it's
+
+193
+00:16:08,360 --> 00:16:14,800
+10% of Bitly you'll understand what it
+means right yeah okay let's let me go next
+
+194
+00:16:14,800 --> 00:16:21,300
+okay so so we'll start with like the
+most simplest version of our system
+
+195
+00:16:21,300 --> 00:16:24,880
+and we'll name it v0. v0 is version 0.
+
+196
+00:16:25,080 --> 00:16:31,120
+You can think about that and
+we'll use one server first.
+
+197
+00:16:31,480 --> 00:16:34,580
+That server has two virtual CPUs.
+
+198
+00:16:34,680 --> 00:16:40,920
+It has 4 GB of RAM. It has 40 GB of
+disk and it costs around 5 to 6 euros
+
+199
+00:16:40,920 --> 00:16:41,740
+per month, right?
+
+200
+00:16:42,760 --> 00:16:47,920
+Two virtual CPUs so because I
+was renting this on the cloud
+
+201
+00:16:47,920 --> 00:16:54,020
+these CPUs were actually also shared
+so other customers could also be using
+
+202
+00:16:54,020 --> 00:17:00,420
+those CPUs so that's something to keep in
+mind but we have two virtual CPUs in the
+
+203
+00:17:00,420 --> 00:17:05,260
+server that we're renting and it's just
+one server right we start with very simple
+
+204
+00:17:05,260 --> 00:17:11,700
+one server and we start with one simple
+Node app and it's using a SQLite
+
+205
+00:17:11,700 --> 00:17:18,020
+database so SQLite database essentially
+it's it just uses one file to store all the
+
+206
+00:17:18,020 --> 00:17:19,500
+information but
+
+207
+00:17:20,360 --> 00:17:26,280
+SQLite provides provides us a library
+that we can import in our Node app and it
+
+208
+00:17:26,280 --> 00:17:32,620
+helps us to keep like transactional it
+
+209
+00:17:32,620 --> 00:17:37,220
+gives us like transactional guarantees
+and atomicity like if we are able no two
+
+210
+00:17:37,220 --> 00:17:40,200
+people are able to write at the
+same time and so on and so forth.
+
+211
+00:17:40,320 --> 00:17:42,460
+So the data doesn't get corrupted.
+
+212
+00:17:42,840 --> 00:17:46,040
+So we use SQLite, which is a very
+
+213
+00:17:47,200 --> 00:17:52,800
+simple way to manage data. And it's
+essentially a library that we import in Node.
+
+214
+00:17:52,840 --> 00:17:55,460
+It's not even a separate database server.
+
+215
+00:17:55,700 --> 00:17:57,420
+So we are starting with very simple.
+
+216
+00:17:58,860 --> 00:18:01,900
+So SQLite, which is just one
+file where the data is stored.
+
+217
+00:18:02,040 --> 00:18:04,240
+And we have this one program,
+which is our Node app.
+
+218
+00:18:04,240 --> 00:18:10,700
+right and you will have visitors
+creating an https connection and we'll
+
+219
+00:18:10,700 --> 00:18:16,920
+be returning a 301 status
+code to them so in our
+
+220
+00:18:16,920 --> 00:18:22,320
+initial table we'll have a
+links table where you have
+
+221
+00:18:23,260 --> 00:18:29,460
+what we store is numbers
+which is the id and that id uh
+
+222
+00:18:29,460 --> 00:18:33,400
+is associated with a
+with a long url right?
+
+223
+00:18:33,500 --> 00:18:34,980
+So this is the original long URL.
+
+224
+00:18:35,200 --> 00:18:38,620
+And also there's a timestamp which we
+store with that when it's created.
+
+225
+00:18:39,920 --> 00:18:45,220
+Also, this ID, we store this ID
+in sort of like sorted order.
+
+226
+00:18:45,340 --> 00:18:48,680
+So each new link comes, we add
+plus one and keep on doing that.
+
+227
+00:18:48,940 --> 00:18:50,660
+So the table is sorted
+
+228
+00:18:51,380 --> 00:18:55,580
+as we store it. So it's easier to search
+as well, because that ID acts as an actual
+
+229
+00:18:55,580 --> 00:19:01,500
+index, you can directly go to that row and
+get the corresponding long URL with that
+
+230
+00:19:01,500 --> 00:19:02,300
+short URL, right.
+
+231
+00:19:03,500 --> 00:19:09,900
+But to get this code, because
+remember, the short URL actually has a
+
+232
+00:19:09,900 --> 00:19:10,820
+code with it, right.
+
+233
+00:19:12,300 --> 00:19:18,440
+So to get that short
+code, we are using base
+
+234
+00:19:18,440 --> 00:19:24,420
+62. So each number essentially
+can be converted into a code.
+
+235
+00:19:24,460 --> 00:19:27,360
+So which is, let's say,
+for the number this,
+
+236
+00:19:28,180 --> 00:19:34,320
+which is 10 million, I think this gets
+converted into a base 62 code, which is f x s
+
+237
+00:19:34,320 --> 00:19:39,960
+k. Right. So remember, we had a rule, if
+I go back quickly, we had a rule here,
+
+238
+00:19:40,220 --> 00:19:44,020
+that said that a code can be at most
+seven letters and digits, right.
+
+239
+00:19:45,300 --> 00:19:51,800
+So this is, so this is what we're
+doing here, we are taking each, each
+
+240
+00:19:51,800 --> 00:19:53,420
+number and converting into a code.
+
+241
+00:19:53,500 --> 00:19:56,460
+But in the database, we do not store
+the code, we only store the number.
+
+242
+00:19:56,580 --> 00:19:57,980
+So that's, it's easier to search.
+
+243
+00:19:58,740 --> 00:20:04,180
+But when we return the short URL to the
+user, we take the number and convert it into
+
+244
+00:20:04,180 --> 00:20:08,400
+code, then create that URL with that short
+URL with that code and send it to the
+
+245
+00:20:08,400 --> 00:20:09,200
+user, right.
+
+246
+00:20:10,200 --> 00:20:16,060
+And this is how we can
+convert a number to a
+
+247
+00:20:16,060 --> 00:20:20,200
+code in base 62 form, if you're interested,
+like this is this is how it works,
+
+248
+00:20:20,300 --> 00:20:25,440
+right, we essentially keep on dividing the
+number by 62 until the quotient becomes
+
+249
+00:20:25,440 --> 00:20:29,560
+zero and then we take all of the
+remainders and convert it into
+
+250
+00:20:30,700 --> 00:20:33,040
+the corresponding digit or alphabet.
+
+251
+00:20:33,340 --> 00:20:39,280
+So our base 62 set has essentially zero to
+nine digits, A to Z small letters and A
+
+252
+00:20:39,280 --> 00:20:43,740
+to Z capital letters, right? So this is
+essentially how you can convert the numbers
+
+253
+00:20:43,740 --> 00:20:44,940
+to base 62 code.
+
+254
+00:20:46,720 --> 00:20:51,000
+Okay, so this is the setup for
+our version zero of our system.
+
+255
+00:20:51,000 --> 00:20:57,060
+now let's try and run it with our first
+
+256
+00:20:57,060 --> 00:21:02,700
+event right so what's our first event our
+first event is that one clicks per second
+
+257
+00:21:02,700 --> 00:21:08,420
+and one new link created per minute right
+and the database is prefilled with 1000
+
+258
+00:21:08,420 --> 00:21:14,420
+links so this is our first
+event right and we we
+
+259
+00:21:14,420 --> 00:21:20,480
+want to be able to pass the always true
+rules that we discussed before right so the
+
+260
+00:21:20,480 --> 00:21:26,460
+performance rules for creates and
+redirects so the p99 numbers we want to
+
+261
+00:21:26,460 --> 00:21:30,480
+maintain that and so on and so forth right
+so those rules need to be maintained for
+
+262
+00:21:30,480 --> 00:21:36,260
+event one right because we maintain
+that for all levels all events
+
+263
+00:21:36,260 --> 00:21:41,340
+so this is what this is what the traffic
+will look like we have the same version
+
+264
+00:21:41,340 --> 00:21:42,320
+zero that we discussed
+
+265
+00:21:43,360 --> 00:21:49,600
+Here the graph, the graph
+essentially shows the clicks,
+
+266
+00:21:50,020 --> 00:21:55,020
+how long the clicks take
+depending on the the time.
+
+267
+00:21:55,240 --> 00:22:01,420
+So x-axis is time and y-axis is the time
+for the clicks, how long each click is
+
+268
+00:22:01,420 --> 00:22:02,220
+taking, right?
+
+269
+00:22:03,140 --> 00:22:06,760
+And these dotted lines are essentially
+limited, which is 100 milliseconds, which we
+
+270
+00:22:06,760 --> 00:22:13,080
+need to pass we cannot go above that
+right our p19 new p99 has to be below 100
+
+271
+00:22:13,080 --> 00:22:19,480
+milliseconds also another
+thing we run we keep we run our
+
+272
+00:22:19,480 --> 00:22:24,760
+system at this traffic for five minutes
+so from one minute to six minutes that's
+
+273
+00:22:24,760 --> 00:22:29,060
+essentially five minutes we run our system
+for five minutes but the first minute
+
+274
+00:22:29,060 --> 00:22:35,380
+which is zero to one we do a warm-up
+of the system so that our system is
+
+275
+00:22:35,380 --> 00:22:36,900
+essentially at a place where
+
+276
+00:22:38,840 --> 00:22:44,820
+how a normal system would be running we
+don't want to take the warm-up time those
+
+277
+00:22:44,820 --> 00:22:49,720
+numbers into our actual measurements
+because that may not be so fair because a
+
+278
+00:22:49,720 --> 00:22:55,920
+normal system would be because in a warm-up
+during warm-up what happens is you're
+
+279
+00:22:55,920 --> 00:23:01,880
+established establishing things like
+connections or your caches in your servers get
+
+280
+00:23:01,880 --> 00:23:06,820
+filled with data and so on and so forth
+right so you want to you want to ignore that
+
+281
+00:23:06,820 --> 00:23:12,640
+time so that a normal system would be
+the that's how a normal system would be
+
+282
+00:23:12,640 --> 00:23:18,780
+running so we want to remove the warm-up
+time from it right so just remember from
+
+283
+00:23:18,780 --> 00:23:23,740
+zero to one minute this time we do not judge
+or we do not take into our measurements
+
+284
+00:23:23,740 --> 00:23:30,240
+right and we only take our
+measurements for five minutes so we
+
+285
+00:23:30,240 --> 00:23:35,000
+run our system for five minutes based on
+this traffic right so this is event one so
+
+286
+00:23:35,000 --> 00:23:39,220
+let's try and run it and see uh what
+happened what happens right and i would like
+
+287
+00:23:39,220 --> 00:23:43,560
+you to also like think about it and guess
+like what do you think would happen would
+
+288
+00:23:43,560 --> 00:23:49,880
+our system be able to handle it or not right
+also another thing this essentially our
+
+289
+00:23:49,880 --> 00:23:54,400
+system has two cores right so this is
+measuring the average of the two cores how
+
+290
+00:23:54,400 --> 00:23:59,360
+much of the cpu is being used this will
+be more useful later on when we see other
+
+291
+00:23:59,360 --> 00:24:05,800
+events right but just keep in mind
+okay so let's try and run our
+
+292
+00:24:05,800 --> 00:24:11,580
+version zero system on the first event
+and see what happens right so let's see
+
+293
+00:24:16,020 --> 00:24:21,040
+so these are the requests that are
+coming in and we can see that our clicks
+
+294
+00:24:21,780 --> 00:24:27,140
+are staying under the hundred millisecond
+most of the time right so So that's good.
+
+295
+00:24:27,320 --> 00:24:29,660
+So it looks like our system passed.
+
+296
+00:24:30,340 --> 00:24:36,640
+And you'll see that our p99 when we measured
+for event one is at 17.8 milliseconds.
+
+297
+00:24:36,880 --> 00:24:41,320
+So it's pretty fast. And same for
+creates, it's at 27.8 milliseconds.
+
+298
+00:24:41,720 --> 00:24:45,380
+So our version zero system
+has passed event one.
+
+299
+00:24:45,640 --> 00:24:49,820
+So now we'll move on to event
+two and see what happens then.
+
+300
+00:24:49,940 --> 00:24:51,560
+So this passes.
+
+301
+00:24:52,920 --> 00:24:59,320
+So we are done with event one. right
+now we'll start with even two here
+
+302
+00:24:59,320 --> 00:25:05,180
+we'll still use the same version of our
+architecture right so we'll use the same
+
+303
+00:25:05,180 --> 00:25:11,300
+version so it's v0 but now we have one
+percent of Bitly traffic right so this is
+
+304
+00:25:11,300 --> 00:25:16,300
+basically 100 clicks per second and you
+have two new clicks that's going to be
+
+305
+00:25:16,300 --> 00:25:21,240
+created per second and the database is
+going to be prefilled with 10 million links
+
+306
+00:25:21,240 --> 00:25:26,820
+right so this approximately six
+months of 1% of Bitly traffic
+
+307
+00:25:26,820 --> 00:25:31,860
+for creating links so we'll have 10 million
+links pre-filled before we start the
+
+308
+00:25:31,860 --> 00:25:38,000
+test and so again I would
+want you to pause and
+
+309
+00:25:38,000 --> 00:25:41,560
+and just guess what could happen
+right with this new traffic
+
+310
+00:25:42,900 --> 00:25:47,860
+would our version zero would be able to
+handle it or not right so so let's play and
+
+311
+00:25:47,860 --> 00:25:53,100
+see what happens so these are the requests
+that are coming in coming in so this
+
+312
+00:25:53,100 --> 00:25:58,800
+visitor essentially means it's encapsulates
+both the clicks per second and two new
+
+313
+00:25:58,800 --> 00:26:03,960
+links per second right so that's what
+visitor means here so we can see that it
+
+314
+00:26:03,960 --> 00:26:10,040
+passed our our graph here for redirect
+it stayed under 100 milliseconds always
+
+315
+00:26:10,040 --> 00:26:16,540
+and p99 is 17.7 milliseconds and
+creates our 26 milliseconds So
+
+316
+00:26:16,540 --> 00:26:19,300
+they're both under our limits
+that we had declared, right?
+
+317
+00:26:19,980 --> 00:26:26,260
+So, so even to also passed with version
+zero of our architecture, right?
+
+318
+00:26:26,480 --> 00:26:30,120
+Now we'll, let's now move on
+to the next event, right?
+
+319
+00:26:30,580 --> 00:26:32,800
+So the next event is custom names.
+
+320
+00:26:33,900 --> 00:26:39,260
+So if you, if you remember till
+now, we are just generating
+
+321
+00:26:39,260 --> 00:26:45,640
+codes for users based, not based on
+custom names, but based on the basic 62
+
+322
+00:26:45,640 --> 00:26:46,980
+codes that were generated, right?
+
+323
+00:26:47,080 --> 00:26:52,220
+So the user puts a long URL and we give
+them a generated short URL with our own
+
+324
+00:26:52,220 --> 00:26:57,280
+generated code. But your URL shorteners
+also have another feature where they allow
+
+325
+00:26:57,280 --> 00:27:00,780
+for custom names given by the user
+to be included in the short link,
+
+326
+00:27:01,740 --> 00:27:07,120
+right? So that is that, right? So, so event
+three is the user is able to pick their
+
+327
+00:27:07,120 --> 00:27:13,220
+own name, then what, what also
+it expects is 50 people would be
+
+328
+00:27:13,220 --> 00:27:16,500
+claiming the same name at
+the same instant, right?
+
+329
+00:27:16,680 --> 00:27:19,240
+And that would be done
+three times a second.
+
+330
+00:27:19,980 --> 00:27:22,040
+So essentially, uh,
+
+331
+00:27:23,480 --> 00:27:26,820
+three times a second, 50 people
+would be claiming the same name.
+
+332
+00:27:27,060 --> 00:27:30,440
+And in total, we would have
+thousand rounds of it.
+
+333
+00:27:30,600 --> 00:27:37,000
+So if you remember, we were running our
+test for five minutes, right so in that
+
+334
+00:27:37,000 --> 00:27:42,500
+five minutes our there will be
+thousand rounds of 50 people claiming
+
+335
+00:27:42,500 --> 00:27:48,820
+the same name right so that comes
+comes up to around if you split
+
+336
+00:27:48,820 --> 00:27:53,760
+out the thousand rounds over five minutes
+it comes up to around three times a second
+
+337
+00:27:53,760 --> 00:28:00,260
+right so so this is our event three
+and this will be applied on top of
+
+338
+00:28:00,260 --> 00:28:04,040
+whatever was the event to traffic that was
+coming from before right so even if would
+
+339
+00:28:04,040 --> 00:28:09,820
+consist of event 2 traffic plus this new
+custom name traffic that would be coming in
+
+340
+00:28:09,820 --> 00:28:15,820
+right and what's our pass criteria so
+exactly one winner every time so if 50 people
+
+341
+00:28:15,820 --> 00:28:19,140
+are claiming the same name only one person
+should get that name right other 49
+
+342
+00:28:19,140 --> 00:28:25,500
+should be said that hey this is already
+taken right so this is event 3 so if we
+
+343
+00:28:25,500 --> 00:28:29,560
+what would happen if we try
+to run it on our version 0
+
+344
+00:28:30,440 --> 00:28:34,440
+of our architecture so our version zero
+doesn't even support custom names right so
+
+345
+00:28:34,440 --> 00:28:40,400
+it would obviously fail so so what would
+happen is if currently what happens is if
+
+346
+00:28:40,400 --> 00:28:45,240
+there's a post request that comes for this
+endpoint our architect just ignores name
+
+347
+00:28:45,240 --> 00:28:50,380
+name property in it right it ignores the
+custom name which is given by the user and
+
+348
+00:28:50,380 --> 00:28:56,460
+so it just looks like a
+normal uh new link request so
+
+349
+00:28:56,460 --> 00:29:01,140
+our system currently says it tries to
+create new links for everyone because it
+
+350
+00:29:01,140 --> 00:29:04,440
+ignores the custom name right which
+is not obviously what we want right
+
+351
+00:29:06,100 --> 00:29:12,360
+so so yeah so version zero would fail
+for event three right because we do not
+
+352
+00:29:12,360 --> 00:29:18,140
+support it we do not support custom names
+for it right so we need to support that so
+
+353
+00:29:18,140 --> 00:29:23,860
+if you go next what we can essentially
+do is at least this is what
+
+354
+00:29:23,860 --> 00:29:30,260
+I've implemented for this architecture
+of how to support custom name so
+
+355
+00:29:30,260 --> 00:29:35,540
+what we can do is we can sort of make it
+a bit limited for the user where we say
+
+356
+00:29:35,540 --> 00:29:41,280
+that custom names needs to have a hyphen
+or its eight plus character the reason
+
+357
+00:29:41,280 --> 00:29:47,500
+being it's a simplistic rule which allows
+us to firstly keep custom names and the
+
+358
+00:29:47,500 --> 00:29:52,520
+generated codes tables separate
+so that we can easily look up
+
+359
+00:29:52,520 --> 00:29:58,720
+based on whatever request comes if it's a
+custom names request or it's a generated
+
+360
+00:29:58,720 --> 00:30:03,740
+code request we use two different
+tables to make it a bit simple right so
+
+361
+00:30:03,740 --> 00:30:10,060
+the generated codes never have a hyphen
+in them because it's using base 62
+
+362
+00:30:10,060 --> 00:30:15,700
+characters where we only had digits a to
+z small letters and capital letter a to z
+
+363
+00:30:15,700 --> 00:30:21,540
+right and it's and it and it cannot
+get more than seven characters so
+
+364
+00:30:21,540 --> 00:30:26,940
+so that is why we chose this condition so
+that we are easily able to differentiate
+
+365
+00:30:26,940 --> 00:30:31,120
+between custom names and generated code so
+this is one way you could do it maybe in
+
+366
+00:30:31,120 --> 00:30:36,100
+some other way where you have only a single
+table which has both custom names and
+
+367
+00:30:36,100 --> 00:30:40,960
+the generated codes, right? You could do
+it that way also, but I've chosen to do it
+
+368
+00:30:40,960 --> 00:30:44,180
+this way where we keep
+both separate, right?
+
+369
+00:30:44,420 --> 00:30:48,760
+So that we can store both of them in
+separate tables and it would be like sort of
+
+370
+00:30:48,760 --> 00:30:54,560
+easier to look for because the one good
+thing with the generated codes, how we are
+
+371
+00:30:54,560 --> 00:30:58,540
+doing it is it's a sorted table, right?
+
+372
+00:30:58,640 --> 00:31:01,440
+Because we are just
+increasing the offset by one.
+
+373
+00:31:01,440 --> 00:31:07,820
+so that is why it has that property
+where it allows us to quickly look up a
+
+374
+00:31:07,820 --> 00:31:13,240
+generated code compared to our custom
+names right so that's why I'm trying to
+
+375
+00:31:13,240 --> 00:31:19,340
+separate custom names into a separate table
+so so this is the rule we would use and
+
+376
+00:31:19,340 --> 00:31:23,300
+this is how the tables would look like we
+have our original links table which has
+
+377
+00:31:23,300 --> 00:31:27,800
+the generated code where we only store the
+offset and now we have a new names table
+
+378
+00:31:27,800 --> 00:31:31,500
+where we have a name that we store, right?
+
+379
+00:31:31,640 --> 00:31:35,760
+Which is a custom name and then it
+has the associated URL with it.
+
+380
+00:31:35,880 --> 00:31:36,680
+Right?
+
+381
+00:31:37,640 --> 00:31:42,240
+So, so this is what our version one has,
+which is a second table that we introduced,
+
+382
+00:31:42,380 --> 00:31:43,180
+right?
+
+383
+00:31:43,740 --> 00:31:44,540
+Okay.
+
+384
+00:31:44,920 --> 00:31:45,720
+So,
+
+385
+00:31:46,260 --> 00:31:47,060
+uh,
+
+386
+00:31:47,380 --> 00:31:53,300
+with every version, what we do is we always
+run all the previous events to make sure
+
+387
+00:31:53,300 --> 00:31:59,580
+there's no regression, right? So with version
+one, I already ran event 1 and event 2
+
+388
+00:31:59,580 --> 00:32:05,220
+to just make sure nothing fails and so
+nothing fails it works now we'll try event 3
+
+389
+00:32:05,220 --> 00:32:08,480
+on version 1 right and see what happens
+because that we haven't tried right
+
+390
+00:32:09,640 --> 00:32:14,700
+so so this is the architecture it's
+the it's the same architecture the only
+
+391
+00:32:14,700 --> 00:32:19,600
+difference is we have now a new table that
+we are storing in our SQLite right that's
+
+392
+00:32:19,600 --> 00:32:23,600
+the only difference everything else is the
+same and now we are trying to have even
+
+393
+00:32:23,600 --> 00:32:25,860
+three run on this architecture right
+
+394
+00:32:27,680 --> 00:32:32,700
+uh and okay so again yeah pause and let's
+try and see what would happen do you think
+
+395
+00:32:32,700 --> 00:32:38,620
+it would pass or fail right so so let's
+let's run it and see what happens so again
+
+396
+00:32:38,620 --> 00:32:42,760
+the requests are coming in and we can
+already see that there are requests which are
+
+397
+00:32:42,760 --> 00:32:48,640
+going above 100 milliseconds but let's
+see what our p99 comes to right so our p99
+
+398
+00:32:48,640 --> 00:32:53,900
+for redirects comes to almost around 180
+milliseconds right so this is above our 100
+
+399
+00:32:53,900 --> 00:32:59,800
+millisecond threshold although our this
+condition passed well uh when 50 requests
+
+400
+00:32:59,800 --> 00:33:04,480
+come together for the same name there's
+only one winner every round and we said
+
+401
+00:33:04,480 --> 00:33:09,880
+there are thousand rounds right which are
+spread across uh five minutes right so so
+
+402
+00:33:09,880 --> 00:33:13,980
+that so that is okay that that is that
+passes the only thing that fails is the
+
+403
+00:33:13,980 --> 00:33:20,100
+redirect right which is above 180
+milliseconds and if you notice when I ran it
+
+404
+00:33:20,100 --> 00:33:26,440
+you could have seen that there were requests
+sort of that were being queued when our
+
+405
+00:33:26,440 --> 00:33:29,620
+Node app was trying to process other
+requests right so that is something you may
+
+406
+00:33:29,620 --> 00:33:36,080
+have noticed that there were requests that
+were being queued so let's see like why
+
+407
+00:33:36,080 --> 00:33:41,540
+this was happening and what was the
+problem that led to this higher p99 right
+
+408
+00:33:41,540 --> 00:33:47,820
+so currently we have one
+Node app so node usually has
+
+409
+00:33:47,820 --> 00:33:54,280
+one main thread right so what happens
+during one burst we essentially
+
+410
+00:33:54,280 --> 00:34:00,700
+have in our server we have our
+operating system queue where request
+
+411
+00:34:00,700 --> 00:34:07,180
+when the request come they are stored
+there and then the Node app whenever it's
+
+412
+00:34:07,180 --> 00:34:13,600
+ready it picks up request
+from the queue right so
+
+413
+00:34:13,600 --> 00:34:20,080
+yeah whenever new request comes it sort
+of gets first stored in this operating
+
+414
+00:34:20,080 --> 00:34:24,580
+system queue and then the Node app picks
+up request from the right whenever it's
+
+415
+00:34:24,580 --> 00:34:31,040
+ready right so what I've what I've
+done is there's a timeline here
+
+416
+00:34:31,040 --> 00:34:37,120
+where we are trying to at each
+burst so remember we had three
+
+417
+00:34:37,120 --> 00:34:43,220
+burst that used to happen of 50 requests
+coming in one second right if you only look
+
+418
+00:34:43,220 --> 00:34:48,660
+at one burst which is sort of like 50
+requests that are coming in for that names
+
+419
+00:34:48,660 --> 00:34:54,600
+for that names claim we know that https
+we need to like do sort of a handshake
+
+420
+00:34:54,600 --> 00:35:00,940
+procedure right to establish the identity
+of both the client in the server right
+
+421
+00:35:00,940 --> 00:35:07,400
+so for each burst we
+have 50 handshakes and
+
+422
+00:35:08,100 --> 00:35:12,300
+approximately when we measure it in our
+app we are seeing that each handshake takes
+
+423
+00:35:12,300 --> 00:35:18,560
+around 1.8 sort of around milliseconds
+and and our Node app can only handle one
+
+424
+00:35:18,560 --> 00:35:24,820
+request at a time right now
+imagine when this 50 handshakes are
+
+425
+00:35:24,820 --> 00:35:30,900
+getting processed one by one
+around around let's say during
+
+426
+00:35:30,900 --> 00:35:37,360
+20 seconds 20 milliseconds one request
+arrives for a redirect or a click
+
+427
+00:35:37,360 --> 00:35:43,380
+from from a user right so these 50
+handshakes are getting processed but
+
+428
+00:35:43,380 --> 00:35:49,620
+around 20 milliseconds in the timeline a
+new request arrives for click the problem
+
+429
+00:35:49,620 --> 00:35:54,000
+is because these handshakes are being
+processed this request has to wait right
+
+430
+00:35:54,000 --> 00:35:58,400
+because node can only take care of one
+thing at a time because there's only one
+
+431
+00:35:58,400 --> 00:36:04,440
+thread right it's it's just one thread
+using one core so it can only take care of
+
+432
+00:36:04,440 --> 00:36:10,900
+one request at a time so this click
+basically then waits and only after this 50
+
+433
+00:36:10,900 --> 00:36:16,880
+handshakes finish that we can answer or
+we can process this request so the the
+
+434
+00:36:16,880 --> 00:36:20,700
+request arrived at around 20 millisecond
+but we answered it at around 97
+
+435
+00:36:20,700 --> 00:36:25,320
+milliseconds so that's essentially when we
+measured it that was what was happening
+
+436
+00:36:26,040 --> 00:36:31,540
+so the slow request the requests were getting
+slowed down because of this handshakes
+
+437
+00:36:31,540 --> 00:36:36,800
+or this burst of requests that were coming
+and node was only being able to handle
+
+438
+00:36:36,800 --> 00:36:38,320
+one request at a time
+
+439
+00:36:39,880 --> 00:36:43,320
+uh yeah also interesting is
+if you looked at only the cpu
+
+440
+00:36:44,120 --> 00:36:48,020
+and the average CPU percentage,
+that was only like around 34%.
+
+441
+00:36:48,020 --> 00:36:48,820
+So,
+
+442
+00:36:49,500 --> 00:36:54,320
+but yeah, the weight essentially
+lives here where because of the burst,
+
+443
+00:36:55,600 --> 00:36:58,340
+this request was getting
+slowed down, right?
+
+444
+00:36:59,120 --> 00:37:05,480
+So this is the problem with our
+event three that we faced for our
+
+445
+00:37:05,480 --> 00:37:06,960
+version of the architecture, right?
+
+446
+00:37:07,580 --> 00:37:09,840
+So what are some options to deal with it?
+
+447
+00:37:09,960 --> 00:37:12,220
+So now we experienced a failure, right?
+
+448
+00:37:12,220 --> 00:37:16,280
+So now we need to think of what's like one
+of the simpler things that we could do to
+
+449
+00:37:16,280 --> 00:37:19,760
+fix that failure, right? So we at least
+know what the problem is right now.
+
+450
+00:37:20,020 --> 00:37:23,040
+One thing we could do is we could
+have two copies of the same app.
+
+451
+00:37:23,960 --> 00:37:27,400
+So the good thing would be that we
+would be doing handshakes on both cores.
+
+452
+00:37:28,060 --> 00:37:30,320
+So the view would be using two
+cores for doing handshakes.
+
+453
+00:37:30,480 --> 00:37:32,240
+So the workload would be split out.
+
+454
+00:37:32,320 --> 00:37:36,060
+But the only problem would be now we
+would have two copies of the app, right?
+
+455
+00:37:37,720 --> 00:37:40,260
+but if you only had one SQLite file,
+
+456
+00:37:41,080 --> 00:37:47,460
+two node apps could be saying
+that the name is free for a user.
+
+457
+00:37:47,700 --> 00:37:52,560
+So both would be saying that the names are
+free and both users could be granted the
+
+458
+00:37:52,560 --> 00:37:55,880
+same name, which doesn't
+pass our condition, right?
+
+459
+00:37:55,900 --> 00:37:56,700
+So that would be wrong.
+
+460
+00:37:59,000 --> 00:38:03,960
+So for doing two copies of the same app,
+we would need to do something else to deal
+
+461
+00:38:03,960 --> 00:38:06,000
+with that problem, right?
+So that is one thing.
+
+462
+00:38:06,360 --> 00:38:09,220
+Another thing we could do is we
+could use a faster server itself.
+
+463
+00:38:10,900 --> 00:38:14,760
+That could work, but that would
+still be using one thread, right?
+
+464
+00:38:14,860 --> 00:38:15,840
+So that is another option.
+
+465
+00:38:17,060 --> 00:38:22,520
+Another option is we could have a service
+which is called nginx, which is sort of
+
+466
+00:38:22,520 --> 00:38:28,860
+made to sort of deal with or be
+in front of our main app so that
+
+467
+00:38:28,860 --> 00:38:35,140
+it's able to deal with these types
+of requests or like HTTPS requests
+
+468
+00:38:35,140 --> 00:38:40,120
+and sort of the code inside nginx, it's
+sort of optimized to deal with these
+
+469
+00:38:40,120 --> 00:38:40,920
+requests.
+
+470
+00:38:42,060 --> 00:38:46,920
+So nginx usually put in front of the
+main app to deal with this, right?
+
+471
+00:38:47,280 --> 00:38:51,900
+And the good thing with nginx, it's essentially
+just another app which sits in front
+
+472
+00:38:51,900 --> 00:38:55,760
+of our Node app in the same server, right?
+
+473
+00:38:57,960 --> 00:39:02,340
+So, and the good thing with NGNX is it
+can use all the cores in your machine.
+
+474
+00:39:02,580 --> 00:39:07,300
+So in our machine, we had two cores, so it
+could do this TLS handshake work on every
+
+475
+00:39:07,300 --> 00:39:08,100
+core.
+
+476
+00:39:08,400 --> 00:39:12,720
+Right? So the app, the good thing would
+this would be the app would still stay
+
+477
+00:39:12,720 --> 00:39:15,980
+single threaded. So our Node app
+would be staying single threaded.
+
+478
+00:39:16,140 --> 00:39:18,460
+So there will be no race
+conditions for the names.
+
+479
+00:39:18,580 --> 00:39:22,720
+And we wouldn't have to do any other
+like application logic changes, right?
+
+480
+00:39:23,660 --> 00:39:26,720
+So we would have these three options you
+can think about there could be other ways
+
+481
+00:39:26,720 --> 00:39:31,980
+also right so that's what i did i chose
+this option having nginx in front of our
+
+482
+00:39:31,980 --> 00:39:35,140
+main Node app and and go with
+that and see what happens
+
+483
+00:39:37,420 --> 00:39:42,040
+so essentially the same diagram that i
+showed previously but if you had nginx the
+
+484
+00:39:42,040 --> 00:39:46,280
+handshakes would be divided so in a single
+burst if 50 handshakes were coming we 25
+
+485
+00:39:46,280 --> 00:39:51,420
+would go in one and other 25 would go in
+other the other worker of nginx so nginx
+
+486
+00:39:51,420 --> 00:39:54,880
+can use all can have workers that
+could use all the cores, right?
+
+487
+00:39:55,260 --> 00:39:59,380
+So basically it would be divided,
+the requests would be divided, right?
+
+488
+00:39:59,640 --> 00:40:04,460
+And hence we would be able to answer the
+click that was slowed down because the
+
+489
+00:40:04,460 --> 00:40:09,740
+handshake's much quicker compared to
+before, at least that's the idea.
+
+490
+00:40:10,560 --> 00:40:12,920
+That's what should
+happen in theory, right?
+
+491
+00:40:12,980 --> 00:40:14,840
+We'll run it and see what happens,
+
+492
+00:40:15,900 --> 00:40:16,700
+right?
+
+493
+00:40:18,820 --> 00:40:21,940
+So yeah, so this is how it
+would behave in nginx, right?
+
+494
+00:40:21,940 --> 00:40:26,920
+So now we have version two of our app
+where we have nginx sitting in front of our
+
+495
+00:40:26,920 --> 00:40:28,140
+main Node app, right?
+
+496
+00:40:29,320 --> 00:40:31,160
+And everything else stays the same, right?
+
+497
+00:40:31,280 --> 00:40:35,820
+It's still the same machine. We
+have two vCPUs and so on, right?
+
+498
+00:40:35,900 --> 00:40:36,780
+It's still the same machine.
+
+499
+00:40:38,380 --> 00:40:42,860
+Okay, now, again, I want you to
+pause and guess what could happen.
+
+500
+00:40:43,440 --> 00:40:47,400
+And, yeah, I'll run the same event three
+on our version two and let's see what
+
+501
+00:40:47,400 --> 00:40:48,200
+happens.
+
+502
+00:40:49,940 --> 00:40:55,120
+so the gray the gray one is still v1 the
+line showing what happened before now the
+
+503
+00:40:55,120 --> 00:41:00,620
+bolded line is our current version and we
+can see that it stayed under our limit of
+
+504
+00:41:00,620 --> 00:41:06,200
+100 milliseconds right so our redirects
+also passed this time it's under 100
+
+505
+00:41:06,200 --> 00:41:07,800
+milliseconds so it's 71 milliseconds
+
+506
+00:41:08,740 --> 00:41:14,600
+and our the other condition also passed
+right which also passed before also so the
+
+507
+00:41:14,600 --> 00:41:21,060
+nginx fix did work looks like also
+one one one more thing i forgot to
+
+508
+00:41:21,060 --> 00:41:27,560
+mention for every uh new event that
+comes in i have tested it we do we do the
+
+509
+00:41:27,560 --> 00:41:33,780
+test i repeated the test like three times
+to make sure that all three pass right uh
+
+510
+00:41:33,780 --> 00:41:39,260
+but i do not go and again run the previous
+levels three time only for every new
+
+511
+00:41:39,260 --> 00:41:43,900
+event i run it three times to make sure
+the the fix works in all tries right?
+
+512
+00:41:44,020 --> 00:41:45,020
+So that is something to remember.
+
+513
+00:41:47,180 --> 00:41:51,160
+So yeah, version, version two does
+work and it passes even three.
+
+514
+00:41:53,480 --> 00:41:58,640
+So in our always true list that we
+had for every event, now we also add
+
+515
+00:41:58,640 --> 00:42:04,500
+another where our name should have exactly
+one owner and the rest should be told
+
+516
+00:42:04,500 --> 00:42:10,000
+that it's taken, right? So I've also added
+this new rule to our list of always true
+
+517
+00:42:10,000 --> 00:42:12,100
+rules, right? So I've
+also added that list.
+
+518
+00:42:13,920 --> 00:42:19,080
+now version 2 also pass version 2 passes
+all the three events right so that's good
+
+519
+00:42:19,080 --> 00:42:22,040
+yeah
+
+520
+00:42:24,120 --> 00:42:30,600
+okay so let's move on to the next
+event and see what happens right okay
+
+521
+00:42:30,600 --> 00:42:36,160
+so now it's event 4 so event 4 is about
+there's a there's like a single link that
+
+522
+00:42:36,160 --> 00:42:40,720
+just goes viral so you can think about
+like a specific short link was shared
+
+523
+00:42:40,720 --> 00:42:46,060
+somewhere on social media and then it just
+got like very famous right and a lot of
+
+524
+00:42:46,060 --> 00:42:51,900
+people started clicking on it right so a
+link could also go viral right in a real
+
+525
+00:42:51,900 --> 00:42:58,340
+URL shorter system so that is what we are
+trying to test here so what we'll do is on
+
+526
+00:42:58,340 --> 00:43:04,540
+top of the event to traffic we'll have a
+single link that ramps up to zero to two
+
+527
+00:43:04,540 --> 00:43:10,820
+thousand clicks a second right
+because it has gone viral and we'll
+
+528
+00:43:10,820 --> 00:43:12,420
+keep it there for 10 minutes
+
+529
+00:43:13,260 --> 00:43:19,280
+right so that is the idea
+for even for okay so
+
+530
+00:43:19,280 --> 00:43:25,520
+this is our same version to
+architecture that we had previously
+
+531
+00:43:25,520 --> 00:43:28,760
+right we haven't changed anything and
+now we'll try it on even for and see what
+
+532
+00:43:28,760 --> 00:43:33,840
+happens right so yeah again I would like
+you to pause and just guess what could
+
+533
+00:43:33,840 --> 00:43:36,140
+happen right okay let's play and see
+
+534
+00:43:39,420 --> 00:43:45,400
+sorry sorry let me start again so
+before I start one thing to note here
+
+535
+00:43:45,400 --> 00:43:51,840
+look at this part which is the
+CPU percentage right here I
+
+536
+00:43:51,840 --> 00:43:57,060
+have labeled it as there's two parts to it
+there's nginx how much is nginx using our
+
+537
+00:43:57,060 --> 00:43:59,820
+CPU and how much is node using our CPU.
+
+538
+00:43:59,960 --> 00:44:03,480
+I've done it to show
+what's actually happening.
+
+539
+00:44:03,720 --> 00:44:09,680
+It's important for this event. So remember
+that the CPU is now divided and it shows
+
+540
+00:44:09,680 --> 00:44:16,140
+the amount of CPU, CPU percentage that's
+being used by nginx and by the Node app
+
+541
+00:44:16,140 --> 00:44:20,520
+itself. So keep that in mind. And let's
+see, I'll run the viral link and see what
+
+542
+00:44:20,520 --> 00:44:21,320
+happens.
+
+543
+00:44:23,240 --> 00:44:29,040
+so you'll see that here it's almost at 100%
+the CPU is being used and and nginx is
+
+544
+00:44:29,040 --> 00:44:34,580
+using like almost 1.7 cores of it and
+our time has already gone above the 100
+
+545
+00:44:34,580 --> 00:44:41,020
+millisecond limit right and there was
+a lot of waiting that was going on and
+
+546
+00:44:41,020 --> 00:44:46,720
+requests were also being timed out right
+so obviously there is something that's
+
+547
+00:44:46,720 --> 00:44:47,520
+happening where
+
+548
+00:44:48,160 --> 00:44:52,900
+something is not being able to keep up
+with the viral load right and hence the
+
+549
+00:44:52,900 --> 00:44:59,300
+request are sort of being removed and
+being timed out sort of so we can see
+
+550
+00:44:59,300 --> 00:45:05,480
+that our redirect p99 was around 9.4
+seconds which is obviously above our hundred
+
+551
+00:45:05,480 --> 00:45:10,640
+millisecond limit and also there were like
+18.4 errors right our limit was only 0.1
+
+552
+00:45:10,640 --> 00:45:16,560
+percent and we also noticed
+that nginx was taking
+
+553
+00:45:16,560 --> 00:45:21,840
+after at a certain point almost
+1.7 was using almost 1.7 course.
+
+554
+00:45:22,040 --> 00:45:23,520
+So our system has two cores, right.
+
+555
+00:45:25,720 --> 00:45:30,680
+And yeah, and our CPUs are literally busy
+all that time during the viral load,
+
+556
+00:45:30,800 --> 00:45:34,400
+right. So something is going on special,
+especially with nginx, because we can see
+
+557
+00:45:34,400 --> 00:45:36,260
+that it's using most of the cores.
+
+558
+00:45:36,880 --> 00:45:42,460
+Okay, so essentially, what was happening
+was because of the viral load, the part
+
+559
+00:45:42,460 --> 00:45:48,220
+that was taking the most amount
+of time was the TLS handshake and
+
+560
+00:45:48,220 --> 00:45:53,760
+specifically in TLS handshake there is a
+process where there is an exchange of keys
+
+561
+00:45:53,760 --> 00:45:58,760
+that goes between the client and the server
+and both of them are trying to prove
+
+562
+00:45:58,760 --> 00:46:02,320
+themselves right they prove their
+identity so that part takes a lot of time
+
+563
+00:46:02,320 --> 00:46:08,020
+essentially and that is why nginx was trying
+to do all the different types of math
+
+564
+00:46:08,020 --> 00:46:11,400
+that's needed during TLS handshake
+and that's where you saw that the
+
+565
+00:46:12,400 --> 00:46:18,380
+CPU it was using almost 1.7 of the
+cores right of our two cores so that was
+
+566
+00:46:18,380 --> 00:46:24,360
+essentially taking the most amount of time
+so the node Node app itself was pretty
+
+567
+00:46:24,360 --> 00:46:30,000
+fast like the after the handshake was done
+the lookups were really quick from the
+
+568
+00:46:30,000 --> 00:46:36,400
+Node app side but the part where it got
+slowed was because of the nginx where it
+
+569
+00:46:36,400 --> 00:46:42,760
+was trying to process too many requests
+at a time and so our current system has
+
+570
+00:46:42,760 --> 00:46:46,640
+only two workers right so it can only do
+two at a time so that was essentially what
+
+571
+00:46:46,640 --> 00:46:53,080
+was keeping it slow and here we can
+see that on the one nginx was using
+
+572
+00:46:53,080 --> 00:46:57,800
+almost 1.7 cores node
+was just using 30% right
+
+573
+00:46:57,800 --> 00:47:01,520
+so that is the reason
+of the slowdown right
+
+574
+00:47:02,400 --> 00:47:07,980
+So what can we do? What could be the smallest
+change maybe we could make to help fix
+
+575
+00:47:07,980 --> 00:47:08,780
+the failure?
+
+576
+00:47:09,240 --> 00:47:10,960
+So I could think about like three options.
+
+577
+00:47:11,080 --> 00:47:17,280
+You could use like a CDN, which is
+a content delivery network where the
+
+578
+00:47:17,280 --> 00:47:20,720
+servers are closer to the visitors, right?
+
+579
+00:47:21,040 --> 00:47:26,280
+And there the hand checks happen
+rather than our current server.
+
+580
+00:47:26,500 --> 00:47:27,680
+So that could be one option.
+
+581
+00:47:28,380 --> 00:47:32,500
+You could also use a load balancer where
+in front of our current server there will
+
+582
+00:47:32,500 --> 00:47:38,740
+be another another machine essentially
+that is able to do all that
+
+583
+00:47:38,740 --> 00:47:45,160
+work and then spread the request
+or balance the traffic behind it
+
+584
+00:47:45,160 --> 00:47:50,080
+to these servers right currently we only
+have one server so it kinder I'm not sure
+
+585
+00:47:50,080 --> 00:47:56,520
+if it makes sense to use a load balancer
+and also there's a cost associated with it
+
+586
+00:47:56,520 --> 00:48:02,920
+as well right another option which is
+which i felt is one of the more simpler
+
+587
+00:48:02,920 --> 00:48:07,520
+option is just to have a bigger machine
+right so currently we have two cores we can
+
+588
+00:48:07,520 --> 00:48:13,100
+twice it and we could have four cores right
+so that adds another three euros a month
+
+589
+00:48:13,100 --> 00:48:18,000
+so our if you remember our old cost for
+that machine was around five to six euros
+
+590
+00:48:18,000 --> 00:48:23,280
+now there's another three euros edition of
+a month but I thought that's that could
+
+591
+00:48:23,280 --> 00:48:28,440
+maybe be the smallest chain and let's see
+what happens by doing that right so so we
+
+592
+00:48:28,440 --> 00:48:32,020
+just have a bigger machine and everything
+else would stay the same the only
+
+593
+00:48:32,020 --> 00:48:37,100
+difference is now nginx would be able to
+use four cores not two right because it's
+
+594
+00:48:37,100 --> 00:48:42,820
+able to take advantage of how many ever
+cores are there in your machine right okay
+
+595
+00:48:42,820 --> 00:48:47,340
+so that's so that's what we would we are
+doing here we are using a bigger machine
+
+596
+00:48:47,340 --> 00:48:53,800
+and so yeah now we have four CPUs
+that bigger machine has around
+
+597
+00:48:53,800 --> 00:48:58,600
+80 GB of disk space and 8 GB of RAM and
+it costs like around nine euros a month
+
+598
+00:48:58,600 --> 00:49:03,520
+right and everything else stays the same
+and okay now let's see let's see what
+
+599
+00:49:03,520 --> 00:49:09,980
+happened again right so it's going
+okay it did increase but now it's only
+
+600
+00:49:09,980 --> 00:49:14,900
+using around 70% or like 2.6 cores.
+
+601
+00:49:15,100 --> 00:49:18,820
+nginx is only using 2.6,
+2.8 cores of our four cores.
+
+602
+00:49:18,920 --> 00:49:19,960
+So it's still within the limit.
+
+603
+00:49:20,040 --> 00:49:24,100
+And also the redirect speeds are also
+pretty much below 100 milliseconds.
+
+604
+00:49:24,300 --> 00:49:27,400
+So it looks like the bigger machine is
+able to handle the load spike, right?
+
+605
+00:49:28,140 --> 00:49:33,100
+We get 0% errors and the redirect is like
+14.6 milliseconds which is under our 100
+
+606
+00:49:33,100 --> 00:49:35,860
+millisecond limit as well.
+So that worked as well.
+
+607
+00:49:35,960 --> 00:49:41,560
+So this worked, our version, version three
+works with a bigger machine with four
+
+608
+00:49:41,560 --> 00:49:47,760
+cores now right okay let's let's go next
+so yeah version three was able to handle
+
+609
+00:49:47,760 --> 00:49:52,820
+all our events including the new event four
+which was a link going viral right let's
+
+610
+00:49:52,820 --> 00:49:58,820
+let's go next so yeah now we
+added this version to our
+
+611
+00:49:58,820 --> 00:50:03,200
+scoreboard now we have a new machine
+which now costs around nine euros a month
+
+612
+00:50:03,200 --> 00:50:09,340
+okay now next now let's see
+what happens next we have a new
+
+613
+00:50:09,340 --> 00:50:15,840
+event now this essentially is
+it allows users or the creators
+
+614
+00:50:15,840 --> 00:50:20,120
+of the links to see how many users have
+actually clicked on the short links right
+
+615
+00:50:20,120 --> 00:50:24,000
+this is something like very common you
+would want to know how many users are
+
+616
+00:50:24,000 --> 00:50:30,020
+clicking on your link right so that is
+sort of the main idea like you need to you
+
+617
+00:50:30,020 --> 00:50:34,960
+would want to know how popular is that link
+even getting so that is essentially the
+
+618
+00:50:34,960 --> 00:50:41,340
+gold we need to sort of show for each
+link what's the count how many users are
+
+619
+00:50:41,340 --> 00:50:47,760
+using visiting it so the rule
+is the event says that the
+
+620
+00:50:47,760 --> 00:50:53,580
+creator sees links per day we they need
+to be able to see the count for each link
+
+621
+00:50:53,580 --> 00:50:59,680
+per day it should be at most a
+minute behind and this is also
+
+622
+00:50:59,680 --> 00:51:06,080
+tested with the viral spike event as
+well so on top of the viral spike
+
+623
+00:51:06,080 --> 00:51:12,200
+event we need to be able to save the click
+counts right so that that is the idea
+
+624
+00:51:12,200 --> 00:51:18,360
+and yeah for passing this even every link
+must be within 1% of the actual count
+
+625
+00:51:18,360 --> 00:51:23,900
+and it must be at most like 60 second behind
+so that's the that's the rule for event
+
+626
+00:51:23,900 --> 00:51:30,160
+5 right okay so one of the obvious ways to
+
+627
+00:51:30,160 --> 00:51:36,560
+do it would be for every click, we would
+immediately save it in our SQLite database.
+
+628
+00:51:36,840 --> 00:51:40,040
+That would be sort of the most
+simplest way you could do it.
+
+629
+00:51:41,320 --> 00:51:46,020
+For every click that's coming,
+we also ensure that it's saved.
+
+630
+00:51:46,300 --> 00:51:52,460
+We make sure that we save it to the database
+before returning or responding to that
+
+631
+00:51:52,460 --> 00:51:53,260
+request, right?
+
+632
+00:51:54,040 --> 00:51:56,360
+And okay, so let's see what happens.
+
+633
+00:51:56,360 --> 00:52:02,800
+so just to just remember that
+this also has the viral spike on
+
+634
+00:52:02,800 --> 00:52:04,800
+top on top of our
+
+635
+00:52:05,620 --> 00:52:12,120
+current event which is also counting
+every click right so so let's see what
+
+636
+00:52:12,120 --> 00:52:18,480
+happens with this okay so we can see
+already it's the redirect has gone above
+
+637
+00:52:18,480 --> 00:52:23,600
+hundred milliseconds and a lot of
+requests seems like it's timing out right
+
+638
+00:52:23,600 --> 00:52:27,960
+yeah so it's probably something
+
+639
+00:52:27,960 --> 00:52:34,320
+it's probably something related to
+this new saving that we are doing for
+
+640
+00:52:34,320 --> 00:52:39,980
+every click it's probably that which is
+slowing it down hence the redirect is that
+
+641
+00:52:39,980 --> 00:52:46,020
+high also if you notice the
+CPU wasn't being used much
+
+642
+00:52:46,020 --> 00:52:52,380
+throughout if I quickly played again
+right you would you would see that the CPU
+
+643
+00:52:52,380 --> 00:52:57,020
+is like very less so it seems like it's
+something to do with the disk right because
+
+644
+00:52:57,020 --> 00:53:01,880
+the CPU percentage seems to be not being
+used much so it's probably something to do
+
+645
+00:53:01,880 --> 00:53:06,340
+with the disk right and that's what is
+most likely because we introduced a new
+
+646
+00:53:06,340 --> 00:53:12,280
+saving feature for every click right also
+another thing to note the click counts we
+
+647
+00:53:12,280 --> 00:53:16,240
+said remember the rule was that
+it should be within 1%, right?
+
+648
+00:53:16,400 --> 00:53:19,120
+So we can see that around
+231 links are off.
+
+649
+00:53:19,380 --> 00:53:24,240
+The reason this is happening
+is we only count a click.
+
+650
+00:53:26,680 --> 00:53:32,440
+When we click on something, the server
+returns, returns successful response and then
+
+651
+00:53:32,440 --> 00:53:35,060
+the browser goes to that
+redirect link, right?
+
+652
+00:53:35,300 --> 00:53:39,360
+But here what was happening was
+because we are saving for every link,
+
+653
+00:53:40,800 --> 00:53:47,080
+the other links were getting timed
+out the other links they were
+
+654
+00:53:47,080 --> 00:53:53,240
+waiting for any other links to be finished
+and they were getting timed out so they
+
+655
+00:53:53,240 --> 00:53:59,300
+weren't being redirected but later on when
+the server catched up they were going and
+
+656
+00:53:59,300 --> 00:54:04,600
+still counting adding the counts for those
+links so that is why there is there was a
+
+657
+00:54:04,600 --> 00:54:08,620
+difference and it wasn't within our one
+person rule a lot of links were being over
+
+658
+00:54:08,620 --> 00:54:14,020
+counted. We can only count a link when
+the actual visitor actually has been
+
+659
+00:54:14,020 --> 00:54:15,520
+successfully redirected, right?
+
+660
+00:54:15,720 --> 00:54:22,200
+But here, because the server wasn't
+able to catch up, there was this 1%
+
+661
+00:54:22,200 --> 00:54:24,480
+difference in the counts, right?
+
+662
+00:54:24,640 --> 00:54:26,140
+So that is also something which failed.
+
+663
+00:54:27,640 --> 00:54:33,900
+So it looks like saving every click
+isn't a good way to handle it, especially
+
+664
+00:54:33,900 --> 00:54:39,200
+I think because of the spike or the
+viral link load, it's causing it to fail.
+
+665
+00:54:40,200 --> 00:54:41,900
+So let's see what we can do, right?
+
+666
+00:54:43,140 --> 00:54:49,480
+Another simple option would be, we do
+not save for every click, but we batch,
+
+667
+00:54:49,800 --> 00:54:55,360
+we can batch the number of clicks and we
+then, we batch the number of clicks in
+
+668
+00:54:55,360 --> 00:54:57,280
+memory and then we save every second.
+
+669
+00:54:58,280 --> 00:55:02,000
+So that's also another
+simpler, simple approach.
+
+670
+00:55:02,000 --> 00:55:08,360
+we don't save every second, we don't save
+for every click, we wait a second, we
+
+671
+00:55:08,360 --> 00:55:11,880
+batch all the accounts for the
+different links and then we save it.
+
+672
+00:55:12,540 --> 00:55:15,840
+So this is what version four
+is, this is what we are doing.
+
+673
+00:55:17,280 --> 00:55:19,380
+And let's see if this works.
+
+674
+00:55:20,200 --> 00:55:25,720
+So we have this, the older, the obvious
+way where we save for every click grade out
+
+675
+00:55:25,720 --> 00:55:30,560
+on this graph. So just for reference, and
+now let's see how version four behaves.
+
+676
+00:55:32,000 --> 00:55:38,460
+okay so it looks like yeah it
+looks like it's it it's mostly
+
+677
+00:55:38,460 --> 00:55:43,980
+under 100 millisecond though we had one
+sort of spike here but mostly it feels it's
+
+678
+00:55:43,980 --> 00:55:49,580
+good right it's keeping everything under
+100 millisecond and yeah this works like
+
+679
+00:55:49,580 --> 00:55:54,760
+this was able to pass even for the redirect
+was also good and all the click counts
+
+680
+00:55:54,760 --> 00:55:59,660
+were exact we were able to the actual count
+matched with what we saved so that's a
+
+681
+00:55:59,660 --> 00:56:03,380
+good as well so so this this looks
+like this version for did work
+
+682
+00:56:06,300 --> 00:56:11,980
+there's two two things to note here for
+saving the click counts we introduced a new
+
+683
+00:56:11,980 --> 00:56:17,860
+clicks table the reason being we need to
+store the counts per day so that was the
+
+684
+00:56:17,860 --> 00:56:24,020
+event rule so that's why we need a new
+table so that we can save the counts per day
+
+685
+00:56:24,020 --> 00:56:30,140
+also so in this table we are storing
+both the generated link and the
+
+686
+00:56:30,140 --> 00:56:34,920
+custom names link in the same table which
+is different from what we did here right
+
+687
+00:56:34,920 --> 00:56:41,280
+so for to make the lookups
+quicker we we have added a
+
+688
+00:56:41,280 --> 00:56:47,020
+primary key on code and day columns right
+so this would this helps us to make the
+
+689
+00:56:47,020 --> 00:56:52,780
+lookups much more quicker because SQLite
+then builds an index on on those two
+
+690
+00:56:52,780 --> 00:56:57,200
+columns right so the lookups are quicker
+so that's one thing we have a clicks table
+
+691
+00:56:58,180 --> 00:57:04,320
+and another thing we need to remember
+is uh what browsers usually do is
+
+692
+00:57:06,660 --> 00:57:13,120
+once our server returns
+a redirect link that
+
+693
+00:57:13,120 --> 00:57:19,540
+hey this short url maps to this long
+url our normal browsers usually remember
+
+694
+00:57:19,540 --> 00:57:20,340
+that,
+
+695
+00:57:20,740 --> 00:57:25,780
+right? So next time when a user clicks on
+that short link, it actually never even
+
+696
+00:57:25,780 --> 00:57:27,440
+goes to our server.
+
+697
+00:57:28,400 --> 00:57:32,620
+And it automatically just redirects it
+because it's sort of saving it in some sort
+
+698
+00:57:32,620 --> 00:57:36,940
+of a cache in the browser and it's
+redirecting the user to the longer link.
+
+699
+00:57:37,000 --> 00:57:43,500
+But this would cause a problem for us
+because we need to be able to save the click
+
+700
+00:57:43,500 --> 00:57:45,860
+counts, right? So that is
+something we need to do.
+
+701
+00:57:45,860 --> 00:57:48,700
+So we need those requests
+to come to our server.
+
+702
+00:57:49,040 --> 00:57:54,940
+So what you can do is from the server
+side, we can send this to the browser,
+
+703
+00:57:55,680 --> 00:57:58,420
+this property saying
+cache control no store.
+
+704
+00:57:58,560 --> 00:58:01,880
+So this says that please do
+not cache it in your browser.
+
+705
+00:58:02,320 --> 00:58:05,080
+So every time the user clicks,
+
+706
+00:58:05,940 --> 00:58:11,540
+it first goes to our short link server
+and then it gets redirected to the actual
+
+707
+00:58:11,540 --> 00:58:13,640
+link. So this is another
+thing to note now.
+
+708
+00:58:15,860 --> 00:58:17,880
+Okay, so yeah, this looks okay.
+
+709
+00:58:18,240 --> 00:58:24,520
+Okay, and we have added to our always true
+list another rule where the click count
+
+710
+00:58:24,520 --> 00:58:27,280
+should be within one person
+and at most 60 seconds behind.
+
+711
+00:58:28,180 --> 00:58:34,180
+So yeah, version four passes till event
+five, all of the events it passes.
+
+712
+00:58:34,520 --> 00:58:36,000
+So that's good, right?
+
+713
+00:58:37,220 --> 00:58:38,040
+Okay, yeah.
+
+714
+00:58:39,500 --> 00:58:42,760
+Okay, so let's move on to
+the next event, right?
+
+715
+00:58:42,760 --> 00:58:48,540
+So we are, we've finished event five
+and we are till version four of our
+
+716
+00:58:48,540 --> 00:58:50,340
+architecture and let's see
+what happens next, right?
+
+717
+00:58:52,300 --> 00:58:54,800
+So, okay, the next event is event six.
+
+718
+00:58:55,340 --> 00:58:59,940
+Essentially it's a failure event
+and it's about power cuts, right?
+
+719
+00:59:00,040 --> 00:59:04,140
+Cause it's very common, like servers
+can crash and lose power, right?
+
+720
+00:59:04,980 --> 00:59:10,960
+So the important thing here is that whenever
+the server loses power or it crashes,
+
+721
+00:59:13,800 --> 00:59:18,020
+whatever promise we had made to people that
+had created the link successfully that
+
+722
+00:59:18,020 --> 00:59:24,380
+has to stay right if a person had created
+a link uh after the server restarts that
+
+723
+00:59:24,380 --> 00:59:28,760
+link still should be saved on the server
+right it shouldn't just get deleted right
+
+724
+00:59:28,760 --> 00:59:34,060
+so so yeah that is what's written here like
+whatever we told the creator was it must
+
+725
+00:59:34,060 --> 00:59:39,980
+be still there afterwards and we are going
+to run it under episode two, event two's
+
+726
+00:59:39,980 --> 00:59:44,560
+traffic and the machine gets switched off
+like without warning and then on again
+
+727
+00:59:44,560 --> 00:59:50,120
+right and for passing no
+confirmed links can be lost and
+
+728
+00:59:50,120 --> 00:59:56,080
+redirects should be back like
+within five minutes of the server
+
+729
+00:59:56,080 --> 00:59:58,580
+restarting so these are
+the rules for event six.
+
+730
+01:00:00,900 --> 01:00:07,340
+so okay let's use our same
+architecture of version 4 and and
+
+731
+01:00:07,340 --> 01:00:12,760
+see what happens right so yeah it's time
+to and pause and just imagine what could
+
+732
+01:00:12,760 --> 01:00:18,200
+happen like what do you think will it work
+or will it go wrong right let's see okay
+
+733
+01:00:18,200 --> 01:00:24,100
+so yeah we have redirects and power gets
+off at this time and then it gets on
+
+734
+01:00:24,100 --> 01:00:30,020
+and again it starts processing
+requests right so the server
+
+735
+01:00:30,020 --> 01:00:34,320
+successfully restarted within x61 seconds
+and the limit for five minutes so this
+
+736
+01:00:34,320 --> 01:00:39,860
+worked but the thing that didn't work
+was because we had that rule like any
+
+737
+01:00:39,860 --> 01:00:45,620
+confirmed links cannot be lost but during
+our test we see that one of the links were
+
+738
+01:00:45,620 --> 01:00:51,540
+lost so the link with this code was actually
+lost and when the server restarted it
+
+739
+01:00:51,540 --> 01:00:56,740
+sort of handed that same code over to
+someone else because remember we whenever we
+
+740
+01:00:56,740 --> 01:01:01,560
+generate a new link we just add plus one
+to the previous offset and we can hand it
+
+741
+01:01:01,560 --> 01:01:07,260
+to anyone else right so what happened was
+this link was confirmed to someone else
+
+742
+01:01:07,260 --> 01:01:13,160
+before the power cut and after the power
+cut that link was just lost right so that's
+
+743
+01:01:13,160 --> 01:01:17,920
+not that's not correct right
+So let's see what went wrong.
+
+744
+01:01:19,140 --> 01:01:25,500
+So this is how SQLite
+saves with whatever is its
+
+745
+01:01:25,500 --> 01:01:27,520
+default settings. This
+is how the save works.
+
+746
+01:01:27,960 --> 01:01:34,020
+Essentially what it does is every time it
+wants to save something, the part of the
+
+747
+01:01:34,020 --> 01:01:39,040
+file that it's trying to change, it will
+copy that into a separate file called
+
+748
+01:01:39,040 --> 01:01:41,800
+a journal file. right?
+
+749
+01:01:42,660 --> 01:01:47,600
+Essentially, it copies whatever was the
+original original data, wherever it's trying
+
+750
+01:01:47,600 --> 01:01:51,500
+to change it first in a separate file so
+that just in case something goes wrong,
+
+751
+01:01:51,640 --> 01:01:55,360
+it's able to undo it, whatever
+was the original data, right?
+
+752
+01:01:55,440 --> 01:01:59,520
+So it copies, whatever it's trying to change
+the original data into a separate file,
+
+753
+01:01:59,660 --> 01:02:05,520
+then it writes the new data into our the
+current main database file wherever the
+
+754
+01:02:05,520 --> 01:02:07,320
+links were. So that's called links.db.
+
+755
+01:02:07,660 --> 01:02:12,520
+And links.db-journal was the
+undo file, right, the undo file.
+
+756
+01:02:13,060 --> 01:02:19,500
+Then once it writes the new link into the
+main file, it deletes the journal file
+
+757
+01:02:19,500 --> 01:02:25,420
+and once it deletes the journal file, that
+it counts it as final and then it returns
+
+758
+01:02:25,420 --> 01:02:31,540
+the response to the user saying, okay,
+I've saved this file, this link and you're
+
+759
+01:02:31,540 --> 01:02:36,480
+good, right. So this is how with
+default setting the SQLite works, right.
+
+760
+01:02:37,700 --> 01:02:40,500
+But the problem is at this step,
+
+761
+01:02:41,620 --> 01:02:47,440
+when it says to delete the
+journal file apparently
+
+762
+01:02:47,440 --> 01:02:49,120
+at the OS level
+
+763
+01:02:51,280 --> 01:02:57,720
+the OS just marks it delete in the memory
+and says and tells SQLite hey it's
+
+764
+01:02:57,720 --> 01:03:03,340
+done we are good right and SQLite thinks
+that okay everything's okay and it just
+
+765
+01:03:03,340 --> 01:03:08,580
+returns but it's not actually
+removed from the disk itself.
+
+766
+01:03:08,980 --> 01:03:11,900
+That journal file hasn't been
+removed from the disk itself.
+
+767
+01:03:12,380 --> 01:03:14,320
+The journal file was the undo file, right?
+
+768
+01:03:14,440 --> 01:03:20,260
+So what happens is when the machine
+restarts, SQLite first looks for the journal
+
+769
+01:03:20,260 --> 01:03:23,760
+file, if it sees that, hey, there's a journal
+file that exists, it thinks that okay,
+
+770
+01:03:23,840 --> 01:03:28,960
+something may have gone wrong, I need
+to undo it back to the original data.
+
+771
+01:03:29,140 --> 01:03:30,480
+So this is what happened, right?
+
+772
+01:03:31,640 --> 01:03:37,580
+That is why our link was actually lost
+so the deletion of the journal file
+
+773
+01:03:37,580 --> 01:03:43,420
+hadn't actually propagated to the disk
+itself right the OS hadn't confirmed that
+
+774
+01:03:43,420 --> 01:03:49,280
+so that so that is what was happening yeah
+
+775
+01:03:49,280 --> 01:03:54,640
+so the catch was the deleting of file
+was firstly only noted in memory
+
+776
+01:03:54,640 --> 01:04:00,980
+the disk record or the journal file
+deleting from the disk took a few
+
+777
+01:04:00,980 --> 01:04:05,720
+seconds later that operation happened after
+a few seconds later so between that gap
+
+778
+01:04:05,720 --> 01:04:11,400
+if the power gets cut off the the general
+file still remains on disk and SQLite will
+
+779
+01:04:11,400 --> 01:04:17,360
+undo it whenever the machine restarts
+right so so that is what was happening here
+
+780
+01:04:17,360 --> 01:04:23,380
+so the fix to this is to change
+SQLite's default setting and
+
+781
+01:04:23,380 --> 01:04:28,280
+changing sync synchronous equals to extra
+this is setting with what it does is it
+
+782
+01:04:28,280 --> 01:04:34,200
+basically it makes sure the
+deletion of the journal file has
+
+783
+01:04:34,200 --> 01:04:38,560
+propagated to the disk and only after that
+it returns to the user that hey your link
+
+784
+01:04:38,560 --> 01:04:44,600
+is successfully saved right so this is the
+this is the change or setting that can be
+
+785
+01:04:44,600 --> 01:04:50,800
+done to fix that right okay so now once we
+apply that setting we have version 5 of
+
+786
+01:04:50,800 --> 01:04:56,020
+our system and let's see what happens
+now with the same event six traffic
+
+787
+01:04:57,180 --> 01:04:58,600
+with the power cut, right?
+
+788
+01:04:59,980 --> 01:05:00,780
+Okay.
+
+789
+01:05:05,180 --> 01:05:09,540
+After the power gets cut, it's back after
+67 seconds, which is still under five
+
+790
+01:05:09,540 --> 01:05:10,340
+minutes.
+
+791
+01:05:10,700 --> 01:05:12,660
+And we see that everything works.
+
+792
+01:05:14,940 --> 01:05:18,880
+So we are back up after 67 seconds,
+
+793
+01:05:19,620 --> 01:05:25,040
+and we are responding. no confirmed links
+were lost that is important one thing that
+
+794
+01:05:25,040 --> 01:05:31,300
+still didn't work was that remember
+we had a promise that we made for
+
+795
+01:05:31,300 --> 01:05:36,980
+every event that was uh every click
+count has to be within one percent
+
+796
+01:05:36,980 --> 01:05:42,780
+right so during my test
+what i found was the the
+
+797
+01:05:42,780 --> 01:05:48,620
+links that had click counts which
+were less than 100 if you do 1%
+
+798
+01:05:48,620 --> 01:05:54,980
+of that it's it rounds down to sort of
+zero right the one person rounds down
+
+799
+01:05:54,980 --> 01:06:01,240
+to zero so that means it's essentially
+like exact counts right but our
+
+800
+01:06:01,240 --> 01:06:07,020
+system doesn't do exact counts our system
+was designed to let's save every second
+
+801
+01:06:07,020 --> 01:06:13,260
+right so so this is something was that's
+only sort of is happening with very
+
+802
+01:06:13,260 --> 01:06:19,500
+links with very small counts
+so we sort of accept this
+
+803
+01:06:19,500 --> 01:06:25,520
+failure and we move on say thinking that
+it's not a big deal right for those counts
+
+804
+01:06:25,520 --> 01:06:32,020
+if it's if it doesn't have to be exact
+right so only for those very small
+
+805
+01:06:32,020 --> 01:06:37,460
+counts we we count this failure is acceptable
+and we move on right so that is why
+
+806
+01:06:37,460 --> 01:06:43,780
+there's a cross here and but we we
+have that failure is accepted right uh
+
+807
+01:06:43,780 --> 01:06:50,120
+the difference i think when i tested the
+actual count difference were very small
+
+808
+01:06:50,120 --> 01:06:54,960
+it was like one or two counts difference
+for those links which had very less number
+
+809
+01:06:54,960 --> 01:07:00,000
+of clicks the count difference was very
+small so it was it was like acceptable and
+
+810
+01:07:00,000 --> 01:07:06,500
+yeah that is why I thought this failure is
+acceptable and I moved on right so yeah
+
+811
+01:07:06,500 --> 01:07:12,080
+so version 5 works with event
+6 and there's an asterisk
+
+812
+01:07:12,080 --> 01:07:18,100
+asterisk here just because of that
+reason which I just mentioned right so
+
+813
+01:07:18,100 --> 01:07:24,520
+okay let's let's move on to the
+next okay now it's event 7 even 7
+
+814
+01:07:24,520 --> 01:07:28,220
+is also about another failure
+but now it's not about the power
+
+815
+01:07:28,220 --> 01:07:34,600
+being cut and the server still
+restarting and coming back on.
+
+816
+01:07:34,720 --> 01:07:36,940
+It's about the machine
+being lost altogether.
+
+817
+01:07:37,760 --> 01:07:43,300
+So this is about the whole machine getting
+lost with the server and the disk in it
+
+818
+01:07:43,300 --> 01:07:44,100
+for good.
+
+819
+01:07:45,060 --> 01:07:46,740
+So this is something important.
+
+820
+01:07:48,580 --> 01:07:54,780
+This can happen and machines need to
+come back and keep processing user
+
+821
+01:07:54,780 --> 01:07:57,940
+requests. So this is something
+that can happen in real world.
+
+822
+01:08:00,740 --> 01:08:05,720
+So yeah, the passing condition for this
+is we need to be back on a new machine
+
+823
+01:08:05,720 --> 01:08:11,880
+within one hour of failure. And we can lose
+at most the last five minutes of links.
+
+824
+01:08:11,900 --> 01:08:15,080
+So this is the passing condition
+for event seven, right?
+
+825
+01:08:16,100 --> 01:08:22,400
+Okay. so it's it should i hope
+it's a it should be a bit obvious
+
+826
+01:08:22,400 --> 01:08:28,780
+at least that why our current version
+5 wouldn't survive because firstly the
+
+827
+01:08:28,780 --> 01:08:33,480
+only copy that we currently have is just on
+the disk itself of that one server right
+
+828
+01:08:33,480 --> 01:08:38,800
+so it it wouldn't survive right because
+there's nothing else that we are copying it
+
+829
+01:08:38,800 --> 01:08:44,780
+to so that is one very simple reason our
+version 5 won't survive this right another
+
+830
+01:08:44,780 --> 01:08:50,600
+thing to note here is our system the links
+
+831
+01:08:50,600 --> 01:08:56,320
+have the our IP address of the
+machines like we didn't for for this
+
+832
+01:08:56,320 --> 01:09:00,840
+system that I'm building I didn't buy any
+domain name so I'm using the IP address
+
+833
+01:09:00,840 --> 01:09:05,920
+itself so the IP address are itself in the
+links that we have provided to the user.
+
+834
+01:09:06,260 --> 01:09:09,560
+So the short URLs have the
+IP addresses in it, right?
+
+835
+01:09:10,080 --> 01:09:16,440
+So the problem with the machine is once
+this gets deleted, the IP address that was
+
+836
+01:09:16,440 --> 01:09:18,220
+associated with it also gets deleted.
+
+837
+01:09:18,460 --> 01:09:24,500
+So we need to also make sure the IP address
+gets copied over that same IP address
+
+838
+01:09:24,500 --> 01:09:27,080
+can be moved to another machine, right?
+
+839
+01:09:27,180 --> 01:09:31,060
+So that is something is also which is
+missing in the current v5 system, right?
+
+840
+01:09:31,300 --> 01:09:37,300
+Second is we need to be able to notice
+when the machine is dead, right?
+
+841
+01:09:37,460 --> 01:09:39,660
+So we need to know, okay,
+when did this machine die?
+
+842
+01:09:39,800 --> 01:09:44,580
+Because we had a condition here that our
+new machine should be back within one hour,
+
+843
+01:09:44,620 --> 01:09:49,420
+right? So we need some kind of a mechanism
+to know when that machine dies, right?
+
+844
+01:09:49,660 --> 01:09:50,680
+So that's third.
+
+845
+01:09:52,040 --> 01:09:57,400
+Fourth is we need to have a sort of a
+script that builds up the new server
+
+846
+01:09:57,400 --> 01:10:02,460
+automatically, It can quickly build up the
+new server, the SQLite database with all
+
+847
+01:10:02,460 --> 01:10:05,940
+the data copied over and the
+Node app and everything running.
+
+848
+01:10:06,120 --> 01:10:07,980
+So that is something we need to build up.
+
+849
+01:10:08,460 --> 01:10:14,740
+And another thing is that for all the
+creates or for all the creations of the new
+
+850
+01:10:14,740 --> 01:10:18,820
+link, we need to make sure it's not only
+in the current machine, but it also gets
+
+851
+01:10:18,820 --> 01:10:21,940
+copied over to wherever
+we are copying the data.
+
+852
+01:10:22,440 --> 01:10:25,660
+Because we need to copy the data
+over to some other place as well.
+
+853
+01:10:25,660 --> 01:10:28,520
+right? Not inside the machine, but
+outside the machine, some other place.
+
+854
+01:10:28,860 --> 01:10:35,240
+So we need to make sure that every create
+gets copied over first and only then we
+
+855
+01:10:35,240 --> 01:10:38,260
+respond to the user that,
+hey, your link is confirmed.
+
+856
+01:10:38,540 --> 01:10:42,540
+So that is also something is
+missing with our current V5 system.
+
+857
+01:10:42,680 --> 01:10:44,720
+So these are like five things
+which are currently missing.
+
+858
+01:10:46,500 --> 01:10:47,300
+Okay.
+
+859
+01:10:49,420 --> 01:10:55,320
+So for copying, what are the different ways
+we could think about how the copy could
+
+860
+01:10:55,320 --> 01:10:59,260
+work right the one option
+is using daily backups
+
+861
+01:11:00,840 --> 01:11:06,660
+uh so the the cloud service that i'm using
+hedchners it provides daily backup but
+
+862
+01:11:06,660 --> 01:11:12,440
+the issue with this is it only does it once
+a day right so but our event condition
+
+863
+01:11:12,440 --> 01:11:16,600
+was we can only lose like about five
+minutes of data so that is something it
+
+864
+01:11:16,600 --> 01:11:17,560
+wouldn't work for us
+
+865
+01:11:19,140 --> 01:11:23,160
+uh another thing we could do is we could
+have a standby server or a live server
+
+866
+01:11:23,160 --> 01:11:26,160
+which is running with our current
+server at the same time simultaneously.
+
+867
+01:11:27,160 --> 01:11:32,280
+So that could work and the switch between
+the failed server and the new server would
+
+868
+01:11:32,280 --> 01:11:35,220
+be very quick right because that
+server is already running with it.
+
+869
+01:11:36,040 --> 01:11:41,160
+So that would be very good. The only thing
+is we would have a maybe a more it would
+
+870
+01:11:41,160 --> 01:11:45,100
+be more costly right having a whole another
+server running together at the same time
+
+871
+01:11:45,100 --> 01:11:45,960
+with the current server.
+
+872
+01:11:47,060 --> 01:11:53,480
+Another option is using a tool or a
+program called Litestream what essentially
+
+873
+01:11:53,480 --> 01:11:59,960
+it does is every time it notices
+a change in our database it
+
+874
+01:11:59,960 --> 01:12:05,980
+can copy that data from that database to
+a separate place right now that separate
+
+875
+01:12:05,980 --> 01:12:12,380
+place could be anything but in
+our case we can copy to a volume
+
+876
+01:12:12,380 --> 01:12:18,680
+it's essentially a separate disk that's
+stored over the network in that same data
+
+877
+01:12:18,680 --> 01:12:20,620
+center that's what I
+think they call a volume.
+
+878
+01:12:21,420 --> 01:12:26,740
+So you can think about this is something
+which is a disk which is outside our
+
+879
+01:12:26,740 --> 01:12:31,660
+current machine right. So Litestream is
+able to notice changes in our database and
+
+880
+01:12:31,660 --> 01:12:35,760
+copy it over to another place.
+It's outside our current machine.
+
+881
+01:12:36,460 --> 01:12:41,060
+The important thing to know about Litestream
+is it was built to sort of work with
+
+882
+01:12:41,060 --> 01:12:47,140
+SQLite databases specifically. So as our
+databases have our database is SQLite so it
+
+883
+01:12:47,140 --> 01:12:53,320
+works with that right so yeah
+the additional cost for a
+
+884
+01:12:53,320 --> 01:12:59,560
+volume is essentially like 0.57
+euros a month so yeah our volume is
+
+885
+01:12:59,560 --> 01:13:04,060
+essentially a separate disk and Litestream
+would do it every second right so these
+
+886
+01:13:04,060 --> 01:13:07,740
+would be like these are like some three
+options I could think about and for us we
+
+887
+01:13:07,740 --> 01:13:13,660
+are we are choosing Litestream for for
+doing the copying every second it would copy
+
+888
+01:13:13,660 --> 01:13:20,140
+the changes to another place
+which is the volume right so yeah
+
+889
+01:13:20,140 --> 01:13:26,280
+so this is our v6 architecture
+essentially we have Litestream where it
+
+890
+01:13:26,280 --> 01:13:31,340
+notices changes in our SQLite and it can
+then copy every second to a volume right
+
+891
+01:13:31,340 --> 01:13:37,240
+the volume is like 10 gb size
+and it's 0.57 euros a month right
+
+892
+01:13:37,240 --> 01:13:43,580
+and our event 7 it
+essentially has episode 2
+
+893
+01:13:43,580 --> 01:13:50,020
+traffic and then the machine gets deleted
+here right the machine gets deleted and
+
+894
+01:13:50,020 --> 01:13:53,900
+it has to be back within one hour and it
+may lose only the last five minutes of
+
+895
+01:13:53,900 --> 01:13:54,700
+links right
+
+896
+01:13:55,680 --> 01:14:01,580
+so let's see if our v6
+version can survive this
+
+897
+01:14:01,580 --> 01:14:03,760
+machine being lost right
+and see what happens.
+
+898
+01:14:08,380 --> 01:14:10,200
+So it gets deleted here.
+
+899
+01:14:11,240 --> 01:14:15,700
+And after like 78 seconds,
+Better Stack notices it.
+
+900
+01:14:15,880 --> 01:14:17,700
+So Better Stack is essentially the service
+
+901
+01:14:18,420 --> 01:14:22,780
+that calls our health endpoint
+of our service, right?
+
+902
+01:14:23,040 --> 01:14:26,260
+There's like a health endpoint, it
+keeps on calling every 30 seconds.
+
+903
+01:14:26,540 --> 01:14:29,900
+And when it notices the machine
+is down, it alerts, right?
+
+904
+01:14:29,900 --> 01:14:32,120
+So here it alerts like after 78 seconds.
+
+905
+01:14:32,680 --> 01:14:37,760
+And then I think during this point, we
+were rebuilding our machine, right?
+
+906
+01:14:38,220 --> 01:14:41,680
+And we were back after
+204 seconds, essentially.
+
+907
+01:14:41,880 --> 01:14:44,780
+So that was within the one
+hour limit that we had, right?
+
+908
+01:14:44,780 --> 01:14:46,400
+Our machine has to be up within one hour.
+
+909
+01:14:47,400 --> 01:14:50,200
+And zero confirmed links were also lost.
+
+910
+01:14:50,620 --> 01:14:53,040
+So no links that we promised were lost.
+
+911
+01:14:53,220 --> 01:14:57,380
+So that is also good. And this version
+was able to pass the event, right?
+
+912
+01:15:03,420 --> 01:15:07,080
+So yeah, version six was able
+to pass even seven, right?
+
+913
+01:15:07,260 --> 01:15:08,980
+So it works well.
+
+914
+01:15:10,380 --> 01:15:11,860
+Let's go to the next even, right?
+
+915
+01:15:13,060 --> 01:15:15,800
+And so, yeah, for version six,
+
+916
+01:15:16,580 --> 01:15:20,760
+we added Litestream and
+we added another volume.
+
+917
+01:15:20,760 --> 01:15:23,860
+So that has a cost, that
+was like around 0.56.
+
+918
+01:15:23,860 --> 01:15:28,740
+So now the total cost of our version
+is like around 9.56 euros, right?
+
+919
+01:15:30,520 --> 01:15:34,920
+Okay, so now let's start with the
+next event which is event eight.
+
+920
+01:15:35,180 --> 01:15:37,780
+So this is about a new
+traffic coming in, right?
+
+921
+01:15:37,860 --> 01:15:43,400
+So now this is like 10% of Bitly traffic
+which is essentially like thousand clicks a
+
+922
+01:15:43,400 --> 01:15:45,580
+second. 20 new links are created.
+
+923
+01:15:45,840 --> 01:15:51,580
+These new links are all the generated
+code links and not the custom names link.
+
+924
+01:15:52,700 --> 01:15:58,640
+One reason behind this also was that the
+custom names feature is usually like a paid
+
+925
+01:15:58,640 --> 01:16:04,640
+feature, right? So I was assuming most
+traffic would be the generated names traffic,
+
+926
+01:16:04,880 --> 01:16:05,940
+right? In production.
+
+927
+01:16:06,640 --> 01:16:09,520
+Sorry, the generated quotes
+traffic and not the custom names.
+
+928
+01:16:09,660 --> 01:16:11,140
+So that's what it's trying to represent.
+
+929
+01:16:11,320 --> 01:16:15,140
+Like all these 20 links are
+like generated quotes traffic.
+
+930
+01:16:15,580 --> 01:16:18,380
+And you have 100 million
+links are already prefilled.
+
+931
+01:16:18,940 --> 01:16:23,400
+So this is six months of 10%
+traffic, which is already preceded.
+
+932
+01:16:23,460 --> 01:16:27,600
+The database is already stored with 100
+million links, which is like about 12 GB.
+
+933
+01:16:27,600 --> 01:16:33,040
+and this is also like the first time the
+total database size was more than our
+
+934
+01:16:33,040 --> 01:16:39,180
+memory in our server so our disk was i
+think 80 gb right but our memory was like
+
+935
+01:16:39,180 --> 01:16:45,080
+only 8 gb uh so first time the area
+was outside that so this could also
+
+936
+01:16:45,080 --> 01:16:49,520
+possibly help us see if there are other
+costs associated with data not being in
+
+937
+01:16:49,520 --> 01:16:53,640
+memory and hence SQLite would need to go
+and fetch from the disk right So that is
+
+938
+01:16:53,640 --> 01:16:54,940
+also something which may notice here.
+
+939
+01:16:55,860 --> 01:17:00,700
+So in terms of scale, it's like
+about 877 million clicks a month.
+
+940
+01:17:02,040 --> 01:17:04,740
+And yeah, let's see what happens, right?
+
+941
+01:17:05,480 --> 01:17:11,860
+So before going forward, let's try
+and quickly understand a bit how
+
+942
+01:17:11,860 --> 01:17:14,220
+Litestream works in a bit more detail.
+
+943
+01:17:14,480 --> 01:17:20,940
+This will help us in the coming slides.
+
+944
+01:17:21,160 --> 01:17:22,460
+So let's quickly understand.
+
+945
+01:17:24,220 --> 01:17:29,620
+Essentially, so this is our node
+SQLite app, we have a write ahead log,
+
+946
+01:17:30,680 --> 01:17:37,100
+which is essentially any change that happens
+in our database is written here in the
+
+947
+01:17:37,100 --> 01:17:39,940
+write ahead log. So all the
+changes are just written here.
+
+948
+01:17:40,520 --> 01:17:45,320
+And Litestream essentially then picks up
+all the changes from the log, each change
+
+949
+01:17:45,320 --> 01:17:49,840
+and every one second, it copies
+it into its volume, right?
+
+950
+01:17:50,040 --> 01:17:55,640
+That's what Litestream does. it copies or
+streams changes into the volume inside
+
+951
+01:17:55,640 --> 01:18:01,280
+the volume there there are usually two
+types of file one is like the full database
+
+952
+01:18:01,280 --> 01:18:07,740
+copy so initially when the
+when there is no like change
+
+953
+01:18:07,740 --> 01:18:13,060
+but like at just at the start when the
+database database is full right Litestream
+
+954
+01:18:13,060 --> 01:18:18,640
+first makes a full copy of the database and
+slowly when small changes keep coming in
+
+955
+01:18:18,640 --> 01:18:23,680
+it writes them into small files right so
+this is the structure essentially inside
+
+956
+01:18:23,680 --> 01:18:28,840
+the volume you there is usually a fresh
+full copy of the whole database and when
+
+957
+01:18:28,840 --> 01:18:33,260
+changes start coming in it writes it
+into small files per second right
+
+958
+01:18:33,260 --> 01:18:39,520
+yeah so a fresh full copy is made when
+
+959
+01:18:39,520 --> 01:18:44,560
+Litestream starts on a new database so this
+is what happens during at the start of
+
+960
+01:18:44,560 --> 01:18:50,860
+our test it copies the all the hundred
+million links which is around 1.7 GB
+
+961
+01:18:50,860 --> 01:18:57,260
+which is compressed right so it does a
+fresh full copy and then every one second it
+
+962
+01:18:57,260 --> 01:19:01,740
+writes it into small files right
+also another thing to remember since
+
+963
+01:19:01,740 --> 01:19:07,840
+version 6 of our architecture we were
+waiting for every link to be copied to the
+
+964
+01:19:07,840 --> 01:19:13,720
+volume so whenever we create a new link
+regardless of the link being a generated
+
+965
+01:19:13,720 --> 01:19:18,000
+code link or a custom names link we were
+going and copying it to the volume itself
+
+966
+01:19:18,000 --> 01:19:24,420
+because we needed to survive machine loss
+right so also keep that in mind it may
+
+967
+01:19:24,420 --> 01:19:29,800
+be needed here so this is just a general
+introduction of how a bit more deeper
+
+968
+01:19:29,800 --> 01:19:35,560
+introduction of how Litestream works right
+okay so this is our v6 architecture and
+
+969
+01:19:35,560 --> 01:19:41,480
+let's see how this behaves with event 8
+right so thousand ticks per second and 20
+
+970
+01:19:41,480 --> 01:19:46,340
+new links per second right and hundred
+million links are already stored and let's
+
+971
+01:19:46,340 --> 01:19:47,140
+see how it behaves
+
+972
+01:19:48,820 --> 01:19:53,680
+and also remember this graph is now a create
+graph I wanted to show only the create
+
+973
+01:19:53,680 --> 01:19:58,720
+and not the redirect because of the
+problem you'll see right now you're already
+
+974
+01:19:58,720 --> 01:20:02,600
+seeing that some of the requests are
+going above the 300 millisecond limit for
+
+975
+01:20:02,600 --> 01:20:06,600
+creates remember for create we had 300
+millisecond limit and for redirects or clicks
+
+976
+01:20:06,600 --> 01:20:10,780
+we had 100 millisecond limit so you can
+already see that some of the requests are
+
+977
+01:20:10,780 --> 01:20:16,660
+taking above that time right above the
+limit here so you can see our p99 fail is
+
+978
+01:20:16,660 --> 01:20:22,980
+like 848 millisecond so it's above the
+300 millisecond limit a redirect still
+
+979
+01:20:22,980 --> 01:20:27,260
+did pass right it's still 17.2 milliseconds
+so there's something with the creates
+
+980
+01:20:27,260 --> 01:20:33,560
+that's slowing it down right yeah
+so let's see let's now see what
+
+981
+01:20:33,560 --> 01:20:40,060
+the problem is so what
+Litestream if we go into a bit
+
+982
+01:20:40,060 --> 01:20:44,160
+more deal to understand what's happening
+inside the volume if you remember I
+
+983
+01:20:44,160 --> 01:20:50,280
+mentioned there are these small change
+files right and there's a full copy inside
+
+984
+01:20:50,280 --> 01:20:55,340
+the volume right so what Litestream does
+like every few minutes and like every
+
+985
+01:20:55,340 --> 01:21:01,540
+hour and so it sort of merges
+these small files and the
+
+986
+01:21:01,540 --> 01:21:06,140
+large file into one big file and it keeps
+on doing this merge every few minutes
+
+987
+01:21:06,140 --> 01:21:11,500
+every one hour and and it keeps merging
+files essentially inside the volume the
+
+988
+01:21:11,500 --> 01:21:17,260
+reason it does this is because when a
+restore is done in a new machine it's very
+
+989
+01:21:17,260 --> 01:21:22,180
+it's very quicker or very easier because
+we need to only replay fewer files right
+
+990
+01:21:22,180 --> 01:21:26,060
+imagine if there were a lot of small files
+and we never merge them we have to go
+
+991
+01:21:26,060 --> 01:21:31,620
+through each small file and then restore
+it right so but if we do this merge
+
+992
+01:21:31,620 --> 01:21:36,480
+operation maybe every few moments then you
+would have less number of files right to
+
+993
+01:21:36,480 --> 01:21:42,800
+restore so this is what essentially
+is doing every few minutes and then
+
+994
+01:21:42,800 --> 01:21:47,580
+hourly it merges them
+into bigger files yeah
+
+995
+01:21:48,720 --> 01:21:54,980
+but one thing to note here what happens
+is for the first few merges after a fresh
+
+996
+01:21:54,980 --> 01:22:01,420
+full copy is made the merge involves the
+
+997
+01:22:01,420 --> 01:22:07,460
+fresh full copy and the small change files
+so this happens only for the very first
+
+998
+01:22:07,460 --> 01:22:13,940
+few merge let's say a full copy has
+been made and you get two or three
+
+999
+01:22:13,940 --> 01:22:18,880
+new change files coming right and if
+Litestream merges the last few minutes those
+
+1000
+01:22:18,880 --> 01:22:24,740
+last few minutes will have all of the small
+fights plus the full copy it takes them
+
+1001
+01:22:24,740 --> 01:22:31,040
+merges them and and creates another big
+file so so at that point it's copying
+
+1002
+01:22:31,040 --> 01:22:37,460
+this whole 1.7 gb of file and rewriting
+it so that is what what causes
+
+1003
+01:22:37,460 --> 01:22:39,600
+uh creates to be slow because
+
+1004
+01:22:40,360 --> 01:22:46,740
+this process can take like when i measure
+it it takes like roughly around one to 1.5
+
+1005
+01:22:46,740 --> 01:22:52,880
+seconds here and during that time other
+the creates the user create requests are
+
+1006
+01:22:52,880 --> 01:22:57,820
+waiting behind this rewrite and essentially
+that is the reason why we were seeing
+
+1007
+01:22:57,820 --> 01:23:04,000
+slowdowns right so yeah so this is
+the problem that is essentially
+
+1008
+01:23:04,000 --> 01:23:09,220
+happening in the background right so what
+are some options to deal with this either
+
+1009
+01:23:09,220 --> 01:23:11,960
+you could have a bigger server
+or bigger server doesn't really
+
+1010
+01:23:13,300 --> 01:23:19,780
+makes any doesn't really help here because
+the CPU and the disk weren't like full at
+
+1011
+01:23:19,780 --> 01:23:24,540
+all right this was something which was
+happening in Litestream where it's doing
+
+1012
+01:23:24,540 --> 01:23:30,120
+the rewrite in the volume right so it's not
+related with a CPU or a disk or having a
+
+1013
+01:23:30,120 --> 01:23:35,880
+bigger server right the queue would still
+happen because Litestream would be doing
+
+1014
+01:23:35,880 --> 01:23:41,080
+that rewrites of the fresh full copy
+another option is to tune Litestream to sort
+
+1015
+01:23:41,080 --> 01:23:47,460
+of rewrite less often but even if we do
+even if you do that those big rewrites
+
+1016
+01:23:47,460 --> 01:23:52,860
+would still be happening right so we are
+not able to stop that right so even if we
+
+1017
+01:23:52,860 --> 01:23:57,760
+tune the Litestream to rewrite less often
+or do less merges we would still have
+
+1018
+01:23:57,760 --> 01:24:03,220
+the cases where it's doing the merge of the
+big fresh copy right so that still can't
+
+1019
+01:24:03,220 --> 01:24:08,880
+changed we would still have the
+slowdowns yeah another option is
+
+1020
+01:24:08,880 --> 01:24:15,000
+it's it's called a counter a counter
+technique or sort of a trick we can use
+
+1021
+01:24:15,000 --> 01:24:21,360
+and this essentially applies to the
+generated code links not the custom
+
+1022
+01:24:21,360 --> 01:24:26,580
+names links but for the generated code
+names uh generated code links where it it
+
+1023
+01:24:26,580 --> 01:24:33,080
+allows it allows us to not wait
+for the Litestream copy so
+
+1024
+01:24:33,080 --> 01:24:38,120
+we wouldn't have to wait for Litestream
+to copy it on the volume but also
+
+1025
+01:24:38,120 --> 01:24:42,440
+those codes will also not
+be reused by other people
+
+1026
+01:24:42,440 --> 01:24:48,740
+when the machine is lost
+because that's that's the
+
+1027
+01:24:48,740 --> 01:24:54,760
+point right if we don't wait for the
+copy to the volume we also need to
+
+1028
+01:24:54,760 --> 01:25:00,860
+make sure that hey we may have given
+this generated code to the user already
+
+1029
+01:25:00,860 --> 01:25:06,320
+so when the machine restores we need to
+make sure we need to make sure that we
+
+1030
+01:25:06,320 --> 01:25:12,460
+haven't we don't give this to anyone else
+right so let me show more clearly how this
+
+1031
+01:25:12,460 --> 01:25:18,600
+works so we we chose this method
+essentially right the third method so let me
+
+1032
+01:25:18,600 --> 01:25:24,780
+show it more visually how it works okay
+so what happens is initially our copy
+
+1033
+01:25:24,780 --> 01:25:30,900
+has these numbers let's say
+right till around 10 million 819
+
+1034
+01:25:30,900 --> 01:25:37,240
+which is inside our volume
+right and after when the machine
+
+1035
+01:25:37,240 --> 01:25:42,700
+gets lost so these numbers are essentially
+lost right and these numbers aren't
+
+1036
+01:25:42,700 --> 01:25:46,380
+copied to the aren't copied
+to the volume, right?
+
+1037
+01:25:46,640 --> 01:25:52,520
+So these numbers are, we return to the
+users, hey, you, this numbers are confirmed.
+
+1038
+01:25:52,760 --> 01:25:57,140
+But now these numbers are lost, because
+they aren't copied to the volume, right?
+
+1039
+01:25:57,220 --> 01:25:59,460
+With this technique, we wouldn't
+be copying to the volume.
+
+1040
+01:25:59,560 --> 01:26:00,740
+So we wouldn't be waiting for it.
+
+1041
+01:26:00,800 --> 01:26:02,780
+So that's the speed gain we would get get.
+
+1042
+01:26:03,000 --> 01:26:05,600
+We were essentially, we are
+essentially reversing what we did.
+
+1043
+01:26:06,480 --> 01:26:08,100
+Because of this bigger traffic.
+
+1044
+01:26:08,120 --> 01:26:13,660
+Now we are we can't wait for all each link
+right so we are reverting that and so
+
+1045
+01:26:13,660 --> 01:26:19,100
+because because we reverted those links
+will be lost now right but we have already
+
+1046
+01:26:19,100 --> 01:26:25,200
+confirmed to the user okay so what
+happens is when when the machine restores
+
+1047
+01:26:25,200 --> 01:26:30,540
+what we do is whatever was the last number
+which was stored in our database we take
+
+1048
+01:26:31,280 --> 01:26:37,100
+we take a huge offset of a million
+numbers and start our saving from
+
+1049
+01:26:37,100 --> 01:26:42,960
+a million plus right so this would be 10
+million 819 which was the last saved we
+
+1050
+01:26:42,960 --> 01:26:49,000
+start our next save from 11 million 819
+what this would do is for any future
+
+1051
+01:26:49,000 --> 01:26:55,140
+create request we we are able
+to uh not give that same code
+
+1052
+01:26:55,140 --> 01:27:01,640
+that that may have already been
+given right uh to another user so
+
+1053
+01:27:01,640 --> 01:27:07,240
+this works for us because
+remember we had a rule I think in
+
+1054
+01:27:07,240 --> 01:27:12,560
+one of the previous events in the machine
+lost even saying that it's okay for us to
+
+1055
+01:27:12,560 --> 01:27:16,000
+lose five minutes of links.
+So that is why this works.
+
+1056
+01:27:16,100 --> 01:27:17,620
+We are able to lose five minutes of links.
+
+1057
+01:27:17,700 --> 01:27:22,740
+So here we are just losing a second of
+links because Litestream saves every second
+
+1058
+01:27:22,740 --> 01:27:23,540
+usually.
+
+1059
+01:27:23,960 --> 01:27:26,720
+So we are losing a second of
+links during machine lost.
+
+1060
+01:27:30,580 --> 01:27:36,120
+So this offset is able to cover a wide
+range of numbers and it and would be saved
+
+1061
+01:27:36,120 --> 01:27:42,420
+essentially because if you see our
+current event 8 is doing only 20 new
+
+1062
+01:27:42,420 --> 01:27:46,640
+links per second right so that would
+essentially cover us for about like 14 hours of
+
+1063
+01:27:46,640 --> 01:27:52,980
+links in between because of the 1 million
+offset jump but we can't jump for names
+
+1064
+01:27:52,980 --> 01:27:56,780
+custom names there's no way to jump right
+because it's text like it's not numbers
+
+1065
+01:27:56,780 --> 01:28:03,140
+being saved so that still waits for it
+to be copied in Litestream but it's okay
+
+1066
+01:28:03,140 --> 01:28:08,740
+for us right because the 10 percent of
+Bitly traffic uh we were the 20 new links
+
+1067
+01:28:08,740 --> 01:28:15,040
+that are created are all generated codes
+and not custom name links right uh yeah
+
+1068
+01:28:15,040 --> 01:28:19,900
+so so this is the counter jump technique
+essentially we are doing a offset jump and
+
+1069
+01:28:19,900 --> 01:28:25,320
+we are able to now not wait for uh
+things to be saved in Litestream
+
+1070
+01:28:25,320 --> 01:28:31,820
+in the volume but also one thing that
+would happen now is that those people
+
+1071
+01:28:31,820 --> 01:28:36,700
+that had been confirmed now would get
+a 404 right because those links do not
+
+1072
+01:28:36,700 --> 01:28:41,660
+actually exist but it's fine that we are
+able to lose at least five minutes of link
+
+1073
+01:28:41,660 --> 01:28:45,960
+when a machine gets lost so that I think
+that's why that's why I mentioned here 404
+
+1074
+01:28:45,960 --> 01:28:52,220
+okay so now let's now run
+with this counter jump
+
+1075
+01:28:52,220 --> 01:28:58,620
+added to our v7 architecture and now
+let's see what happens right with this new
+
+1076
+01:28:58,620 --> 01:29:04,620
+event date so yeah I think it
+looks like it's staying under
+
+1077
+01:29:04,620 --> 01:29:06,300
+the limit of 300 milliseconds
+
+1078
+01:29:07,700 --> 01:29:12,100
+and I think we should be able to pass this
+time right so this time our creates are
+
+1079
+01:29:12,100 --> 01:29:17,640
+well under 300 milliseconds and our redirects
+are also well under 100 milliseconds
+
+1080
+01:29:17,640 --> 01:29:19,800
+right so we so that so
+that is good as well.
+
+1081
+01:29:21,200 --> 01:29:26,960
+One more thing to mention, which I haven't
+covered here is remember for every new
+
+1082
+01:29:26,960 --> 01:29:28,580
+event, we were doing three runs.
+
+1083
+01:29:28,800 --> 01:29:31,740
+And I made sure that
+all three runs worked.
+
+1084
+01:29:31,840 --> 01:29:35,680
+But when I was testing it, only two of the
+three runs worked with this counter jump
+
+1085
+01:29:35,680 --> 01:29:41,580
+technique. And one run, one run failed
+was because the app froze for some reason.
+
+1086
+01:29:41,780 --> 01:29:43,840
+And I wasn't able to figure that out.
+
+1087
+01:29:44,020 --> 01:29:50,040
+So I like Claude really helped me to sort
+of look into what's happening and and
+
+1088
+01:29:50,040 --> 01:29:55,420
+there was a like a there was a inefficiency
+in the Litestream library that i was
+
+1089
+01:29:55,420 --> 01:30:01,920
+using and it was able to sort of go and
+fix that and that's that needs a bigger
+
+1090
+01:30:01,920 --> 01:30:06,140
+explanation so i haven't explained in
+this episode because this is already like
+
+1091
+01:30:06,140 --> 01:30:11,140
+above an hour but this is what the
+fix is it's related to a heartbeat fix
+
+1092
+01:30:12,440 --> 01:30:18,900
+uh so it's it's it's storing a separate
+row in the sql SQLite database for for
+
+1093
+01:30:18,900 --> 01:30:22,140
+a specific reason but i haven't explained
+it here but i'll put it in the youtube
+
+1094
+01:30:22,140 --> 01:30:26,100
+description if you're interested and i can
+explain further if you need it right so
+
+1095
+01:30:26,100 --> 01:30:32,040
+so yeah essentially we are we covered event
+eight our version seven architecture now
+
+1096
+01:30:32,040 --> 01:30:37,720
+works and yeah okay so let's
+
+1097
+01:30:37,720 --> 01:30:44,040
+let's go to the next even though this is
+the final event right so we are almost done
+
+1098
+01:30:44,040 --> 01:30:50,180
+so so this event nine and we
+just basically takedowns so
+
+1099
+01:30:50,180 --> 01:30:56,460
+what happens is because like what
+attackers usually do is because
+
+1100
+01:30:56,460 --> 01:31:02,820
+of short links you actually don't know
+what the longer URL is behind the shorter
+
+1101
+01:31:02,820 --> 01:31:03,620
+link right
+
+1102
+01:31:04,140 --> 01:31:09,800
+so what they tend to do is they
+they tend to hide the spam link
+
+1103
+01:31:09,800 --> 01:31:15,380
+under or behind the shorter link and make
+make people go go to their spam links
+
+1104
+01:31:15,380 --> 01:31:21,500
+right so this is something that happens
+and once we know a link is spam, we need to
+
+1105
+01:31:21,500 --> 01:31:27,780
+be able to have a way in our system
+to be able to take down essentially
+
+1106
+01:31:27,780 --> 01:31:32,160
+those shorter links, right from the system,
+right, so that no users can now go to
+
+1107
+01:31:32,160 --> 01:31:35,080
+the spam link. So that's
+essentially the idea for this event.
+
+1108
+01:31:36,220 --> 01:31:42,280
+And for this, we will have the previous
+event aid traffic with 10% of Bitly and we
+
+1109
+01:31:42,280 --> 01:31:46,280
+will have 100 links which are reported
+and are taken down during the run right so
+
+1110
+01:31:46,280 --> 01:31:52,340
+that's the idea and another pass rule is
+that no taken down link can redirect after
+
+1111
+01:31:52,340 --> 01:31:58,620
+60 seconds of its takedown right so our
+current version essentially doesn't have any
+
+1112
+01:31:58,620 --> 01:32:04,160
+mechanism of like marking down a link to be
+takedown right in our SQLite database if
+
+1113
+01:32:04,160 --> 01:32:07,960
+you remember we don't have any sort of
+takedown column saying that hey this link now
+
+1114
+01:32:07,960 --> 01:32:13,080
+shouldn't work because it's a spam right
+so v7 our version 7 architecture wouldn't
+
+1115
+01:32:13,080 --> 01:32:16,700
+work right essentially so So we need
+to have a way to save that, right?
+
+1116
+01:32:17,080 --> 01:32:19,780
+So that's why V7 wouldn't work.
+
+1117
+01:32:19,900 --> 01:32:22,880
+We need a new architecture for marking
+down those takedown links, right?
+
+1118
+01:32:24,500 --> 01:32:29,400
+So this is what we do. We, in our current
+links and names table, we have another
+
+1119
+01:32:29,400 --> 01:32:33,000
+column which is taken down at, and
+there's a timestamp which is stored, which
+
+1120
+01:32:33,000 --> 01:32:36,820
+essentially says, hey, this link is
+now taken down at this time, right?
+
+1121
+01:32:36,920 --> 01:32:38,000
+And we shouldn't use it anymore.
+
+1122
+01:32:38,920 --> 01:32:42,780
+So once that is, so how does that work?
+
+1123
+01:32:42,780 --> 01:32:48,000
+we essentially have another endpoint which
+the operator can call for taking down a
+
+1124
+01:32:48,000 --> 01:32:48,800
+specific link
+
+1125
+01:32:49,420 --> 01:32:54,480
+and what it essentially does is it goes to
+that link and saves a timestamp for that
+
+1126
+01:32:54,480 --> 01:32:58,020
+column so if there's something which is
+stored in the taken down at column we know
+
+1127
+01:32:58,020 --> 01:33:04,400
+that it's taken down link and we won't
+use it anymore and we yeah so once that
+
+1128
+01:33:04,400 --> 01:33:10,120
+link is taken down anytime the user goes
+and visits that link we send a 410 status
+
+1129
+01:33:10,120 --> 01:33:14,480
+code which is essentially says the link
+existed before now it doesn't exist anymore
+
+1130
+01:33:14,480 --> 01:33:19,420
+right so I think in those cases we use a
+410 status code so we send 410 status code
+
+1131
+01:33:19,420 --> 01:33:25,860
+also during takedown we also need to
+make sure this change also goes to
+
+1132
+01:33:25,860 --> 01:33:32,340
+the volume right because we do not
+want during restore that to be undoed
+
+1133
+01:33:32,340 --> 01:33:35,800
+right so we need to have that as So during
+takedown when this link is called, we
+
+1134
+01:33:35,800 --> 01:33:38,740
+also make sure that the change
+is stored in the volume itself.
+
+1135
+01:33:39,800 --> 01:33:43,120
+So, okay, now let's see how
+our system would behave.
+
+1136
+01:33:43,220 --> 01:33:47,360
+So this is our V8 system, which with the
+takedown column added to the database.
+
+1137
+01:33:49,400 --> 01:33:53,060
+And we have our episode eight
+traffic with 100 takedowns, right?
+
+1138
+01:33:53,960 --> 01:33:56,680
+And let's see how our system behaves.
+
+1139
+01:33:56,880 --> 01:33:58,740
+And this is again the redirect graph.
+
+1140
+01:33:59,200 --> 01:34:00,700
+So let's see how it behaves.
+
+1141
+01:34:02,500 --> 01:34:06,400
+It's staying under 100 milliseconds,
+I think most of the time.
+
+1142
+01:34:07,460 --> 01:34:10,220
+So takedowns will be
+going on during this run.
+
+1143
+01:34:10,720 --> 01:34:13,820
+And we see that 100 of 100
+links were taken down properly.
+
+1144
+01:34:16,360 --> 01:34:19,760
+And no redirect was later
+than 60 seconds, right?
+
+1145
+01:34:19,920 --> 01:34:22,680
+So this is zero. No redirects
+took more than 60 seconds.
+
+1146
+01:34:22,920 --> 01:34:27,980
+So that worked as well. So this V8 system
+was able to handle the 10% Bitly traffic
+
+1147
+01:34:27,980 --> 01:34:29,380
+on top of the takedown traffic.
+
+1148
+01:34:29,380 --> 01:34:35,560
+so so that this worked for us
+and we add this to the event list
+
+1149
+01:34:35,560 --> 01:34:42,000
+that are taken down link must must
+stay down and yes version 8 now works
+
+1150
+01:34:42,000 --> 01:34:42,920
+for all the events
+
+1151
+01:34:44,640 --> 01:34:50,200
+and yeah we have essentially done with
+all the events and we essentially had like
+
+1152
+01:34:50,200 --> 01:34:55,740
+eight eight different versions of our system
+and finally we were able to handle all
+
+1153
+01:34:55,740 --> 01:35:00,160
+the events with our
+version 8 right so yeah
+
+1154
+01:35:00,160 --> 01:35:06,560
+so we are I think almost
+at the end of this
+
+1155
+01:35:06,560 --> 01:35:12,480
+episode right so yeah so this is just adding
+it to our scoreboard our final amount
+
+1156
+01:35:12,480 --> 01:35:18,840
+is 956 euros so yeah what's the
+final claim of this episode so we
+
+1157
+01:35:18,840 --> 01:35:25,300
+were able to handle 10% of Bitly
+traffic right so that's around 877
+
+1158
+01:35:25,300 --> 01:35:31,340
+million clicks a month and we were
+able to handle 20 per second creates
+
+1159
+01:35:31,340 --> 01:35:37,720
+at peak and if we average it
+out it's around 17.5 million new
+
+1160
+01:35:37,720 --> 01:35:44,220
+links created a month so this is yeah this
+is 10 percent Bitly traffic so and we
+
+1161
+01:35:44,220 --> 01:35:50,440
+had 100 million links already stored
+in our database to sort of show
+
+1162
+01:35:50,440 --> 01:35:54,360
+that the traffic was already
+running for like six months, right?
+
+1163
+01:35:54,480 --> 01:35:56,880
+To make a more better claim, right?
+
+1164
+01:35:57,120 --> 01:36:03,060
+So this was 10% Bitly traffic
+for both creates and redirects.
+
+1165
+01:36:03,940 --> 01:36:09,640
+Our p99 was around 14.8 milliseconds and
+our creates for around 26.2 milliseconds.
+
+1166
+01:36:10,220 --> 01:36:14,500
+And yeah, our final dollar
+value is like 956 euros a month.
+
+1167
+01:36:14,900 --> 01:36:21,100
+It would cost our system to run right
+so so yeah this is our final claim
+
+1168
+01:36:21,100 --> 01:36:27,380
+so to just end so what are some caveats
+uh for this system that we developed
+
+1169
+01:36:27,380 --> 01:36:33,320
+one thing that you you would have noticed
+is like we uh haven't tested like a few
+
+1170
+01:36:33,320 --> 01:36:39,640
+combination of events so more
+specifically we didn't test like a viral
+
+1171
+01:36:39,640 --> 01:36:45,380
+spike during a power cut that wasn't tested
+also the power cut and machine loss were
+
+1172
+01:36:45,380 --> 01:36:51,420
+run at 1% traffic we should we can we
+should or we can also test it on the 10
+
+1173
+01:36:51,420 --> 01:36:57,520
+% Bitly traffic as well because that
+would also affect the restore time of the
+
+1174
+01:36:57,520 --> 01:37:01,740
+machine right because during 10% traffic
+we have like almost 100 million links
+
+1175
+01:37:01,740 --> 01:37:05,440
+stored compared to 1% traffic so that's
+something to keep in mind some combinations
+
+1176
+01:37:05,440 --> 01:37:11,500
+of events weren't tested also our
+test service or our load generator
+
+1177
+01:37:11,500 --> 01:37:17,540
+service was actually running on the same
+data center as our actual service so so
+
+1178
+01:37:17,540 --> 01:37:23,640
+so the times don't actually include a
+visitors on internet connections because
+
+1179
+01:37:23,640 --> 01:37:28,320
+visitors may also be in different data
+centers or maybe running from different
+
+1180
+01:37:28,320 --> 01:37:34,520
+places right so that
+timings may differ also our
+
+1181
+01:37:34,520 --> 01:37:39,440
+copy currently lives or our volume limbs
+lives in the same location as the server.
+
+1182
+01:37:39,600 --> 01:37:40,780
+So it's in the same data center.
+
+1183
+01:37:41,000 --> 01:37:46,180
+So we didn't test what would happen if the
+whole data center would get lost, right?
+
+1184
+01:37:46,300 --> 01:37:49,480
+So our architecture wouldn't
+survive in that case, right?
+
+1185
+01:37:49,860 --> 01:37:54,120
+But it's okay, I guess, because we developed
+our system based on whatever events we
+
+1186
+01:37:54,120 --> 01:37:56,580
+had pre declared from before, right?
+
+1187
+01:37:57,220 --> 01:37:58,960
+Also, we do not have any domain.
+
+1188
+01:37:59,180 --> 01:38:05,300
+So we our server returns like direct IP
+addresses, which obviously isn't real.
+
+1189
+01:38:06,620 --> 01:38:10,520
+Actual service would actually
+actually return a domain name.
+
+1190
+01:38:10,540 --> 01:38:14,420
+So it's, it's okay, like, I don't think
+it would like change timings or anything.
+
+1191
+01:38:14,840 --> 01:38:19,980
+It's just that for cost sake, I
+didn't set up a proper domain name.
+
+1192
+01:38:20,080 --> 01:38:21,820
+And I'm just returning IP addresses.
+
+1193
+01:38:21,940 --> 01:38:23,400
+So we don't have a proper domain name.
+
+1194
+01:38:23,540 --> 01:38:27,200
+And also, we are using a self-made
+certificate and not using like a proper
+
+1195
+01:38:27,200 --> 01:38:33,200
+certificate but we are still using HTTPS
+connections so those TLS handshakes and all
+
+1196
+01:38:33,200 --> 01:38:38,400
+of that is legitimate right so I think
+the timings wouldn't affect that much
+
+1197
+01:38:38,400 --> 01:38:44,200
+and yeah I hope this is like the
+end of the episode I I hope you guys
+
+1198
+01:38:44,200 --> 01:38:50,020
+learned something I enjoyed learnings
+about systems building it from like scratch
+
+1199
+01:38:50,020 --> 01:38:55,100
+and from the smallest possible solution and
+slowly improving each architecture based
+
+1200
+01:38:55,100 --> 01:39:00,600
+on failures that we notice and let me
+know if this helps this way of learning
+
+1201
+01:39:00,600 --> 01:39:06,900
+systems building systems helps and yeah
+please feel free to like and like share and
+
+1202
+01:39:06,900 --> 01:39:09,800
+subscribe and I hope to see you
+in the next one see you guys
