@@ -22,7 +22,7 @@ Use this as the short preflight for future **Systems from First Principles** epi
 
 ## Visual language
 
-- Prefer the hand-drawn notebook world, live diagrams, cursors, packets, and state changes over lecture slides.
+- Draw everything in the [visual language](visual-language.md): ink on a white board, a fixed set of symbols, IBM Plex Sans and Plex Mono, and red only for limits and breaks.
 - Give each idea its own frame. Avoid overlapping cards, labels, and diagrams.
 - Match narration literally: if the voice says **position**, do not animate **fill**.
 - Make the visual event happen just before or as it is spoken—not several seconds later.
@@ -49,4 +49,4 @@ From the archived Figma multiplayer episode:
 - Long form: 1920×1080, 24 fps, H.264 High Profile, `yuv420p`, BT.709 limited range, AAC at 48 kHz.
 - Short: 1080×1920 with readable text inside mobile-safe margins.
 - Upload privately and wait until YouTube explicitly offers 1080p before publishing.
-- Use a notebook-style thumbnail with a short promise and one meaningful diagram.
+- Use a white-board thumbnail in the visual language with a short promise and one meaningful diagram.

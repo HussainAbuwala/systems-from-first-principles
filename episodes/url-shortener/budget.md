@@ -7,6 +7,7 @@ Planning estimates, not episode claims. The design at each level is unknown unti
 | Item | Spec | Price |
 | --- | --- | --- |
 | CX23 | 2 shared vCPU, 4 GB, 40 GB disk | €0.0088/hour (€5.49/month) |
+| CX33 | 4 shared vCPU, 8 GB, 80 GB disk (spec from the Hetzner API 2026-10-11; used from stage 3) | about €0.0136/hour (€8.49/month) |
 | CAX41 | 16 shared ARM vCPU, 32 GB | €0.0657/hour |
 | CAX31 | 8 shared ARM vCPU, 16 GB | €0.0336/hour (€20.99/month) |
 | CCX33 | 8 dedicated vCPU, 32 GB (only if shared cores prove too noisy) | €0.2219/hour |

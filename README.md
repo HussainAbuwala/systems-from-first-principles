@@ -34,7 +34,7 @@ Earlier episodes used a different format (reconstructing a company's system from
 ## Repository structure
 
 ```text
-docs/        Format, measurement standard, topic selection, production guide
+docs/        Format, measurement standard, topic selection, production guide, visual language
 templates/   Event script, stage log, interview cut, script and storyboard
 episodes/    One folder per problem: event script, stages, results, script
 archive/     Earlier-format episodes, their animation workspace and lab
