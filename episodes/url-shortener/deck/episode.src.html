@@ -1,0 +1,543 @@
+<title>URL Shortener Episode</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: two views of one episode. Read = a running order you review top to bottom (board thumbnail + what you say). Present = one full-width board you click through on camera. Single light theme on purpose: the notation is ink on a white board. */
+:root{
+  --page:#f4f4f2; --board:#ffffff; --ink:#111111; --grey:#9a9a9a; --soft:#5c5c5c; --line:#e0e0dc; --red:#d1291f;
+  --text:"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif; --mono:"IBM Plex Mono", ui-monospace, Menlo, monospace;
+  color-scheme:light;
+}
+body{ background:var(--page); color:var(--ink); font:16px/1.6 var(--text); }
+.wrap{ max-width:1180px; margin:0 auto; padding-inline:24px; padding-block:32px 72px; display:grid; gap:28px; }
+header{ display:flex; justify-content:space-between; align-items:flex-end; gap:16px 24px; flex-wrap:wrap; }
+header .t{ display:grid; gap:6px; min-width:0; }
+h1{ font:500 clamp(26px,3.2vw,36px)/1.15 var(--text); margin:0; letter-spacing:-.01em; }
+header p{ margin:0; color:var(--soft); max-width:64ch; }
+.mono{ font-family:var(--mono); }
+.tabs{ display:inline-flex; border:1px solid var(--ink); border-radius:6px; overflow:hidden; }
+.tabs button{ font:500 14px var(--text); background:var(--board); color:var(--ink); border:0; padding:8px 18px; cursor:pointer; }
+.tabs button[aria-selected="true"]{ background:var(--ink); color:var(--board); }
+button:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+.facts{ display:flex; flex-wrap:wrap; gap:8px 28px; font:400 14px var(--mono); color:var(--soft); }
+.facts b{ color:var(--ink); font-weight:500; }
+
+/* Read view */
+.chapter{ display:grid; gap:14px; }
+.chapter h2{ font:500 22px/1.25 var(--text); margin:12px 0 0; display:flex; gap:14px; align-items:baseline; flex-wrap:wrap; }
+.chapter h2 span{ font:400 13px var(--mono); color:var(--grey); }
+.beat{ display:grid; grid-template-columns:minmax(0,44%) minmax(0,1fr); gap:22px; background:var(--board); border:1px solid var(--line); padding:14px; }
+.beat .thumb{ all:unset; cursor:pointer; display:block; min-width:0; }
+.beat .thumb canvas{ display:block; width:100%; aspect-ratio:16/9; border:1px solid var(--line); }
+.beat .thumb:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+.beat .body{ display:grid; gap:10px; align-content:start; min-width:0; }
+.beat .head{ display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; }
+.beat .n{ font:400 13px var(--mono); color:var(--grey); }
+.beat h3{ font:500 18px/1.3 var(--text); margin:0; }
+.beat .dur{ font:400 13px var(--mono); color:var(--grey); margin-left:auto; }
+.beat .say{ margin:0; font-size:16px; line-height:1.6; border-left:2px solid var(--ink); padding-left:14px; }
+.beat .meta{ display:flex; flex-wrap:wrap; gap:6px 18px; font:400 13px var(--mono); color:var(--soft); }
+.beat .meta b{ font-weight:500; color:var(--ink); }
+.beat .note{ margin:0; font-size:14px; color:var(--soft); }
+
+/* Present view */
+.stage{ display:grid; gap:12px; }
+.screen{ background:var(--board); border:1px solid var(--line); }
+.screen canvas{ display:block; width:100%; aspect-ratio:16/9; max-width:100%; cursor:pointer; }
+.screen:fullscreen{ display:flex; align-items:center; justify-content:center; background:#fff; border:0; }
+.screen:fullscreen canvas{ width:auto; height:100%; max-width:100%; max-height:100%; }
+.bar{ display:flex; flex-wrap:wrap; align-items:center; gap:10px 14px; font-size:14px; }
+.btn[aria-pressed="true"]{ background:var(--ink); color:var(--board); }
+.screen canvas.laser{ cursor:crosshair; touch-action:none; }
+.btn{ font:500 14px var(--text); background:var(--board); color:var(--ink); border:1px solid var(--ink); border-radius:6px; padding:6px 14px; cursor:pointer; }
+.jump{ font:400 14px var(--text); color:var(--ink); background:var(--board); border:1px solid var(--ink); border-radius:6px; padding:6px 8px; max-width:min(100%,420px); }
+.jump:focus-visible{ outline:2px solid var(--red); outline-offset:2px; }
+.pos{ font:400 13px var(--mono); color:var(--soft); font-variant-numeric:tabular-nums; }
+.keys{ margin-left:auto; font:400 12px var(--mono); color:var(--grey); }
+.notes{ background:var(--board); border:1px solid var(--line); padding:16px 18px; display:grid; gap:8px; }
+.notes .say{ margin:0; font-size:18px; line-height:1.6; }
+.notes .meta{ font:400 13px var(--mono); color:var(--soft); }
+@media (max-width:820px){ .beat{ grid-template-columns:1fr; } .keys{ margin-left:0; } }
+@media (max-width:440px){ .wrap{ padding-inline:16px; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="t">
+      <h1>URL shortener · the episode</h1>
+      <p>Every beat of the video in order: what’s on the board, what you say, and which run each number comes from. Read it top to bottom, then switch to Present to click through it out loud.</p>
+    </div>
+    <div class="tabs" role="tablist" aria-label="View">
+      <button type="button" role="tab" id="tab-read" aria-selected="true">Read</button>
+      <button type="button" role="tab" id="tab-present" aria-selected="false">Present</button>
+    </div>
+  </header>
+  <div class="facts" id="facts"></div>
+
+  <main id="read"></main>
+
+  <section id="present" class="stage" hidden>
+    <div class="screen" id="screen"><canvas id="live" aria-label="Current board"></canvas></div>
+    <div class="bar">
+      <button class="btn" id="prev" type="button">← Back</button>
+      <button class="btn" id="next" type="button">Next →</button>
+      <button class="btn" id="pp" type="button">Play</button>
+      <button class="btn" id="replay" type="button">Replay</button>
+      <button class="btn" id="full" type="button">Full screen</button>
+      <button class="btn" id="laser" type="button" aria-pressed="false">Laser off</button>
+      <select class="jump" id="jump" aria-label="Go to slide"></select>
+      <span class="pos" id="pos"></span>
+      <span class="keys">→ / space next · ← back · P play/pause · R replay · N notes · F full screen · L laser</span>
+    </div>
+    <div class="notes" id="notes"></div>
+  </section>
+</div>
+
+<script>
+const RUNS=__RUNS__;
+// RUNS[id] = per 10 s window: [req/s attempted, redirect p99 ms, create p99 ms, error %, CPU avg %, iowait %, Node CPU %, nginx CPU %, Litestream CPU %, creates/s (201 + 409 responses)] (program CPU in % of one core)
+
+const W=1600, H=900, WIN=10;
+const INK='#111111', GREY='#9a9a9a', RED='#d1291f', BOARD='#ffffff', FAINT='#e8e8e5';
+const SANS='"IBM Plex Sans", "Helvetica Neue", Arial, sans-serif', MONO='"IBM Plex Mono", ui-monospace, Menlo, monospace';
+const ft=(s,w=400)=>`${w} ${s}px ${SANS}`, fm=(s,w=400)=>`${w} ${s}px ${MONO}`;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)), lerp=(a,b,f)=>a+(b-a)*f;
+const LMIN=Math.log10(5), LMAX=Math.log10(20000), lf=p=>clamp((Math.log10(Math.max(p,1))-LMIN)/(LMAX-LMIN),0,1);
+const fmtInt=v=>Math.round(v).toLocaleString('en-US');
+const ms=v=> v<1000? (v<100? v.toFixed(1): Math.round(v))+' ms' : (v/1000).toFixed(1)+' s';
+
+// ---------- run sampling
+function series(id,k){ const R=RUNS[id]; return R.map(w=> k==='answered' ? (w[0]||0)*(1-(w[3]||0)/100) : (w[{rps:0,redirect:1,create:2,err:3,cpu:4,io:5,node:6,nginx:7,lite:8}[k]]??0)); }
+function sample(id,t){ const R=RUNS[id], n=R.length, f=clamp((t-5)/WIN,0,n-1), i=Math.min(Math.floor(f),n-2), a=f-i, A=R[i], B=R[i+1];
+  const lg=(x,y)=> (x>0&&y>0)? Math.pow(10,lerp(Math.log10(x),Math.log10(y),a)) : lerp(x||0,y||0,a);
+  return { t, rps:lerp(A[0]||0,B[0]||0,a), redirect:lg(A[1],B[1]), create:lg(A[2],B[2]), err:lerp(A[3]||0,B[3]||0,a), cpu:lerp(A[4]??0,B[4]??0,a), io:lerp(A[5]??0,B[5]??0,a), node:lerp(A[6]??0,B[6]??0,a), nginx:lerp(A[7]??0,B[7]??0,a), lite:lerp(A[8]??0,B[8]??0,a), cr:(A[9]!=null&&B[9]!=null)? lerp(A[9],B[9],a) : null }; }
+const runLen=id=>RUNS[id].length*WIN;
+
+// ---------- drawing helpers
+function T(c,s,x,y,font,color,align='left'){ c.font=font; c.fillStyle=color; c.textAlign=align; c.textBaseline='alphabetic'; c.fillText(s,x,y); return c.measureText(s).width; }
+function TW(c,s,font){ c.font=font; return c.measureText(s).width; }
+function wrap(c,s,x,y,maxW,lh,font,color){ c.font=font; const words=s.split(' '); let line='', yy=y; for(const w of words){ const tst=line? line+' '+w : w; if(c.measureText(tst).width>maxW && line){ T(c,line,x,yy,font,color); line=w; yy+=lh; } else line=tst; } if(line) T(c,line,x,yy,font,color); return yy; }
+function L(c,x1,y1,x2,y2){ c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke(); }
+function head(c,x,y,a,s=12){ c.save(); c.translate(x,y); c.rotate(a); c.beginPath(); c.moveTo(0,0); c.lineTo(-s,-s*.42); c.lineTo(-s,s*.42); c.closePath(); c.fill(); c.restore(); }
+function arrow(c,x1,y1,x2,y2,col,w=1.5,dash){ c.strokeStyle=col; c.fillStyle=col; c.lineWidth=w; if(dash) c.setLineDash(dash); const a=Math.atan2(y2-y1,x2-x1); L(c,x1,y1,x2-Math.cos(a)*9,y2-Math.sin(a)*9); c.setLineDash([]); head(c,x2,y2,a); }
+function box(c,b,col,w=2){ c.strokeStyle=col; c.lineWidth=w; c.strokeRect(b.x,b.y,b.w,b.h); }
+function check(c,x,y,s,col){ c.strokeStyle=col; c.lineWidth=s*.16; c.lineCap='round'; c.lineJoin='round'; c.beginPath(); c.moveTo(x-s*.38,y); c.lineTo(x-s*.1,y+s*.3); c.lineTo(x+s*.42,y-s*.36); c.stroke(); c.lineCap='butt'; }
+function cross(c,x,y,s,col){ c.strokeStyle=col; c.lineWidth=s*.15; c.lineCap='round'; L(c,x-s*.34,y-s*.34,x+s*.34,y+s*.34); L(c,x-s*.34,y+s*.34,x+s*.34,y-s*.34); c.lineCap='butt'; }
+function runTag(c,s){ T(c,s,W-60,H-34,fm(17),GREY,'right'); }
+function heading(c,ev,title,col=INK){ let x=80; if(ev){ x+=T(c,ev,80,104,fm(26,500),INK)+22; } T(c,title,x,104,ft(36),col); }
+
+// ---------- the system board: one fixed layout for every stage (nothing moves)
+const G={ vis:60, M:{x:330,y:200,w:820,h:360}, N:{x:390,y:258,w:180,h:172}, O:{x:650,y:258,w:240,h:172}, Ls:{x:970,y:258,w:150,h:172}, V:{x:1250,y:292,w:210,h:104},
+  reqY:338, resY:388, cpu:{x:470,y:503,w:560,h:14}, ch:{x:200,y:628,w:1180,h:160} };
+const SPEC=s=> s<3? 'CX23 · 2 vCPU · 4 GB RAM · 40 GB disk · €5.99/mo' : s<6? 'CX33 · 4 vCPU · 8 GB RAM · 80 GB disk · €8.99/mo' : 'CX33 · 4 vCPU · 8 GB RAM · 80 GB disk · kept IP · €8.99/mo';
+const entryX=s=> s>=2? G.N.x : G.O.x, turnX=G.O.x+G.O.w/2;
+
+function drawBoard(c,b,o={}){ // b.stage, b.hi (keys drawn black), b.oldSpec, b.down, b.tags
+  const s=b.stage, col=k=> (!b.hi||b.hi.includes(k))? INK : GREY;
+  const M=G.M, mc=o.down? RED : col('machine');
+  c.strokeStyle=mc; c.lineWidth=1.6; c.setLineDash([7,6]); c.strokeRect(M.x,M.y,M.w,M.h); c.setLineDash([]);
+  let x=M.x; if(b.oldSpec){ const w=T(c,b.oldSpec,x,M.y-16,fm(19),GREY); c.strokeStyle=GREY; c.lineWidth=1.4; L(c,x,M.y-22,x+w,M.y-22); x+=w+22; }
+  T(c,o.down? o.down : SPEC(s),x,M.y-16,fm(19),o.down? RED : col('machine'));
+  if(s>=2){ box(c,G.N,col('nginx')); T(c,'nginx',G.N.x+G.N.w/2,G.N.y+40,ft(28),col('nginx'),'center'); }
+  box(c,G.O,col('node')); T(c,'Node · SQLite',G.O.x+G.O.w/2,G.O.y+40,ft(26),col('node'),'center');
+  if(b.nodeSub) b.nodeSub.forEach((l,i)=>T(c,l,G.O.x+G.O.w/2,G.O.y+G.O.h+30+i*22,fm(15),col('nodeSub'),'center'));
+  if(s>=6){ box(c,G.Ls,col('lite')); T(c,'Litestream',G.Ls.x+G.Ls.w/2,G.Ls.y+40,ft(22),col('lite'),'center');
+    box(c,G.V,col('vol')); T(c,'Volume',G.V.x+G.V.w/2,G.V.y+40,ft(24),col('vol'),'center'); T(c,'10 GB · €0.57/mo',G.V.x+G.V.w/2,G.V.y+72,fm(15),col('vol'),'center');
+    arrow(c,G.O.x+G.O.w,G.reqY,G.Ls.x,G.reqY,col('lite'),1.4,[5,5]); arrow(c,G.Ls.x+G.Ls.w,G.reqY,G.V.x,G.reqY,col('vol'),1.4,[5,5]);
+    T(c,'copy ≈ 1 s',(G.Ls.x+G.Ls.w+G.V.x)/2,G.reqY-12,fm(14),col('vol'),'center');
+    T(c,'Better Stack checks /health every 30 s',W-60,G.M.y-16,fm(15),col('mon'),'right'); }
+  if(s>=8 && b.showTakedown) T(c,'POST /takedown → 410',G.O.x+G.O.w/2,G.O.y+G.O.h+52,fm(15),col('nodeSub'),'center');
+  // flow
+  const fc=col('flow'), ex=entryX(s);
+  arrow(c,G.vis,G.reqY,ex,G.reqY,fc); if(s>=2){ arrow(c,G.N.x+G.N.w,G.reqY,G.O.x,G.reqY,fc); arrow(c,G.O.x,G.resY,G.N.x+G.N.w,G.resY,fc); }
+  arrow(c,ex,G.resY,G.vis,G.resY,fc);
+  if(!o.noVis) T(c,'visitors',G.vis,G.reqY-64,ft(22),fc); T(c,'301',G.vis,G.resY+32,fm(17),fc);
+}
+
+// ---------- packets (sampled: one dot ≈ 30 requests)
+const RATE=1/30, TA=.6, TB=.45, TC=.8, TD=.8, QROWS=7, QCAP=210;
+const waitFor=p=> p<=40?0: clamp(Math.log10(p/40)*.6,0,1.6);
+class Sim{ constructor(b){ this.p=[]; this.acc=0; this.cacc=0; this.now=0; this.per=(b&&b.perDot)||30; this.cr=0; }
+  mk(s,born,cr){ const w=waitFor(s.redirect)*(.65+.7*Math.random()); const err=Math.random()*100<s.err; return {born,w,err,c:cr?1:0,j:Math.random()-.5,life:TA+w+(err?TD:TB+TC)}; }
+  crNow(s){ return (s.cr!=null && this.cr>=0.5)? s.cr : this.cr; }
+  warm(s){ this.p=[]; this.acc=0; this.cacc=0; const cr=this.crNow(s), dur=TA+waitFor(s.redirect)*1.35+TB+TC, n=Math.round(Math.max(0,s.rps-cr)/this.per*dur), nc=Math.round(cr/this.per*dur); for(let k=0;k<n;k++) this.p.push(this.mk(s,this.now-Math.random()*dur,0)); for(let k=0;k<nc;k++) this.p.push(this.mk(s,this.now-Math.random()*dur,1)); }
+  step(dt,s,live){ this.now+=dt; if(live){ const cr=this.crNow(s); this.acc+=Math.max(0,s.rps-cr)/this.per*dt; this.cacc+=cr/this.per*dt; while(this.acc>=1){ this.acc--; this.p.push(this.mk(s,this.now-Math.random()*dt,0)); } while(this.cacc>=1){ this.cacc--; this.p.push(this.mk(s,this.now-Math.random()*dt,1)); } } this.p=this.p.filter(q=>this.now-q.born<q.life); }
+  view(stage){ const pts=[], q=[], ex=entryX(stage), qx=ex-14;
+    for(const p of this.p){ let a=this.now-p.born; if(a<0||a>=p.life) continue;
+      if(a<TA){ const f=a/TA; pts.push({x:lerp(G.vis+8,qx,f), y:G.reqY+p.j*14*(1-f), c:p.c}); continue; }
+      a-=TA; if(a<p.w){ q.push(p); continue; } a-=p.w;
+      if(p.err){ const f=a/TD; pts.push({x:qx-12-f*10, y:G.reqY+f*f*150, e:1, o:1-f*f, c:p.c}); continue; }
+      if(a<TB){ pts.push({x:lerp(ex+8,turnX,a/TB), y:G.reqY, c:p.c}); continue; }
+      a-=TB; const f=a/TC; pts.push(f<.1? {x:turnX,y:lerp(G.reqY,G.resY,f/.1),c:p.c} : {x:lerp(turnX,G.vis+8,(f-.1)/.9), y:G.resY, c:p.c}); }
+    q.sort((a,b)=>a.born-b.born); for(let k=0;k<Math.min(q.length,QCAP);k++) pts.push({x:qx-Math.floor(k/QROWS)*13, y:G.reqY-39+(k%QROWS)*13, c:q[k].c});
+    return {pts,qn:q.length,qx}; }
+}
+
+// ---------- chart for a replay: x = the beat's time segment
+function chart(c,b,t){ const g=G.ch, a=b.from, z=b.to, X=tt=>g.x+(tt-a)/(z-a)*g.w, R=RUNS[b.run];
+  const metric=b.metric||'redirect';
+  c.strokeStyle=INK; c.lineWidth=1; L(c,g.x,g.y+g.h,g.x+g.w,g.y+g.h);
+  const span=(z-a)/60, stepM=span>8?2:1; for(let m=Math.ceil(a/60/stepM)*stepM; m*60<=z; m+=stepM){ const x=X(m*60); L(c,x,g.y+g.h,x,g.y+g.h+6); T(c,m+' min',x,g.y+g.h+26,fm(15),GREY,'center'); }
+  if(metric==='answered'){
+    const S=series(b.run,'answered'), mx=Math.max(...S)*1.12||1, Y=v=>g.y+g.h-v/mx*g.h;
+    T(c,'redirects answered per second',g.x,g.y-14,ft(20),INK); [0,Math.round(mx/2/50)*50].forEach(v=>{ T(c,String(v),g.x-14,Y(v)+5,fm(15),GREY,'right'); });
+    (b.marks||[]).forEach(m=>{ const x=X(m.t); c.strokeStyle=m.red?RED:GREY; c.lineWidth=1.2; c.setLineDash([5,5]); L(c,x,g.y,x,g.y+g.h); c.setLineDash([]); if(t>=m.t) T(c,m.label,x+(m.left?-8:8),g.y+(m.y||18),fm(15),m.red?RED:INK,m.left?'right':'left'); });
+    c.strokeStyle=INK; c.lineWidth=2.4; c.beginPath(); let first=true;
+    for(let i=0;i<R.length;i++){ const tc=i*WIN+5; if(tc<a||tc>t) continue; const x=X(tc), y=Y(S[i]); first? c.moveTo(x,y):c.lineTo(x,y); first=false; } c.stroke();
+    return; }
+  const idx=metric==='create'?2:1, lim=b.limit||(metric==='create'?300:100), Y=p=>g.y+g.h-lf(p)*g.h;
+  T(c,metric==='create'?'create p99':'redirect p99',g.x,g.y-14,ft(20),INK);
+  [[10,'10 ms'],[100,'100 ms'],[1000,'1 s'],[10000,'10 s']].forEach(([p,l])=>{ T(c,l,g.x-14,Y(p)+5,fm(15),GREY,'right'); c.strokeStyle=GREY; c.lineWidth=1; L(c,g.x-7,Y(p),g.x,Y(p)); });
+  c.strokeStyle=RED; c.lineWidth=1.2; c.setLineDash([8,6]); L(c,g.x,Y(lim),g.x+g.w,Y(lim)); c.setLineDash([]); T(c,'limit '+lim+' ms',g.x+g.w,Y(lim)-9,fm(15),RED,'right');
+  if(b.ghost){ const GR=RUNS[b.ghost]; c.strokeStyle=GREY; c.lineWidth=1.6; c.beginPath(); let f=true; GR.forEach((w,i)=>{ const tc=i*WIN+5; if(tc<a||tc>z||!w[idx]) return; const x=X(tc),y=Y(w[idx]); f? c.moveTo(x,y):c.lineTo(x,y); f=false; }); c.stroke(); if(b.ghostLabel) T(c,b.ghostLabel,X(lerp(a,z,.45)),Y(b.ghostAt||9000)-12,ft(17),GREY,'center'); }
+  const pts=[]; R.forEach((w,i)=>{ const tc=i*WIN+5; if(tc>=a&&tc<=t&&w[idx]) pts.push([X(tc),w[idx]]); }); if(t>a){ const sv=sample(b.run,t)[metric]; if(sv) pts.push([X(t),sv]); }
+  c.lineWidth=2.6; c.lineJoin='round';
+  for(let i=1;i<pts.length;i++){ const [x1,p1]=pts[i-1],[x2,p2]=pts[i];
+    if((p1-lim)*(p2-lim)<0){ const f=(Math.log10(lim)-Math.log10(p1))/(Math.log10(p2)-Math.log10(p1)), xm=lerp(x1,x2,f); c.strokeStyle=p1>=lim?RED:INK; L(c,x1,Y(p1),xm,Y(lim)); c.strokeStyle=p2>=lim?RED:INK; L(c,xm,Y(lim),x2,Y(p2)); }
+    else { c.strokeStyle=(p1>=lim&&p2>=lim)?RED:INK; L(c,x1,Y(p1),x2,Y(p2)); } }
+  if(pts.length){ const [ex,ep]=pts[pts.length-1], cl=ep>=lim?RED:INK; c.fillStyle=cl; c.beginPath(); c.arc(ex,Y(ep),5,0,Math.PI*2); c.fill(); T(c,ms(ep),Math.min(ex+12,g.x+g.w-90),Y(ep)-10,fm(19,500),cl); }
+}
+
+// ---------- each event's main requirements, shown on its replay boards
+const EVREQ={E01:['1 click/s · 1 new link/min · 1,000 links',''],
+ E02:['100 clicks/s · 2 new links/s · 10 M links',''],
+ E03:['E02 traffic + 50 people claiming one name, 3 times a second','exactly one winner, the rest told "taken"'],
+ E04:['E02 traffic + one link at 2,000 clicks/s for 10 min',''],
+ E05:['the E04 spike, counting every click','counts within 1%, at most 60 s behind'],
+ E06:['E02 traffic, then the power is cut','back within 5 min'],
+ E07:['E02 traffic, then the machine is deleted','back within 1 h · may lose the last 5 min of links'],
+ E08:['1,000 clicks/s · 20 new links/s · 100 M links (12 GB)',''],
+ E09:['E08 traffic + 100 takedowns','no redirect later than 60 s after a takedown']};
+function drawReq(c,ev){ const r=EVREQ[ev]; if(!r) return; T(c,r[0],W-60,78,fm(18),INK,'right'); if(r[1]) T(c,r[1],W-60,108,fm(17),RED,'right'); else T(c,'+ the always-true rules',W-60,108,fm(16),GREY,'right'); }
+
+// ---------- replay beat
+function drawReplay(c,b,t,sim){
+  const s=sample(b.run,t), stage=b.stage;
+  heading(c,b.ev,b.head); drawReq(c,b.ev);
+  const down=b.down && t>=b.down[0] && t<b.down[1] ? b.down[2] : null;
+  drawBoard(c,b,{down, noVis:true});
+  if(b.after && t>=b.after[0]) T(c,b.after[1],G.M.x+G.M.w,G.M.y+G.M.h+26,fm(16),INK,'right');
+  const v=sim.view(stage);
+  for(const p of v.pts){ c.globalAlpha=p.o??1; const col=p.e?RED:INK; c.beginPath(); if(p.c){ c.fillStyle=BOARD; c.strokeStyle=col; c.lineWidth=1.8; c.arc(p.x,p.y,5,0,Math.PI*2); c.fill(); c.stroke(); } else { c.fillStyle=col; c.arc(p.x,p.y,p.e?4.5:3.7,0,Math.PI*2); c.fill(); } } c.globalAlpha=1;
+  { const per=sim.per; T(c,'1 dot = '+(per===1?'1 request':per+' requests'),G.vis,H-34,fm(16),GREY); }
+  { const w1=T(c,'visitors',G.vis,G.reqY-64,ft(22),INK); T(c,fmtInt(s.rps)+'/s',G.vis+w1+12,G.reqY-64,fm(20),INK); }
+  if(b.answered) T(c,'answered '+fmtInt(s.rps*(1-s.err/100))+'/s',G.vis,G.reqY-92,fm(18),s.err>5?RED:INK);
+  const lat=s.redirect, slow=lat>=100;
+  if(v.qn>0) T(c,(v.qn>QCAP? QCAP+'+':v.qn)+' waiting',v.qx,G.reqY-50,fm(16),slow?RED:INK,'right');
+  if(s.err>=.05) T(c,(b.errWord||'timed out')+' '+(s.err<10?s.err.toFixed(1):Math.round(s.err))+'%',Math.min(v.qx-20,G.M.x-14),G.reqY+196,fm(16),RED,'right');
+  if(b.res){ const P=G.cpu, cores=stage<3?2:4, val=s.cpu, hot=val>=97;
+    T(c,'CPU · '+cores+' cores',P.x,P.y-10,ft(18),INK); c.strokeStyle=INK; c.lineWidth=1.2; c.strokeRect(P.x,P.y,P.w,P.h);
+    if(b.split){ let x=P.x, lx=P.x; const NAME={node:'Node',nginx:'nginx',lite:'Litestream'};
+      b.split.forEach((k,i)=>{ const v=s[k]||0, w=P.w*clamp(v/(cores*100),0,1), main=i===0, col=main?(hot?RED:INK):GREY;
+        c.fillStyle=col; c.fillRect(x,P.y,Math.max(0,w-2),P.h);
+        if(w>6){ const lx0=Math.max(x,lx); lx=lx0+T(c, main? NAME[k]+' '+(v/100).toFixed(1)+' cores' : NAME[k], lx0, P.y+P.h+22, fm(main?16:15), col)+16; }
+        x+=w; }); }
+    else { c.fillStyle=hot?RED:INK; c.fillRect(P.x,P.y,P.w*clamp(val,0,100)/100,P.h); }
+    T(c,Math.round(val)+'%',P.x+P.w+12,P.y+15,fm(19),hot?RED:INK); }
+  chart(c,b,t);
+  if(b.verdict && (t>=b.to-1 || STATIC)){ const x=80+TW(c,b.ev||'',fm(26,500))+22+TW(c,b.head,ft(36))+30; b.verdict==='pass'? check(c,x+12,93,34,INK) : cross(c,x+12,92,32,RED); }
+  if(b.footnote) wrap(c,b.footnote,G.M.x,G.M.y+G.M.h+30,860,20,fm(15),GREY);
+  if(b.result && (t>=b.to-1 || STATIC)){ // the judged result of this run, in the empty right-hand space
+    const x=1236; let y= stage>=6? 440 : 285; const gap= stage>=6? 30 : 38;
+    b.result.forEach(([lab,val,note,ok])=>{ const acc=ok==='a', col= acc? GREY : ok? INK : RED, f= val.length<=9? fm(30,500) : ft(24);
+      T(c,lab,x,y,ft(19),GREY); const w=T(c,val,x,y+38,f,col); acc? cross(c,x+w+24,y+27,22,GREY) : ok? check(c,x+w+24,y+26,24,INK) : cross(c,x+w+24,y+27,22,RED);
+      const ny= note? wrap(c,note,x,y+62,W-44-x,20,fm(15),GREY) : y+38; y=ny+gap; }); }
+  runTag(c,'run '+b.run+(b.ghost?' · grey: '+b.ghost:''));
+}
+
+// ---------- other beat kinds
+const K={};
+function keyLine(c,l,x,y,col){ if(Array.isArray(l)){ T(c,l[0],x,y,fm(23,500),col); T(c,l[1],x+150,y,ft(25),col); } else T(c,l,x,y,ft(25),col); }
+K.statement=(c,b)=>{ wrap(c,b.big,120,b.sub?380:430,1360,78,ft(64),INK); if(b.sub) wrap(c,b.sub,120,560,1300,46,ft(34),GREY); };
+K.problem=(c,b,st)=>{ heading(c,null,'Paste a long link, get a short one');
+  const long='https://example.com/blog/2026/10/how-a-viral-link-took-down-our-server?utm_source=newsletter&utm_campaign=oct';
+  c.strokeStyle=GREY; c.lineWidth=1.2; c.strokeRect(80,230,1440,64); T(c,long,100,272,fm(21),INK);
+  if(st>=1){ arrow(c,800,300,800,380,INK); T(c,'https://short.example/FXsk',800,432,fm(40,500),INK,'center'); }
+  if(st>=2){ arrow(c,800,460,800,540,INK); T(c,'click',822,510,ft(22),GREY); T(c,'301 → the long page, in under 100 ms',800,590,ft(30),INK,'center'); }
+  if(st>=3){ T(c,'HTTP/1.1 301 Moved Permanently',800,680,fm(24),INK,'center'); T(c,'Location: https://example.com/blog/2026/10/how-a-viral-link…',800,716,fm(20),GREY,'center'); T(c,'the browser follows it on its own',800,770,ft(22),GREY,'center'); } };
+K.events=(c,b,st)=>{ heading(c,null,'Everything that will happen, locked before we build');
+  const E=[['E01','Requirement','Launch: friends and family, 1 click/s'],['E02','Load','1% of Bitly: 100 clicks/s, 10 million links'],['E03','Requirement','Custom names: 50 people want the same name at once'],['E04','Load','A link goes viral: 2,000 clicks/s on one link'],['E05','Requirement','Click counts per link, within 1%'],['E06','Failure','Power cut, without warning'],['E07','Failure','The machine and its disk are deleted'],['E08','Load','10% of Bitly: 1,000 clicks/s, 100 million links'],['E09','Requirement','Takedowns: removed links stop within 60 s']];
+  E.forEach((e,i)=>{ const y=200+i*68, on=!b.upto||i<b.upto; const cl=on?INK:GREY; T(c,e[0],120,y,fm(26,500),cl); T(c,e[1],250,y,fm(18),GREY); T(c,e[2],440,y,ft(28),cl); }); };
+K.limits=(c,b,st)=>{ heading(c,null,'What passing means');
+  const R=[['< 100 ms','redirects','99 of every 100 clicks, the point where waiting stops feeling instant'],['< 300 ms','creating a link','99 of every 100'],['< 0.1%','errors',''],['always','correct','a confirmed link goes to exactly its page, forever']];
+  R.forEach((r,i)=>{ const y=230+i*118; T(c,r[0],120,y,fm(52,500),RED); T(c,r[1],520,y-14,ft(32),INK); if(r[2]) T(c,r[2],520,y+26,ft(22),GREY); });
+  if(st>=1){ c.strokeStyle=INK; c.lineWidth=1; L(c,120,712,1480,712); T(c,'Jakob Nielsen, usability researcher (1993):',120,756,ft(22),GREY);
+    [['0.1 s','feels instant'],['1 s','keeps your train of thought'],['10 s','you lose attention']].forEach(([a,b2],i)=>{ const x=120+i*460; T(c,a,x,808,fm(30,500),INK); T(c,b2,x+TW(c,a,fm(30,500))+16,808,ft(22),INK); }); } };
+K.scale=(c,b)=>{ heading(c,null,'How far we climb');
+  const x0=160,x1=1440, X=v=>x0+(Math.log10(v))/4*(x1-x0), y=470;
+  c.strokeStyle=INK; c.lineWidth=1.5; L(c,x0,y,x1,y);
+  const P=[[1,'friends','1 click/s',INK],[100,'1% of Bitly','100/s',INK],[1000,'10% of Bitly','1,000/s',INK],[10000,'Bitly','10,000/s',GREY]];
+  P.forEach(([v,n,r,cl])=>{ const x=X(v); c.fillStyle=cl; c.beginPath(); c.arc(x,y,9,0,Math.PI*2); c.fill(); T(c,n,x,y-36,ft(28),cl,'center'); T(c,r,x,y+50,fm(22),cl,'center'); });
+  c.strokeStyle=INK; c.lineWidth=1.2; c.strokeRect(X(1000)-170,y+86,340,104); T(c,'≈ 877 million',X(1000),y+132,fm(30,500),INK,'center'); T(c,'clicks a month',X(1000),y+166,ft(20),GREY,'center');
+  T(c,'reference only',X(10000),y+86,ft(18),GREY,'center'); };
+K.board=(c,b,st)=>{ heading(c,b.ev,b.head); const bb={...b}; if(b.build){ bb._st=st; }
+  if(b.build){ // stage 0 build-up: machine, Node, flow
+    const M=G.M; if(st>=0){ c.strokeStyle=INK; c.lineWidth=1.6; c.setLineDash([7,6]); c.strokeRect(M.x,M.y,M.w,M.h); c.setLineDash([]); T(c,SPEC(0),M.x,M.y-16,fm(19),INK); }
+    if(st>=1){ box(c,G.O,INK); T(c,'Node · SQLite',G.O.x+G.O.w/2,G.O.y+40,ft(26),INK,'center'); T(c,'one program, one file',G.O.x+G.O.w/2,G.O.y+G.O.h+30,fm(15),GREY,'center'); }
+    if(st>=2){ arrow(c,G.vis,G.reqY,G.O.x,G.reqY,INK); arrow(c,G.O.x,G.resY,G.vis,G.resY,INK); T(c,'visitors',G.vis,G.reqY-64,ft(22),INK); T(c,'HTTPS',G.vis+150,G.reqY-14,fm(16),GREY); T(c,'301',G.vis,G.resY+32,fm(17),INK); }
+    return; }
+  if(b.gone){ drawBoard(c,{...b,hi:[]}); c.strokeStyle=RED; c.lineWidth=3; L(c,G.M.x,G.M.y,G.M.x+G.M.w,G.M.y+G.M.h); L(c,G.M.x+G.M.w,G.M.y,G.M.x,G.M.y+G.M.h);
+    b.gone.forEach((l,i)=> i===0? T(c,l,G.M.x,G.M.y+G.M.h+56,ft(22),GREY) : keyLine(c,l,G.M.x,G.M.y+G.M.h+56+i*40,INK)); return; }
+  drawBoard(c,b); (b.notes||[]).forEach((l,i)=> Array.isArray(l)? keyLine(c,l,G.M.x,G.M.y+G.M.h+60+i*40,INK) : T(c,l,G.M.x,G.M.y+G.M.h+60+i*40,l.startsWith('·')?fm(20):ft(Array.isArray(b.notes[0])?22:26),(i===0&&!Array.isArray(b.notes[0]))?INK:GREY)); };
+K.card=(c,b)=>{ T(c,b.ev,120,250,fm(96,500),INK); T(c,b.type,128,300,fm(22),GREY); T(c,b.title,480,232,ft(52),INK);
+  let y=wrap(c,b.what,480,300,1000,44,ft(30),INK); if(b.why){ y+=66; T(c,'why it matters',480,y,ft(20),GREY); y=wrap(c,b.why,480,y+38,1000,40,ft(27),INK); } y+=84;
+  T(c,'pass:',480,y,ft(24),GREY); if(b.pass) wrap(c,b.pass,560,y,940,38,fm(24),RED); else T(c,'the always-true rules',560,y,fm(24),GREY); };
+K.result=(c,b)=>{ T(c,b.ev,120,250,fm(96,500),INK); T(c,b.title,480,232,ft(52),INK); wrap(c,b.what,480,300,1000,44,ft(30),GREY);
+  check(c,170,520,90,INK); T(c,b.num,300,540,fm(64,500),INK); T(c,b.numSub,300,590,ft(26),GREY); runTag(c,'run '+b.src); };
+K.names=(c,b,st)=>{ heading(c,'E03','50 people, one name, v0');
+  T(c,'50 people send this at the same instant:',120,212,ft(24),GREY);
+  c.strokeStyle=INK; c.lineWidth=1.2; c.strokeRect(120,232,700,150);
+  T(c,'POST /links',148,278,fm(26,500),INK);
+  T(c,'{ "url": "https://example.com/launch",',148,322,fm(22),INK);
+  const nm='  "name": "launch-day" }', nmCol= st>=1? GREY : INK, w=T(c,nm,148,360,fm(22),nmCol);
+  T(c,'× 50',850,322,fm(40,500),INK);
+  if(st>=1){ c.strokeStyle=RED; c.lineWidth=2; L(c,148+TW(c,'  ',fm(22)),353,148+w-TW(c,' }',fm(22)),353);
+    T(c,'v0 only reads "url". It never looks at "name":',120,440,ft(26),INK);
+    T(c,'it was built before names existed, and unknown fields are silently ignored.',120,478,ft(24),GREY); }
+  if(st>=2){ const x=1040; T(c,'every one of the 50 gets:',x,212,ft(24),GREY);
+    ['FXDY','FXDZ','FXE0','FXE1'].forEach((k,i)=>T(c,'201 saved · '+k,x,262+i*44,fm(24),RED)); T(c,'… all 50 told "saved"',x,262+4*44+8,ft(24),RED);
+    T(c,'and /launch-day → 404',x,262+5*44+30,fm(24),RED); T(c,'every round, the same',x,262+5*44+76,ft(22),GREY);
+    cross(c,80+TW(c,'E03',fm(26,500))+22+TW(c,'50 people, one name, v0',ft(36))+42,92,32,RED); }
+  runTag(c,'run e03-01'); };
+K.thread=(c,b,st)=>{ const two=!!b.two; heading(c,'E03', two? 'With nginx: two workers share each burst' : 'Node’s one thread, during one burst');
+  const x0=330,x1=1440,X=v=>x0+v/220*(x1-x0), A=20;                       // A: when the example click arrives (ms)
+  const done= two? 50 : 95;                                              // when the handshakes are finished
+  const block=(y,from,to,txt,col)=>{ c.fillStyle=col; c.fillRect(X(from),y-22,X(to)-X(from),44); if(txt) T(c,txt,X(from)+12,y+7,fm(17),BOARD); };
+  // the operating system's queue: the click has arrived but nobody has picked it up yet
+  const qy=270; T(c,'operating system',x0-24,qy-4,ft(21),INK,'right'); T(c,'queue',x0-24,qy+20,ft(21),INK,'right');
+  c.strokeStyle=GREY; c.lineWidth=1; c.strokeRect(x0,qy-26,x1-x0,52);
+  c.fillStyle=INK; c.beginPath(); c.arc(X(A),qy,7,0,Math.PI*2); c.fill();
+  c.strokeStyle=INK; c.setLineDash([5,5]); c.lineWidth=1.6; L(c,X(A)+9,qy,X(done),qy); c.setLineDash([]);
+  T(c,'a click arrives at '+A+' ms and waits here',X(A)+16,qy-34,fm(17),INK);
+  arrow(c,X(done),qy+26,X(done),two? 610 : 470-26,INK,1.4);
+  // the workers
+  if(!two){ const y=470; T(c,'Node',x0-24,y-2,ft(22),INK,'right'); T(c,'(one thread)',x0-24,y+22,ft(17),GREY,'right');
+    block(y,5,95,'50 handshakes × ≈ 1.8 ms',RED); block(y,95,97,'',INK); T(c,'answered at 97 ms',X(97)+14,y+7,fm(17),INK); }
+  else { [[430,'nginx 1'],[520,'nginx 2']].forEach(([y,n])=>{ T(c,n,x0-24,y+7,ft(22),INK,'right'); block(y,5,50,'25 handshakes',INK); });
+    const y=610; T(c,'Node',x0-24,y+7,ft(22),INK,'right'); block(y,50,52,'',INK); T(c,'answered at 52 ms',X(52)+14,y+7,fm(17),INK); T(c,'Node no longer does handshakes',X(120),y+7,ft(18),GREY); }
+  // time axis
+  const ay=700; c.strokeStyle=INK; c.lineWidth=1; L(c,x0,ay,x1,ay); [0,50,100,150,200].forEach(v=>{ L(c,X(v),ay,X(v),ay+8); T(c,v+' ms',X(v),ay+32,fm(16),GREY,'center'); });
+  T(c, two? 'Expected before running: half the wait. Half of v1’s 180 ms p99 is about 90 ms: right at the limit, so it may or may not pass.' : 'About 3 bursts a second. Averaged over a second the CPU looks fine (34%): the wait lives inside these 90 ms.',x0-200,790,ft(22),INK);
+  T(c,'illustration: 1.8 ms per handshake measured (calib-01), 50 claims per burst from E03, the arrival time is an example',x0-200,830,fm(15),GREY);
+  runTag(c, two? 'calib-01 · expectation from stages/02 log' : 'calib-01 · e03-02'); };
+K.seq=(c,b)=>{ heading(c,'E04','Why: one click, in time');
+  const V=330, NG=860, ND=1290, top=170, bot=780; [[V,'visitor'],[NG,'nginx'],[ND,'Node · SQLite']].forEach(([x,n])=>{ T(c,n,x,top-24,ft(26),INK,'center'); c.strokeStyle=INK; c.lineWidth=1.4; L(c,x,top,x,bot); });
+  const msg=(x1,y1,x2,y2,l,col=INK)=>{ arrow(c,x1,y1,x2,y2,col,1.6); T(c,l,(x1+x2)/2,(y1+y2)/2-16,ft(20),col,'center'); };
+  let y=top+34; msg(V,y,NG,y+30,'connect'); y+=52; msg(NG,y,V,y+30,'connected'); y+=52; msg(V,y,NG,y+30,'hello (TLS)'); y+=30;
+  c.fillStyle=RED; c.fillRect(NG-5,y,10,64); T(c,'key exchange + signature',NG+22,y+26,ft(21),RED); T(c,'≈ 2 ms of CPU, every new visitor',NG+22,y+54,fm(17),RED); y+=64;
+  msg(NG,y,V,y+30,'certificate, done'); y+=52; msg(V,y,NG,y+30,'GET /FXsk'); y+=46; msg(NG,y,ND,y+14,'GET /FXsk'); y+=14; c.fillStyle=INK; c.fillRect(ND-4,y,8,18); T(c,'one lookup, ≈ 1 ms',ND+18,y+15,ft(19),INK); y+=18; msg(ND,y,NG,y+14,'301'); y+=34; msg(NG,y,V,y+30,'301');
+  T(c,'At 2,000 new visitors a second: nginx ≈ 170% of a core, Node ≈ 30%. The machine has 200%.',W/2,bot+60,ft(23),INK,'center'); runTag(c,'run e04-01'); };
+K.options=(c,b,st)=>{ heading(c,b.ev,b.head); let y=230;
+  b.rows.forEach((r,i)=>{ const chosen=r[2]==='yes', shown=st>=1||!chosen, cl=st>=1? (chosen?INK:GREY) : INK; if(!shown && b.reveal) return;
+    if(st>=1){ chosen? check(c,110,y-10,30,INK) : null; }
+    T(c,r[0],150,y,ft(30),cl); wrap(c,r[1],150,y+36,1300,28,ft(21),st>=1&&!chosen?GREY:'#555'); y+= r[1].length>110? 128 : 100; });
+  if(b.foot&&st>=1) T(c,b.foot,150,H-60,ft(22),INK); };
+K.sqlite=(c,b,st)=>{ heading(c,'E06','Why: the save came back undone');
+  T(c,'How SQLite saves, with its default settings:',120,196,ft(23),GREY);
+  const S=[['1','copy the parts of the file it will change into links.db-journal: an undo copy'],['2','write the new link, FXwR, into links.db'],['3','delete the journal: now the save counts as final'],['4','answer the creator: “saved, FXwR”']];
+  S.forEach(([n,l],i)=>{ const y=250+i*52, hot=st>=1&&n==='3'; T(c,n,124,y,fm(24,500),hot?RED:INK); T(c,l,170,y,ft(26),hot?RED:INK); });
+  if(st>=1){ let y=wrap(c,'The catch: deleting a file is first noted only in memory. The disk records it a few seconds later.',120,500,1360,36,ft(25),INK);
+    y=wrap(c,'Power cut in those seconds: after the reboot the journal is still on disk. SQLite thinks the save never finished and copies the old version back. FXwR is gone.',120,y+48,1360,36,ft(25),RED);
+    if(st>=2){ y=wrap(c,'Codes count up, so the next new link gets the same number: FXwR again, now opening a stranger’s page.',120,y+48,1360,36,ft(25),RED);
+      c.strokeStyle=INK; c.lineWidth=1.2; c.strokeRect(110,y+34,1380,62); T(c,'fix · synchronous = EXTRA: answer “saved” only once the deletion is on disk',130,y+74,fm(23),INK); } }
+  runTag(c,'run e06-01 · SQLite docs'); };
+K.freeze=(c,b,st)=>{ heading(c,'E08','The hardest bug: a 30-second freeze'); const x0=200,x1=1440,X=v=>x0+v/40*(x1-x0);
+  const row=(y,label,bar,txt,col)=>{ T(c,label,x0,y-40,ft(24),INK); c.fillStyle=col; c.fillRect(X(2),y-18,X(2+bar)-X(2),36); T(c,txt,X(2+bar)+16,y+7,fm(19),col); };
+  T(c,'after a fresh full copy, Litestream checks its newest file while holding the write lock',x0,210,ft(24),GREY);
+  row(330,'newest file = the whole 1.7 GB copy',30.5,'lock held 30.5 s: the app is frozen',RED);
+  if(st>=1) row(520,'with a heartbeat row saved every second: newest file = 196 bytes',.25,'lock held < 0.25 s',INK);
+  c.strokeStyle=INK; c.lineWidth=1; L(c,x0,640,x1,640); [0,10,20,30,40].forEach(v=>{ L(c,X(v),640,X(v),648); T(c,v+' s',X(v),674,fm(16),GREY,'center'); });
+  runTag(c,'e08-03 · e08-06 · heartbeat-probe-01'); };
+const STAGE_RESULTS=[['p','p','f'],['p','p','f'],['p','p','p','f'],['p','p','p','p','f'],['p','p','p','p','p','f'],['p','p','p','p','p','p*','f'],['p','p','p','p','p','p*','p*','f'],['p','p','p','p','p','p*','p*','p','f'],['p','p','p','p','p','p*','p*','p','p']];
+K.grid=(c,b,st,el)=>{ heading(c,null,b.head||'Every earlier event, rerun after every change'); const x0=300,y0=230,cw=118,rh=58, cur=b.upto;
+  for(let s=0;s<=8;s++) T(c,'v'+s,x0+s*cw,y0-30,fm(22,s===cur?500:400),s===cur?INK:GREY,'center'); T(c,'version',x0-150,y0-30,ft(20),GREY);
+  for(let e=0;e<9;e++) T(c,'E0'+(e+1),x0-150,y0+e*rh+30,fm(22),INK);
+  const shown=el==null? 99 : el/0.12;
+  let star=false;
+  for(let s=0;s<=cur;s++) STAGE_RESULTS[s].forEach((r,e)=>{ const x=x0+s*cw, y=y0+e*rh+22, now=s===cur; if(now && e>shown) return;
+    if(now && (b.pending||[]).includes(e)){ T(c,'?',x,y+10,fm(28),GREY,'center'); return; } if(now && r==='f' && e===STAGE_RESULTS[s].length-1) return; const col= now? (r==='f'?RED:INK) : GREY; if(r[0]==='p'){ check(c,x,y,28,col); if(r==='p*'){ T(c,'*',x+18,y-4,fm(22,600),col); star=true; } } else cross(c,x,y,26,r==='a'&&now?GREY:col); if(r==='a'&&now) T(c,'accepted',x+22,y+8,fm(14),GREY); });
+  if(star) T(c,'* passes, except about 1 s of click counts lost in a crash: accepted',x0-150,b.foot? H-92 : H-56,ft(18),GREY);
+  if(b.foot) T(c,b.foot,x0-150,H-56,ft(20),GREY); };
+const SCORE=[['v0','One Node program, HTTPS direct, on a CX23','E02','17.7 ms','5.99'],['v1','+ a names table','E02','12.9 ms','5.99'],['v2','+ nginx in front for TLS','E03','69.2 ms','5.99'],['v3','same software, 4 vCPU (CX33)','E04','14.6 ms','8.99'],['v4','+ click counts in memory, saved every 1 s','E05','14.5 ms','8.99'],['v5','+ durable saves (synchronous = EXTRA)','E06','14.2 ms','8.99'],['v6','+ Litestream copy to a Volume, monitor, rebuild','E07','8.3 ms','9.56'],['v7','+ counter jump after restore, heartbeat','E08','14.5 ms','9.56'],['v8','+ takedowns (410 Gone)','E09','14.8 ms','9.56']];
+K.score=(c,b)=>{ heading(c,null,'The scoreboard'); const xs=[100,190,940,1110,1300], y0=210;
+  ['version','design','passed','p99','€/month'].forEach((h,i)=>T(c,h,xs[i],y0,fm(17),GREY)); c.strokeStyle=INK; c.lineWidth=1; L(c,100,y0+14,1500,y0+14);
+  SCORE.slice(0,b.upto+1).forEach((r,i)=>{ const y=y0+60+i*62, col=i===b.upto?INK:GREY; T(c,r[0],xs[0],y,fm(22),col); T(c,r[1],xs[1],y,ft(24),col); T(c,r[2],xs[2],y,fm(22),col); T(c,r[3],xs[3],y,fm(22),col); T(c,r[4],xs[4],y,fm(22),col); });
+  runTag(c,'scoreboard.md'); };
+K.claim=(c,b,st)=>{ heading(c,null,'The final claim'); const x=140;
+  T(c,'1,000/s at peak = 333/s on average × 2,629,800 s a month',x,250,fm(30),GREY); T(c,'≈ 877 million clicks a month',x,310,fm(46,500),INK);
+  if(st>=1){ T(c,'20/s at peak = 6.7/s on average × 2,629,800 s',x,410,fm(26),GREY); T(c,'≈ 17.5 million new links a month',x,460,fm(34,500),INK); }
+  if(st>=2){ T(c,'with 100 million links stored (12 GB, more than the server’s memory)',x,560,ft(26),GREY); T(c,'redirect p99 14.8 ms · create p99 26.2 ms · 0 errors',x,612,fm(30),INK); T(c,'€9.56 a month',x,700,fm(46,500),INK); T(c,'p99s: median of the three E09 runs on v8',x,760,fm(16),GREY); }
+  runTag(c,'E08 · E09 · scoreboard.md'); };
+K.notadded=(c,b)=>{ heading(c,null,'What we never needed'); const R=[['a cache','p99 14–19 ms at 1,000/s, 100 M links, no cache'],['a CDN','would hide clicks from counting and delay takedowns'],['a database server','SQLite inside the app; Node used ¼ of a core'],['a key-generation service','a counting-up number, jumped after a restore'],['a queue for clicks','1,355,748 clicks counted, exactly'],['more servers + load balancer','one server at about 50% CPU'],['a standby server','E07 allows an hour; rebuilt in 3.4–5.9 min']];
+  R.forEach(([a,m],i)=>{ const y=220+i*86, w=T(c,a,120,y,ft(32),GREY); c.strokeStyle=GREY; c.lineWidth=1.6; L(c,120,y-11,120+w,y-11); T(c,m,640,y,ft(24),INK); }); };
+K.next=(c,b)=>{ heading(c,null,'What runs out next'); const x0=420,x1=1400, X=v=>x0+v/4*(x1-x0);
+  T(c,'CPU in the largest run (E09), out of 4 cores',x0,210,ft(22),GREY);
+  const R=[['nginx (TLS)',1.1,null],['Litestream',.6,1.5],['Node',.25,null]];
+  R.forEach(([n,v,peak],i)=>{ const y=300+i*100; T(c,n,x0-24,y+8,ft(26),INK,'right'); c.strokeStyle=INK; c.lineWidth=1.2; c.strokeRect(x0,y-14,x1-x0,28); c.fillStyle=INK; c.fillRect(x0,y-14,X(v)-x0,28); if(peak){ c.strokeStyle=INK; c.lineWidth=2; L(c,X(peak),y-22,X(peak),y+22); T(c,'up to '+peak,X(peak)+10,y-26,fm(16),INK); } T(c,v+' cores',x1+16,y+8,fm(20),INK); });
+  for(let k=0;k<=4;k++){ c.strokeStyle=GREY; L(c,X(k),590,X(k),598); T(c,String(k),X(k),624,fm(16),GREY,'center'); }
+  T(c,'about 50% on average · next move: 8 cores (CX43)',x0,700,ft(26),INK); T(c,'beyond one machine: one SQLite file, one Node thread',x0,748,ft(24),GREY); runTag(c,'e09-02 · e09-03 · e09-04'); };
+K.map=(c,b)=>{ heading(c,null,'The whole system, and what forced each piece'); drawBoard(c,{stage:8});
+  const R=[['nginx','v2','E03: 179 ms on one thread'],['4 cores','v3','E04: CPU 100%'],['count in memory','v4','E05: 166 saves/s'],['synchronous = EXTRA','v5','E06: a code reissued'],['Litestream + Volume','v6','E07: the only copy was on the disk'],['counter jump, heartbeat','v7','E08: creates 753 ms; 30 s freeze'],['takedowns','v8','E09: no way to remove a link']];
+  R.forEach((r,i)=>{ const col=i<4?0:1, x=col? 840: 100, y=640+(i%4)*48; T(c,r[0],x,y,ft(21),INK); T(c,r[1],x+260,y,fm(16),GREY); T(c,r[2],x+360,y,fm(16),INK); }); };
+K.spend=(c,b)=>{ T(c,'Every test in this video',140,340,ft(34),GREY); T(c,'€5.53',140,440,fm(96,500),INK); T(c,'of a €25 budget',470,440,ft(30),GREY);
+  T(c,'Running the final system',140,580,ft(34),GREY); T(c,'€9.56 a month',140,670,fm(64,500),INK); runTag(c,'results/spend-ledger.csv'); };
+const ADDED={E03:'a name has exactly one owner; the rest are told "taken"',E05:'click counts within 1%, at most 60 s behind',E09:'a taken-down link stays down'};
+K.rules=(c,b,st)=>{ heading(c,null,'Always true, in every event'); const later=!!b.added, base=later?GREY:INK, lab=GREY;
+  const G3=[['does',['paste a link → a code of at most 7 letters and digits','open a code → 301 to the link · unknown code → not found','HTTPS only'],SANS],['never',['lose a confirmed link, or send it to the wrong page','give a code two owners'],SANS],['fast',['redirect p99 < 100 ms · create p99 < 300 ms · errors < 0.1%'],MONO]];
+  let y=210; G3.forEach(([g,lines,face])=>{ T(c,g,120,y,ft(22),lab); lines.forEach((l,i)=>T(c,l,300,y+i*42,`400 ${face===MONO?24:27}px ${face}`,face===MONO&&!later?RED:base)); y+=lines.length*42+34; });
+  if(!later && st>=1){ c.strokeStyle=INK; c.lineWidth=1; L(c,120,y-6,1480,y-6); T(c,'why those times · Jakob Nielsen, usability researcher (1993):',120,y+34,ft(21),GREY);
+    [['0.1 s','feels instant'],['1 s','keeps your train of thought'],['10 s','you lose attention']].forEach(([a,d],i)=>{ const x=120+i*460; T(c,a,x,y+82,fm(28,500),INK); T(c,d,x+TW(c,a,fm(28,500))+14,y+82,ft(21),INK); });
+    T(c,'p99, not the average: at 1,000 clicks/s the slowest 1% is still 10 people every second',120,y+128,ft(20),GREY); }
+  if(later){ T(c,'since',120,y,ft(22),lab); b.added.forEach((ev,i)=>{ const now=i===b.added.length-1; T(c,ev,300,y+i*42,fm(22,500),now?INK:GREY); T(c,ADDED[ev],380,y+i*42,ft(27),now?INK:GREY); }); }
+  runTag(c,'event-script.md · default pass criteria'); };
+K.gaps=(c,b,st)=>{ heading(c,b.ev,b.head); drawBoard(c,{...b,hi:[]}); c.strokeStyle=RED; c.lineWidth=3; L(c,G.M.x,G.M.y,G.M.x+G.M.w,G.M.y+G.M.h); L(c,G.M.x+G.M.w,G.M.y,G.M.x,G.M.y+G.M.h);
+  const y0=618; T(c,'v5 is missing',260,y0,ft(20),GREY); if(st>=1) T(c,'v6 adds',860,y0,ft(20),GREY);
+  b.rows.forEach(([k,gap,ans],i)=>{ const y=y0+42+i*40; T(c,k,120,y,fm(22,500),INK); T(c,gap,260,y,ft(22),st>=1?GREY:INK); if(st>=1) T(c,ans,860,y,ft(22),INK); }); };
+K.litestream=(c,b,st)=>{ const part=b.part, wal= part===1 && st===0 && b.steps===2;
+  heading(c,'E08', wal? 'First: SQLite’s change log (WAL)' : ['How Litestream keeps a copy','Why Litestream tidies its copy','Litestream tidies the database too'][part-1]);
+  const bx=(x,y,w,h,t,col,sub)=>{ c.strokeStyle=col; c.lineWidth=2; c.strokeRect(x,y,w,h); T(c,t,x+w/2,y+h/2+(sub?-4:8),ft(22),col,'center'); if(sub) T(c,sub,x+w/2,y+h/2+22,fm(14),col,'center'); };
+  const A= part===1? INK : GREY, B= part===2? INK : GREY, C= part===3? INK : GREY;
+  // the server's own disk
+  c.strokeStyle=GREY; c.lineWidth=1.4; c.setLineDash([7,6]); c.strokeRect(90,190,1060,280); c.setLineDash([]); T(c,'the server’s own disk',100,180,fm(15),GREY);
+  bx(120,250,220,90,'Node · SQLite', part===2? GREY : INK);
+  bx(470,215,240,70,'links.db',wal?INK:C,'the database'); bx(470,355,240,70,'WAL',part===2?GREY:INK,'the change log');
+  bx(880,290,200,80,'Litestream',wal?GREY:INK);
+  // the Volume: a full copy plus a small change file for every second since
+  const VC=(part===3||wal)? GREY : INK; c.strokeStyle=VC; c.lineWidth=2; c.strokeRect(1230,190,290,280); T(c,'Volume',1375,180,ft(20),VC,'center');
+  c.strokeStyle=VC; c.lineWidth=2; c.strokeRect(1255,212,240,70); T(c,'full copy',1375,246,ft(20),VC,'center'); T(c,'1.7 GB, compressed',1375,268,fm(13),VC,'center');
+  for(let k=0;k<6;k++){ c.strokeStyle=VC; c.lineWidth=1.3; c.strokeRect(1262+k*36,340,28,34); }
+  T(c,'+ a small change file per second',1375,398,fm(13),VC,'center');
+  // arrows
+  arrow(c,340,300,470,388,A,1.6); T(c,'every change',400,322,fm(14),A,'center');
+  arrow(c,710,388,880,342,wal?GREY:A,1.6); arrow(c,1080,330,1258,356,wal?GREY:A,1.6); T(c,'every ~1 s',1160,320,fm(14),wal?GREY:A,'center');
+  if(wal){ arrow(c,590,355,590,287,INK,1.6); T(c,'later: fold back',602,326,fm(14),INK); }
+  if(part===2){ arrow(c,1290,340,1290,284,INK,1.6); T(c,'merge',1302,316,fm(14),INK); }
+  if(part===3){ arrow(c,590,355,590,287,INK,1.6); T(c,'fold back',602,326,fm(14),INK); T(c,'holds SQLite’s write lock',728,256,fm(16),RED); }
+  const LINES= wal? [['since v6, SQLite runs in WAL mode: Litestream needs it',INK],['the power cut’s way: make an undo copy (the journal), change links.db, delete the undo copy',GREY],['WAL mode: leave links.db alone, and add every change to the end of a change log, the WAL',INK],['anyone reading sees links.db plus the log; later, the log is folded back into links.db',INK],['a confirmed save is in the log on disk before we say “saved”, so it survives a power cut too',GREY]] : [
+    [['SQLite writes every change to a change log (the WAL); about once a second, Litestream copies the new part to the Volume',INK],['Litestream’s copy = one full copy of the database + a small change file for every second since',INK],['to restore: take the full copy, then replay the small changes on top',INK],['a fresh full copy is made when Litestream starts on a new database (after loading data, or after a restore), and once a day',INK],['1.7 GB: our 12 GB database at 100 M links, compressed',GREY],['since v6, every new link waits for its own small change file before we say “saved”',INK]],
+    [['one small file a second is 3,600 an hour, and restoring would replay them all',INK],['so Litestream merges them into bigger files: every few minutes, then hourly',INK],['a merge reads a group of files and writes them out as one new file',INK],['after a fresh full copy, the next merges include the full copy itself, so they read and rewrite all 1.7 GB',INK],['while that runs, each new link’s small file waits in line behind it: 1–1.5 s',RED]],
+    [['the change log can’t grow forever, so Litestream regularly folds it back into links.db',INK],['to do that safely it takes SQLite’s write lock, and first checks that its newest file matches the database',INK],['right after a fresh full copy, its newest file is the full copy itself: 1.7 GB to check, about 30 s with the lock held',RED],['both problems strike right after a fresh full copy',GREY]]][part-1];
+  let y=528; LINES.forEach(([t,col])=>{ y=wrap(c,t,120,y,1380,30,ft(22),col)+40; });
+  runTag(c,'Litestream 0.5.17 · stages/06 and 07 logs'); };
+K.jump=(c,b,st)=>{ heading(c,'E08','v7: the counter jump');
+  const y=360, X0=140, X1=1460; c.strokeStyle=INK; c.lineWidth=2; L(c,X0,y,X1,y);
+  T(c,'link numbers →',X0,y-60,ft(18),GREY);
+  // what made it into the copy
+  c.fillStyle=INK; c.fillRect(X0,y-6,380,12); T(c,'in the copy',X0,y+44,ft(19),INK);
+  const A=520; L(c,A,y-24,A,y+24); T(c,'10,000,819',A,y-36,fm(18,500),INK,'center'); T(c,'newest link in the copy',A,y+70,ft(17),GREY,'center');
+  // confirmed in the last second, lost
+  c.fillStyle=RED; c.fillRect(A+2,y-6,70,12); T(c,'lost: 404',A+38,y+44,fm(17),RED,'center');
+  // the gap
+  if(st>=1){ c.strokeStyle=GREY; c.setLineDash([6,6]); c.lineWidth=1.4; L(c,A+90,y-30,1150,y-30); c.setLineDash([]);
+    T(c,'1,000,000 numbers never handed out',(A+90+1150)/2,y-44,ft(19),GREY,'center');
+    const B=1170; c.strokeStyle=INK; c.lineWidth=2; L(c,B,y-24,B,y+24); T(c,'11,000,819',B,y-36,fm(18,500),INK,'center'); T(c,'placeholder',B,y+44,ft(17),GREY,'center');
+    const C=1330; c.fillStyle=INK; c.beginPath(); c.arc(C,y,8,0,Math.PI*2); c.fill(); T(c,'11,000,820',C,y-36,fm(18,500),INK,'center'); T(c,'next new link',C,y+44,ft(17),INK,'center'); }
+  let ty=500;
+  const lines=[['after a restore, before the app starts: a placeholder goes in a million numbers ahead',INK,0],['links confirmed in the old machine’s last second are lost (404, which E07 allows), but their codes are never handed out again',INK,1],['why a million: at E08’s 20 new links a second, it covers about 14 hours, and the copy is only ever about a second behind',GREY,1],['names can’t jump: a lost name could be registered by someone else, so names still wait for the copy',INK,2],['names are a small share of creates: E08’s 20 a second were all generated links',GREY,2]];
+  lines.forEach(([t,col,k])=>{ if(st>=k) ty=wrap(c,t,X0,ty,1320,30,ft(22),col)+40; });
+  runTag(c,'e07-06 · stages/07 log'); };
+K.caveats=(c,b)=>{ heading(c,null,'Caveats'); let y=220;
+  b.items.forEach(([lead,detail])=>{ T(c,lead,120,y,ft(30),INK); y=wrap(c,detail,120,y+40,1360,32,ft(22),GREY)+68; }); };
+K.uses=(c,b)=>{ heading(c,null,'What short links are for');
+  const R=[['fit a link where space is short','a post, a text message, a QR code: short.example/FXsk'],['pick a readable name','short.example/launch-day'],['count who clicked','launch-day: clicks per day'],['take a bad link down','410 Gone: this link was removed']];
+  R.forEach(([a,e],i)=>{ const y=250+i*150; T(c,a,120,y,ft(38),INK); T(c,e,120,y+48,fm(24),GREY); }); };
+K.numbers=(c,b,st)=>{ heading(c,null,'Where the traffic numbers come from');
+  T(c,'Bitly, per year:',120,190,ft(24),GREY); T(c,'100 billion clicks · 2 billion new links',320,190,fm(28,500),INK); T(c,'bitly.com/pages/about, checked 1 Oct 2026',320,222,fm(16),GREY);
+  const xs=[120,400,700,1010,1290], hy=300;
+  const heads=['','per year','÷ 31.6 M s = average','× 3 = peak','we test'];
+  const rows=[['1% of Bitly',['1 B clicks','32/s','95/s','100/s'],['20 M links','0.63/s','1.9/s','2/s']],['10% of Bitly',['10 B clicks','317/s','951/s','1,000/s'],['200 M links','6.3/s','19/s','20/s']]];
+  for(let k=1;k<=4;k++){ if(st<k) continue; T(c,heads[k],xs[k],hy,fm(18),GREY); }
+  if(st>=1){ c.strokeStyle=INK; c.lineWidth=1; L(c,120,hy+16,1480,hy+16); }
+  rows.forEach((r,ri)=>{ const y=hy+70+ri*130; if(st>=1) T(c,r[0],xs[0],y,ft(26),INK);
+    [r[1],r[2]].forEach((cells,li)=>{ cells.forEach((v,ci)=>{ const k=ci+1; if(st<k) return; const last=k===4; T(c,v,xs[k],y+li*42,fm(last?26:24,last?500:400),last||st===k?INK:GREY); }); }); });
+  if(st>=5){ T(c,'links stored = six months of new links:',120,650,ft(24),GREY); T(c,'10 M at 1% · 100 M at 10%',560,650,fm(24),INK);
+    T(c,'back to a month:',120,704,ft(24),GREY); T(c,'333/s on average × 2,629,800 s ≈ 877 million clicks',560,704,fm(24),INK);
+    T(c,'333/s = the 1,000/s we tested ÷ 3 · exactly 10% of Bitly: 317/s × 2,629,800 s ≈ 833 million',120,770,fm(17),GREY);
+    T(c,'31.6 M s = a year · 2,629,800 s = an average month · × 3 = the busiest time of day (traffic model)',120,800,fm(17),GREY); }
+  runTag(c,'event-script.md · traffic model'); };
+K.tables=(c,b)=>{ heading(c,b.ev||null,b.head); let y=210; const x0=120;
+  (b.tables||[]).forEach(tb=>{ const col=k=> (tb.isNew||(tb.newCols||[]).includes(k))? INK : GREY;
+    const cols=tb.cols, rows=tb.rows||[], wd=cols.map((cn,i)=>Math.max(TW(c,cn,fm(17))+40, ...rows.map(r=>TW(c,String(r[i]),fm(19))+40)));
+    T(c,tb.name,x0,y,ft(26),tb.isNew?INK:GREY); y+=18; let x=x0;
+    cols.forEach((cn,i)=>{ T(c,cn,x,y+26,fm(17),col(cn)); x+=wd[i]; }); c.strokeStyle=tb.isNew?INK:GREY; c.lineWidth=1; L(c,x0,y+38,x,y+38);
+    rows.forEach((r,ri)=>{ let xx=x0; const hot=(tb.hotRows||[]).includes(ri); r.forEach((v,i)=>{ T(c,String(v),xx,y+72+ri*34,fm(19),hot?INK:col(cols[i])); xx+=wd[i]; }); });
+    y+=72+rows.length*34+40; });
+  (b.side||[]).forEach((l,i)=>{ const last=i===b.side.length-1; T(c,l,b.sideX||1010,(b.sideY||250)+i*48,fm(22,last&&b.sideNew?600:400), last? INK : (b.sideNew? GREY : '#444')); });
+  if(b.caption) T(c,b.caption,x0,H-56,ft(20),GREY); };
+
+// ---------- the episode
+const EP=__BEATS__;
+
+// ---------- rendering a beat (static or live)
+function renderBeat(c,b,st,t,sim,el){ c.fillStyle=BOARD; c.fillRect(0,0,W,H);
+  if(b.kind==='replay') drawReplay(c,b,t,sim); else (K[b.kind]||(()=>{}))(c,b,st,el); }
+function fitCanvas(cv,maxD){ const d=Math.min(window.devicePixelRatio||1,maxD), w=Math.round(cv.clientWidth*d), h=Math.round(w*9/16); if(w>0 && (cv.width!==w||cv.height!==h)){ cv.width=w; cv.height=h; } return cv.width/W; }
+
+// ---------- Read view
+const readEl=document.getElementById('read'), thumbs=[];
+const total=EP.reduce((a,b)=>a+(b.sec||0),0);
+document.getElementById('facts').innerHTML=`<span><b>${EP.length}</b> beats</span><span>about <b>${Math.round(total/60)} min</b></span><span>events <b>E01–E09</b></span><span>stages <b>0–8</b></span><span>numbers from <b>episodes/url-shortener/results</b></span>`;
+let chap=null, sec=null, n=0;
+EP.forEach((b,i)=>{ if(b.ch!==chap){ chap=b.ch; sec=document.createElement('section'); sec.className='chapter'; const chT=EP.filter(x=>x.ch===chap).reduce((a,x)=>a+(x.sec||0),0); sec.innerHTML=`<h2>${chap}<span>${Math.round(chT/6)/10} min</span></h2>`; readEl.appendChild(sec); }
+  n++; const d=document.createElement('article'); d.className='beat'; d.id='beat-'+(i+1);
+  d.innerHTML=`<button class="thumb" type="button" aria-label="Present from beat ${i+1}"><canvas></canvas></button><div class="body"><div class="head"><span class="n">${String(i+1).padStart(2,'0')}</span><h3>${b.name}</h3><span class="dur">~${b.sec||0} s</span></div><p class="say">${b.say}</p><div class="meta">${b.screen&&b.screen.length? `<span>on screen: <b>${b.screen.join(' · ')}</b></span>`:'<span>on screen: no numbers</span>'}${b.src?`<span>source: ${b.src}</span>`:''}</div>${b.note?`<p class="note">${b.note}</p>`:''}</div>`;
+  d.querySelector('.thumb').onclick=()=>{ show('present'); go(i,0); };
+  sec.appendChild(d); thumbs.push({cv:d.querySelector('canvas'), b});
+});
+const steps=b=> b.kind==='replay'? 2 : (b.steps||1);
+let STATIC=false;
+function drawThumbs(){ STATIC=true; thumbs.forEach(({cv,b})=>{ const k=fitCanvas(cv,1.5); if(!cv.width) return; const c=cv.getContext('2d'); c.setTransform(k,0,0,k,0,0);
+  let sim=null, t=0; if(b.kind==='replay'){ t=b.at??b.to; sim=new Sim(b); sim.warm({...sample(b.run,t)}); }
+  renderBeat(c,b,steps(b)-1,t,sim,null); }); STATIC=false; }
+
+// ---------- Present view
+const live=document.getElementById('live'), lc=live.getContext('2d');
+let bi=0, si=0, pt=0, playing=false, sim=new Sim(), enterAt=0, notesOn=true;
+const notesEl=document.getElementById('notes'), posEl=document.getElementById('pos');
+const jumpEl=document.getElementById('jump');
+jumpEl.innerHTML=EP.map((b,i)=>`<option value="${i}">${String(i+1).padStart(2,'0')} · ${b.ch} · ${b.name}</option>`).join('');
+jumpEl.onchange=()=>{ go(+jumpEl.value,0); jumpEl.blur(); };
+function go(i,s){ bi=clamp(i,0,EP.length-1); si=s; const b=EP[bi]; enterAt=performance.now();
+  if(b.kind==='replay'){ pt=b.from; sim=new Sim(b); sim.warm(sample(b.run,pt)); playing=s>=1; }
+  posEl.textContent=`${bi+1} / ${EP.length}`; jumpEl.value=String(bi); notesEl.innerHTML=`<p class="say">${b.say}</p><div class="meta">${b.name}${b.screen&&b.screen.length? ' · on screen: '+b.screen.join(' · '):''}</div>`; notesEl.hidden=!notesOn; }
+function next(){ const b=EP[bi]; if(si<steps(b)-1){ si++; enterAt=performance.now(); if(b.kind==='replay'&&si===1) playing=true; } else if(bi<EP.length-1) go(bi+1,0); }
+function prev(){ const b=EP[bi]; if(si>0){ if(b.kind==='replay') go(bi,0); else si--; } else if(bi>0){ go(bi-1,steps(EP[bi-1])-1); } }
+function togglePlay(){ const b=EP[bi]; if(b.kind!=='replay') return; if(pt>=b.to){ go(bi,1); return; } playing=!playing; if(playing){ si=1; enterAt=performance.now()-1000; } }
+function replay(){ go(bi,0); }
+document.getElementById('next').onclick=next; document.getElementById('prev').onclick=prev; document.getElementById('replay').onclick=replay; const ppBtn=document.getElementById('pp'); ppBtn.onclick=togglePlay;
+// ---------- laser pointer: drag to draw a trail that fades after LASER_LIFE seconds
+// Its blue sits outside the notation on purpose: it is your hand, not part of the board.
+const LASER='#2563eb', LASER_LIFE=1.4; let laserOn=false, drawing=false, trail=[], strokeId=0;
+const laserBtn=document.getElementById('laser');
+function setLaser(v){ laserOn=v; drawing=false; laserBtn.setAttribute('aria-pressed',v); laserBtn.textContent=v?'Laser on':'Laser off'; live.classList.toggle('laser',v); }
+laserBtn.onclick=()=>setLaser(!laserOn);
+const toBoard=e=>{ const r=live.getBoundingClientRect(); return {x:(e.clientX-r.left)/r.width*W, y:(e.clientY-r.top)/r.height*H}; };
+live.addEventListener('pointerdown',e=>{ if(!laserOn){ next(); return; } drawing=true; strokeId++; try{ live.setPointerCapture(e.pointerId); }catch(_){} trail.push({...toBoard(e),t:performance.now(),id:strokeId}); });
+live.addEventListener('pointermove',e=>{ if(laserOn&&drawing) trail.push({...toBoard(e),t:performance.now(),id:strokeId}); });
+['pointerup','pointercancel'].forEach(ev=>live.addEventListener(ev,()=>{ drawing=false; }));
+function drawLaser(c){ const now=performance.now(); trail=trail.filter(p=>now-p.t<LASER_LIFE*1000); if(!trail.length) return;
+  c.lineCap='round'; c.lineJoin='round';
+  for(let i=1;i<trail.length;i++){ const a=trail[i-1], b=trail[i]; if(a.id!==b.id) continue; const f=1-(now-b.t)/(LASER_LIFE*1000);
+    c.globalAlpha=clamp(f,0,1); c.strokeStyle=LASER; c.lineWidth=2+6*f; L(c,a.x,a.y,b.x,b.y); }
+  const p=trail[trail.length-1]; if(drawing){ c.globalAlpha=1; c.fillStyle=LASER; c.beginPath(); c.arc(p.x,p.y,7,0,Math.PI*2); c.fill(); }
+  c.globalAlpha=1; c.lineCap='butt'; }
+const screenEl=document.getElementById('screen');
+document.getElementById('full').onclick=()=>{ try{ (screenEl.requestFullscreen? screenEl.requestFullscreen(): Promise.reject()).catch(()=>{}); }catch(e){} };
+document.addEventListener('keydown',e=>{ if(document.getElementById('present').hidden || e.target===jumpEl) return; if(['ArrowRight','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); } else if(['ArrowLeft','PageUp'].includes(e.key)){ e.preventDefault(); prev(); } else if(e.key==='r'||e.key==='R') replay(); else if(e.key==='p'||e.key==='P') togglePlay(); else if(e.key==='n'||e.key==='N'){ notesOn=!notesOn; notesEl.hidden=!notesOn; } else if(e.key==='f'||e.key==='F') document.getElementById('full').click(); else if(e.key==='l'||e.key==='L') setLaser(!laserOn); else if(e.key==='Escape'&&laserOn) setLaser(false); });
+
+let last=performance.now();
+function tick(ts){ const dt=Math.min(.05,(ts-last)/1000); last=ts;
+  if(!document.getElementById('present').hidden){ const b=EP[bi], k=fitCanvas(live,2); lc.setTransform(k,0,0,k,0,0);
+    if(b.kind==='replay'){ const sp=(b.to-b.from)/(b.dur||12); if(playing && performance.now()-enterAt>500){ pt=Math.min(b.to,pt+dt*sp); if(pt>=b.to) playing=false; } if(playing) sim.step(dt,sample(b.run,pt),true); }
+    ppBtn.disabled=b.kind!=='replay'; ppBtn.textContent= b.kind==='replay' && playing ? 'Pause' : 'Play';
+    renderBeat(lc,b,si,pt,sim,(performance.now()-enterAt)/1000); drawLaser(lc); }
+  requestAnimationFrame(tick); }
+
+// ---------- tabs
+function show(v){ const p=v==='present'; document.getElementById('read').hidden=p; document.getElementById('present').hidden=!p; document.getElementById('tab-read').setAttribute('aria-selected',!p); document.getElementById('tab-present').setAttribute('aria-selected',p); if(p) window.scrollTo(0,0); }
+document.getElementById('tab-read').onclick=()=>show('read'); document.getElementById('tab-present').onclick=()=>{ show('present'); go(bi,si); };
+go(0,0); drawThumbs(); if(document.fonts) document.fonts.ready.then(drawThumbs);
+let rT=0; window.addEventListener('resize',()=>{ clearTimeout(rT); rT=setTimeout(drawThumbs,150); });
+requestAnimationFrame(tick);
+</script>
