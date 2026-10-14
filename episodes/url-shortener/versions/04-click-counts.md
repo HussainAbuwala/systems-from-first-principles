@@ -1,9 +1,9 @@
-# Stage 04: Click counts
+# Version 04: Click counts
 
 ## Trigger
 
 - **Event:** E05 (Requirement): creators see total clicks per link per day, at most 60 seconds behind, within 1% of the true number, including through the E06 power cut. Tested by rerunning E04 (viral spike) with counting on. Browser caching is checked too: redirects must not let browsers reuse them, or repeat clicks never reach the server.
-- **Stage 3's behaviour:** it has no counting at all: `GET /links/<code>/stats` answers 404 (it is treated as an unknown short code), and redirects carry no caching instructions, so browsers may reuse a 301 indefinitely. The outcome of E05 against stage 3 is determined without a load run, so none was made.
+- **Version 3's behaviour:** it has no counting at all: `GET /links/<code>/stats` answers 404 (it is treated as an unknown short code), and redirects carry no caching instructions, so browsers may reuse a 301 indefinitely. The outcome of E05 against version 3 is determined without a load run, so none was made.
 
 ## Attempts
 
@@ -11,9 +11,9 @@
 
 The obvious design, shown on purpose: a `clicks (code, day, count)` table, and every redirect runs `INSERT ... ON CONFLICT DO UPDATE SET count = count + 1` synchronously with SQLite's default (fully durable) settings before answering. `GET /links/<code>/stats` returns counts per UTC day. Redirects now carry `Cache-Control: no-store`.
 
-**Expectation stated before running:** collapse. Stage 0 (e03-01) collapsed at about 165 synchronous saves per second, with Node's single thread waiting for the disk; E05 asks for about 2,100.
+**Expectation stated before running:** collapse. Version 0 (e03-01) collapsed at about 165 synchronous saves per second, with Node's single thread waiting for the disk; E05 asks for about 2,100.
 
-**Result (`results/e05-01/`): FAIL, collapse.** 166 successful clicks per second against about 2,100 offered; 91% errors; Node's thread waiting on the disk (iowait 15%, CPU mostly idle). The same ceiling as stage 0's synchronous saves (about 165/s, e03-01). The stall cascaded into nginx (worker connections exhausted, 500s, connections turned away), and the server over-counted by about 5.6% because it finished requests whose visitors had already given up.
+**Result (`results/e05-01/`): FAIL, collapse.** 166 successful clicks per second against about 2,100 offered; 91% errors; Node's thread waiting on the disk (iowait 15%, CPU mostly idle). The same ceiling as version 0's synchronous saves (about 165/s, e03-01). The stall cascaded into nginx (worker connections exhausted, 500s, connections turned away), and the server over-counted by about 5.6% because it finished requests whose visitors had already given up.
 
 ### Attempt 2: count in memory, save once a second
 
@@ -35,13 +35,13 @@ Each redirect adds one to an in-memory tally keyed by (link, day of the click) a
 | E04 | (covered by E05 runs) | 14.1–15.4 ms | 0% | yes | PASS |
 | E05 | e05-03, e05-04, e05-05 | 15.4 / 14.5 / 14.1 ms | 0% | counts exact | **PASS**, 3 of 3 |
 
-**E06 against stage 4 (`results/e06-01/`): FAIL.** A link confirmed about a second before the power cut was rolled back on reboot (SQLite's defaults are not fully durable across power loss in rollback-journal mode), and its counting-up code was then issued to a different link. Five small links' counts were short (the last second of in-memory counts was lost). Recovery took 61 s (passes). This triggers stage 5.
+**E06 against version 4 (`results/e06-01/`): FAIL.** A link confirmed about a second before the power cut was rolled back on reboot (SQLite's defaults are not fully durable across power loss in rollback-journal mode), and its counting-up code was then issued to a different link. Five small links' counts were short (the last second of in-memory counts was lost). Recovery took 61 s (passes). This triggers version 5.
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 04 | Stage 3 + click counts tallied in memory, saved once a second | E05 (about 2,100 new connections/s with counting) | 14.5 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | E06: last pre-cut link rolled back and its code reissued; last second of counts lost |
+| 04 | Version 3 + click counts tallied in memory, saved once a second | E05 (about 2,100 new connections/s with counting) | 14.5 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | E06: last pre-cut link rolled back and its code reissued; last second of counts lost |
 
 ## Interview line
 

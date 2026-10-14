@@ -1,16 +1,16 @@
-# Stage 05: Durable saves
+# Version 05: Durable saves
 
 ## Trigger
 
 - **Event:** E06 (Failure): under E02 load the machine holding the data is powered off without warning, then started again. Rules: no acknowledged link lost; redirects working again within 5 minutes. E05's counts must stay within 1% "including through the E06 power cut".
-- **Failed run:** `results/e06-01/` (stage 4).
+- **Failed run:** `results/e06-01/` (version 4).
 - **What the user would notice:** a creator told "saved, your link is `FXwR`" about a second before the cut found it pointing at someone else's page after the reboot; a few small links' click counts were one or more short.
 
 ## Diagnosis
 
 1. **The last confirmed save was rolled back.** SQLite runs with its defaults (`journal_mode=DELETE`, `synchronous=FULL`). A transaction commits by deleting its rollback journal; with FULL, that deletion is not synced, and the filesystem (ext4) writes it to disk a few seconds later. A power cut in that window leaves the journal on disk, so SQLite undoes the transaction on reboot. SQLite's documentation describes exactly this and recommends `synchronous=EXTRA`.
 2. **The rolled-back number was reissued.** Codes are calculated from a counting-up row number, so the next new link after reboot received the same number and the same code.
-3. **The last second of counts was lost.** Counts are tallied in memory and saved once a second (stage 4); a power cut erases the unsaved tally.
+3. **The last second of counts was lost.** Counts are tallied in memory and saved once a second (version 4); a power cut erases the unsaved tally.
 
 ## Options considered
 
@@ -40,13 +40,13 @@
 | E05 | e05-06 | 14.2 ms | 0% | counts exact (1,356,002 = 1,356,002) | PASS |
 | E06 | e06-02, e06-03, e06-04 | 13.4 / 16.1 / 13.8 ms | 0% | no confirmed link lost; recovery 60–67 s | **PASS** except counts (accepted failure) |
 
-**Did `EXTRA` slow things down?** Not steadily. Most of every regression run matches stage 4. E02 (`e02-07`) had four short disk stalls (10-second windows where CPU waiting for disk reached 4–8% and everything took 100–150 ms), which set its p99s; E03 on stage 5 (`e03-13`), which saves more, had none, and stage 4's E03 (`e03-12`) had one. Whether the extra directory sync makes stalls more likely or the shared disk had a bad few minutes is **not established** from single runs; every run passes with a wide margin.
+**Did `EXTRA` slow things down?** Not steadily. Most of every regression run matches version 4. E02 (`e02-07`) had four short disk stalls (10-second windows where CPU waiting for disk reached 4–8% and everything took 100–150 ms), which set its p99s; E03 on version 5 (`e03-13`), which saves more, had none, and version 4's E03 (`e03-12`) had one. Whether the extra directory sync makes stalls more likely or the shared disk had a bad few minutes is **not established** from single runs; every run passes with a wide margin.
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 05 | Stage 4 with durable saves (`synchronous=EXTRA`) | E05 (about 2,100 new connections/s with counting) and E06 (power cut, recovery 60–67 s) | 14.2 ms (E05) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; next is E07 (machine lost). Accepted: a power cut can lose up to about 1 s of click counts |
+| 05 | Version 4 with durable saves (`synchronous=EXTRA`) | E05 (about 2,100 new connections/s with counting) and E06 (power cut, recovery 60–67 s) | 14.2 ms (E05) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; next is E07 (machine lost). Accepted: a power cut can lose up to about 1 s of click counts |
 
 ## Interview line
 

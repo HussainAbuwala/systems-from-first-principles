@@ -1,6 +1,6 @@
 # Interview cut: URL shortener
 
-The final system (stage 8) in the order a system design interview expects. Every number comes from the episode's runs (run IDs in the stage logs) or from the traffic model in [event-script.md](event-script.md).
+The final system (version 8) in the order a system design interview expects. Every number comes from the episode's runs (run IDs in the version logs) or from the traffic model in [event-script.md](event-script.md).
 
 ## 1. Requirements
 
@@ -25,9 +25,9 @@ Total: **€9.56 a month.**
 
 ## 3. Why each component exists
 
-| Component | Added at stage | The number that forced it | What we tried first |
+| Component | Added at version | The number that forced it | What we tried first |
 | --- | --- | --- | --- |
-| Names table, format-based routing | 1 | E03: stage 0 ignored names; two creators both "won" `launch-day` (`e03-01`) | — |
+| Names table, format-based routing | 1 | E03: version 0 ignored names; two creators both "won" `launch-day` (`e03-01`) | — |
 | nginx in front for TLS | 2 | E03: bursts of 50 TLS handshakes on Node's single thread, redirect p99 179.5 ms | upstream keepalive default gave 502s (attempt 1) |
 | 4 vCPUs (CX33) | 3 | E04: 2,000 clicks/s on one link (about 2,100 new TLS connections/s) ran the 2-vCPU server out of CPU | — |
 | In-memory click tally, saved once a second | 4 | E05: saving every click collapsed at about 166 saves/s | one save per click (attempt 1) |
@@ -52,7 +52,7 @@ Total: **€9.56 a month.**
 ## 5. Breaking point
 
 - **Largest measured load:** E08 and E09: 1,000 redirects/s and 20 creates/s with 100 M links stored, plus 100 takedowns.
-- **What runs out next:** CPU. In the three E09 runs (stage 8) the server averaged 48–51% (peaks 66–73%, busiest core up to 80%, steal 0%): nginx doing TLS for 1,000 new connections a second used about 1–1.1 cores, Litestream about 0.6 on average and up to 1.5 while rewriting its whole copy, Node about a quarter of a core. Memory: the app and tools used about 1.5 GB; the rest of the 8 GB caches the 12 GB database.
+- **What runs out next:** CPU. In the three E09 runs (version 8) the server averaged 48–51% (peaks 66–73%, busiest core up to 80%, steal 0%): nginx doing TLS for 1,000 new connections a second used about 1–1.1 cores, Litestream about 0.6 on average and up to 1.5 while rewriting its whole copy, Node about a quarter of a core. Memory: the app and tools used about 1.5 GB; the rest of the 8 GB caches the 12 GB database.
 - **The next move:** more cores (the 8-vCPU CX43) for TLS and Litestream's merges; beyond one machine, the single SQLite file and Node's single thread become the limits. Not measured: this episode claims no capacity above its largest run.
 
 ## 6. Likely follow-up questions
@@ -63,7 +63,7 @@ Total: **€9.56 a month.**
 | And a power cut? | Nothing confirmed is lost (`synchronous=EXTRA`); redirects back in about 60 s; up to about a second of click counts lost (accepted). |
 | How do you stop two people getting the same code? | One process assigns counting-up numbers; after any restore the counter jumps a million ahead (at most about 200 links a second can be confirmed, so a million covers over an hour). |
 | Two people claim the same name at once? | One process checks then saves; 1,001 rounds of 50 simultaneous claims, exactly one winner every time (E03). |
-| A link goes viral? | 2,000 clicks/s on one link plus normal traffic: redirect p99 8.3 ms (E05 on stage 6). |
+| A link goes viral? | 2,000 clicks/s on one link plus normal traffic: redirect p99 8.3 ms (E05 on version 6). |
 | How accurate are click counts? | Exact in normal runs (1,355,748 = 1,355,748 in E05); a power cut or machine loss can lose about the last second (accepted). |
 | The database no longer fits in memory? | At 12 GB on 8 GB of RAM, clicks spread over all 100 M links (Zipf) still had p99 under 19 ms; right after a fresh restore the first seconds are slower while it warms. |
 | How fast does a takedown work? | On the next click: zero redirects after any of 300 takedowns; redirects are `no-store`, so browsers cannot keep them. |

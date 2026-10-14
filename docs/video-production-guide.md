@@ -18,7 +18,7 @@ Use this as the short preflight for future **Systems from First Principles** epi
 - Graphs on screen come from real runs. Never redraw or smooth them to look better.
 - Every number on screen carries its run ID, small, in a corner.
 - Show the break as it happens: the latency line climbing and the saturated resource beside it, in the same frame.
-- Keep the scoreboard visible as a recurring element; it fills one row per stage.
+- Keep the scoreboard visible as a recurring element; it fills one row per version.
 
 ## Visual language
 
@@ -26,7 +26,7 @@ Use this as the short preflight for future **Systems from First Principles** epi
 - Give each idea its own frame. Avoid overlapping cards, labels, and diagrams.
 - Match narration literally: if the voice says **position**, do not animate **fill**.
 - Make the visual event happen just before or as it is spoken—not several seconds later.
-- Open with a product-like demonstration; end by zooming out to the complete system map and highlighting each learned component, with the stage and number that forced it.
+- Open with a product-like demonstration; end by zooming out to the complete system map and highlighting each learned component, with the version and number that forced it.
 
 ## Voice and sound
 

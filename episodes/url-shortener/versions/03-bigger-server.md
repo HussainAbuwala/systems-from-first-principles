@@ -1,9 +1,9 @@
-# Stage 03: A bigger server
+# Version 03: A bigger server
 
 ## Trigger
 
 - **Event:** E04 (Load): one link ramps to 2,000 clicks/s and holds for 10 minutes on top of E02 traffic. Every click is a new TLS connection.
-- **Failed run:** `results/e04-01/` (stage 2 on a CX23). One run: redirect p99 9,356 ms, about 94 times the limit.
+- **Failed run:** `results/e04-01/` (version 2 on a CX23). One run: redirect p99 9,356 ms, about 94 times the limit.
 - **What the user would notice:** during the spike, every link (not only the viral one) took seconds to open, and about one visit in five timed out.
 
 ## Diagnosis
@@ -29,11 +29,11 @@ Splitting each visit into phases (k6 timings) showed where visitors waited: answ
 | D. CDN in front | Handshakes near visitors; could cache the redirect | Needs a domain; caching conflicts with E05 counts and E09 takedowns; load-testing someone else's network | Not now |
 | A cache for hot links | Nothing here | — | Lookups already come from memory in about a millisecond; the cost is the handshake per new visitor |
 
-**Expectation stated before running:** about twice stage 2's measured ceiling, so roughly 2,000–2,700 new connections per second. E04 needs about 2,100: may or may not pass.
+**Expectation stated before running:** about twice version 2's measured ceiling, so roughly 2,000–2,700 new connections per second. E04 needs about 2,100: may or may not pass.
 
 ## Change
 
-Machine only: `url-shortener/stage-02` software unchanged on a CX33 (`sfp-app`, nbg1) instead of a CX23 (`sfp-stage0`, fsn1). nginx's `worker_processes auto` gives four workers. Load machine moves to nbg1 with it (same type, CPX42).
+Machine only: `url-shortener/version-02` software unchanged on a CX33 (`sfp-app`, nbg1) instead of a CX23 (`sfp-stage0`, fsn1). nginx's `worker_processes auto` gives four workers. Load machine moves to nbg1 with it (same type, CPX42).
 
 ## Rerun of every event so far
 
@@ -48,9 +48,9 @@ Machine only: `url-shortener/stage-02` software unchanged on a CX33 (`sfp-app`, 
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 03 | Stage 2 on 4 vCPUs (CX33, AMD EPYC as assigned) | E04 (2,000 clicks/s on one link + E02 traffic; about 2,100 new TLS connections/s) | 14.6 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; about 70% CPU at E04's peak; next is E05 |
+| 03 | Version 2 on 4 vCPUs (CX33, AMD EPYC as assigned) | E04 (2,000 clicks/s on one link + E02 traffic; about 2,100 new TLS connections/s) | 14.6 ms (median of 3) | 0% | 1.2 GB | €8.49 + €0.50 IPv4 | not yet broken; about 70% CPU at E04's peak; next is E05 |
 
 ## Interview line
 

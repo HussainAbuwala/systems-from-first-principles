@@ -1,17 +1,17 @@
 #!/usr/bin/env python3
 """Combine repeated runs of one event into a single verdict (docs/MEASUREMENT.md#repeats).
 
-    combine.py EVENT STAGE RUN_ID [RUN_ID ...]
+    combine.py EVENT VERSION RUN_ID [RUN_ID ...]
 
 Reads each run's verdict.json, prints best / median / worst of the key
-measures, and writes results/verdicts/EVENT-STAGE.json.
+measures, and writes results/verdicts/EVENT-VERSION.json.
 """
 import json
 import os
 import statistics
 import sys
 
-event, stage, run_ids = sys.argv[1], sys.argv[2], sys.argv[3:]
+event, version, run_ids = sys.argv[1], sys.argv[2], sys.argv[3:]
 results = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "results")
 runs = [json.load(open(os.path.join(results, r, "verdict.json"))) for r in run_ids]
 
@@ -29,12 +29,12 @@ for k in keys:
     if vals:
         spread[k] = {"best": min(vals), "median": statistics.median(vals), "worst": max(vals), "runs": vals}
 
-out = {"event": event, "stage": stage, "verdict": combined, "runs": dict(zip(run_ids, verdicts)),
+out = {"event": event, "version": version, "verdict": combined, "runs": dict(zip(run_ids, verdicts)),
        "reasons": {rid: r["reasons"] for rid, r in zip(run_ids, runs)}, "spread": spread}
 os.makedirs(os.path.join(results, "verdicts"), exist_ok=True)
-json.dump(out, open(os.path.join(results, "verdicts", f"{event}-{stage}.json"), "w"), indent=2, ensure_ascii=False)
+json.dump(out, open(os.path.join(results, "verdicts", f"{event}-{version}.json"), "w"), indent=2, ensure_ascii=False)
 
-print(f"{event} on {stage}: {combined}   ({', '.join(f'{r}={v}' for r, v in zip(run_ids, verdicts))})")
+print(f"{event} on {version}: {combined}   ({', '.join(f'{r}={v}' for r, v in zip(run_ids, verdicts))})")
 print(f"  {'measure':<28}{'best':>10}{'median':>10}{'worst':>10}")
 for k, v in spread.items():
     print(f"  {k:<28}{v['best']:>10}{v['median']:>10}{v['worst']:>10}")

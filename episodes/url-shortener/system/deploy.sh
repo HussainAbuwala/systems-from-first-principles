@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
-# Install the current stage on a provisioned "system" server and (re)start it.
-# From stage 6 the server needs one attached Volume for the copy; on a new
+# Install the current version on a provisioned "system" server and (re)start it.
+# From version 6 the server needs one attached Volume for the copy; on a new
 # server with no database, the database is first restored from that copy, and
-# (stage 7) the link counter jumps a million ahead.
+# (version 7) the link counter jumps a million ahead.
 #   deploy.sh SERVER_NAME
 source "$(dirname "$0")/../../../tools/cloud/lib.sh"
 
@@ -20,10 +20,10 @@ git -C "$SFP_ROOT" diff --quiet HEAD -- . ':(exclude,glob)episodes/*/results/**'
 sfp_ssh "$ip" "echo '$version' > /opt/shortener/VERSION"
 scp "${scp_opts[@]}" "$here"/*.ts "root@$ip:/opt/shortener/"
 scp "${scp_opts[@]}" "$here/shortener.service" "root@$ip:/etc/systemd/system/shortener.service"
-# nginx in front (stage 2 onwards): Ubuntu's package, our site config, defaults otherwise.
+# nginx in front (version 2 onwards): Ubuntu's package, our site config, defaults otherwise.
 sfp_ssh "$ip" "command -v nginx >/dev/null || (DEBIAN_FRONTEND=noninteractive apt-get -qq update && DEBIAN_FRONTEND=noninteractive apt-get -qq install -y nginx >/dev/null); rm -f /etc/nginx/sites-enabled/default"
 scp "${scp_opts[@]}" "$here/nginx-shortener.conf" "root@$ip:/etc/nginx/conf.d/shortener.conf"
-# Stage 6: the copy lives on the server's one attached Volume, mounted at /mnt/copy.
+# Version 6: the copy lives on the server's one attached Volume, mounted at /mnt/copy.
 server_id="$(hcloud server describe "$name" -o json | jq -r '.id')"
 devices="$(hcloud volume list -o json | jq -r --argjson s "$server_id" '.[] | select(.server == $s) | .linux_device')"
 if [[ "$(grep -c . <<<"$devices")" != 1 ]]; then
@@ -42,7 +42,7 @@ sfp_ssh "$ip" "[ \"\$(dpkg-query -W -f='\${Version}' litestream 2>/dev/null)\" =
 scp "${scp_opts[@]}" "$here/litestream.yml" "root@$ip:/etc/litestream.yml"
 # Never copy into the server's own disk if the Volume is missing.
 sfp_ssh "$ip" "mkdir -p /etc/systemd/system/litestream.service.d && printf '[Unit]\nRequiresMountsFor=/mnt/copy\n' > /etc/systemd/system/litestream.service.d/volume.conf"
-# Settings, including the operator secret for takedowns (stage 8, from .env),
+# Settings, including the operator secret for takedowns (version 8, from .env),
 # sent over SSH's input so the secret never appears in a command line; the file
 # is readable by root only.
 sfp_ssh "$ip" "umask 077 && cat > /etc/shortener.env && chmod 600 /etc/shortener.env && systemctl daemon-reload" <<ENV
@@ -53,7 +53,7 @@ PUBLIC_BASE=https://$ip
 TAKEDOWN_SECRET=${TAKEDOWN_SECRET:?TAKEDOWN_SECRET missing from .env}
 ENV
 # Does nothing unless the database is missing and the Volume holds a copy.
-# After a real restore (stage 7), jump the counter before the app starts, so no
+# After a real restore (version 7), jump the counter before the app starts, so no
 # link lost with the old machine has its code issued again (jump.ts).
 restore_start=$(date +%s)
 restored="$(sfp_ssh "$ip" "if [ -e /var/lib/shortener/links.db ]; then echo existing; else \

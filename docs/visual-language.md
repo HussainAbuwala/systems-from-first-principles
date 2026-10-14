@@ -10,7 +10,7 @@ Reference page with live examples: [Unplanned Stack notation](https://claude.ai/
 2. **Black is now. Grey is before, or context. Red is the limit or the break,** and nothing else.
 3. **Things move only when the system moves.** No transitions, no camera moves. Cuts only.
 4. **Draw only what has been said.** The board builds up as it is explained.
-5. **Once placed, nothing moves.** Later stages add to the board; they never rearrange it.
+5. **Once placed, nothing moves.** Later versions add to the board; they never rearrange it.
 6. **Every number has a unit and comes from a run.** The run ID, small in a corner, is the only metadata.
 7. **No icons, logos, 3D, shadows, gradients, glow, textures or emoji.** A name is the icon.
 8. **One typeface family, two styles.** Words in the text face, numbers and code in its mono.
@@ -28,7 +28,7 @@ Reference page with live examples: [Unplanned Stack notation](https://claude.ai/
 | Line over time | A measurement from a run. A dashed red line is the limit from the event script; the part above it is red. |
 | Number + unit | A measured value, set in the mono. |
 | Two lifelines, slanted arrows | A sequence diagram: time runs down, each arrow is a message crossing the network. |
-| Grey vs black | Before (or unchanged) vs now (or changed). A stage diff greys out what did not change. |
+| Grey vs black | Before (or unchanged) vs now (or changed). A version diff greys out what did not change. |
 | ✓ / ✗ | An event passed or failed. The only two marks. |
 
 Layout: left to right is the path a request takes; top to bottom is time. Size never encodes anything outside a chart.
@@ -46,7 +46,7 @@ Typeface: **IBM Plex Sans** for words, **IBM Plex Mono** for numbers, units and 
 
 ## Recurring boards
 
-- **The break:** the stage's system, live dots from the run, the saturated resource and the p99 line crossing the limit in the same frame.
-- **The diff:** the next stage on the same layout; only what changed is black, the previous run stays on the chart in grey.
+- **The break:** the version's system, live dots from the run, the saturated resource and the p99 line crossing the limit in the same frame.
+- **The diff:** the next version on the same layout; only what changed is black, the previous run stays on the chart in grey.
 - **The why:** a sequence diagram with the expensive step in red and the measured cost beside it.
-- **The scoreboard:** one row per stage; earlier stages grey, the current one black.
+- **The scoreboard:** one row per version; earlier versions grey, the current one black.

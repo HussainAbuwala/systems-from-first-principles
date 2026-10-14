@@ -1,5 +1,5 @@
 // Run once after the database has been restored from Litestream's copy, before
-// the app starts (stage 7, E07/E08). Links confirmed in the lost machine's
+// the app starts (version 7, E07/E08). Links confirmed in the lost machine's
 // last moments may be missing from the copy, and SQLite would hand their
 // numbers, and so their codes, out again. A placeholder link with an empty URL
 // (the app answers 404 for it) a million numbers above the highest restored

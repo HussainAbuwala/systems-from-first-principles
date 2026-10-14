@@ -1,6 +1,8 @@
 # URL shortener
 
-**Status:** all events played (E01–E09) on stage 8, 2026-10-08; scoreboard, final claim and interview cut written; script and storyboard next
+> In the video and in the names of run files (for example `sfp-stage0`, `E03-stage-02.json`), versions are called *stages*. Version *n* is stage *n*. The git tags exist under both names: `url-shortener/version-0n` and `url-shortener/stage-0n`.
+
+**Status:** all events played (E01–E09) on version 8, 2026-10-08; scoreboard, final claim and interview cut written; script and storyboard next
 
 ## Central question
 
@@ -12,9 +14,9 @@ It is the most-covered problem in system design teaching, and the standard answe
 
 ## Where it runs
 
-Stage 0 starts on the cheapest real server rather than a "free" tier, because the free options each fail us (checked 2026-10-01):
+Version 0 starts on the cheapest real server rather than a "free" tier, because the free options each fail us (checked 2026-10-01):
 
-| Option | Why not for stage 0 |
+| Option | Why not for version 0 |
 | --- | --- |
 | Oracle Cloud Always Free (now 2 ARM cores, 12 GB) | Its terms say you may not perform or publish performance tests of the service without Oracle's written approval. A public benchmark series cannot depend on that. |
 | Cloudflare Workers free plan | Capped per day, and the platform scales for you, which hides the breaks the episode is meant to show. |
@@ -26,19 +28,19 @@ Planned default: **Hetzner**, billed by the hour. Its smallest server (CX23: 2 v
 
 | File | What it holds |
 | --- | --- |
-| [event-script.md](event-script.md) | Everything that will happen to the system. Must be locked before stage 0 is built. |
-| `stages/NN-name.md` | One [stage log](../../templates/stage-template.md) per design change |
-| `system/` | The application code. Each stage is tagged `url-shortener/stage-NN`. |
+| [event-script.md](event-script.md) | Everything that will happen to the system. Must be locked before version 0 is built. |
+| `versions/NN-name.md` | One [version log](../../templates/version-template.md) per design change |
+| `system/` | The application code. Each version is tagged `url-shortener/version-NN`. |
 | `load/` | k6 scripts, one per event, plus the correctness checker |
 | `results/<run-id>/` | Raw evidence for every run (see [measurement standard](../../docs/MEASUREMENT.md#recording-a-run)) |
-| `scoreboard.md` | One row per stage, filled as the build goes |
+| `scoreboard.md` | One row per version, filled as the build goes |
 | `interview-cut.md` | The final system in interview order |
 | `script.md`, `storyboard.md` | Written once the build is done and the numbers are known |
 
 ## Order of work
 
 1. Lock the event script.
-2. Build stage 0, deploy it, and run E01.
-3. Work through the events. Write the stage log as each change happens, not afterwards.
+2. Build version 0, deploy it, and run E01.
+3. Work through the events. Write the version log as each change happens, not afterwards.
 4. Fill the scoreboard and the interview cut.
 5. Write the script from what actually happened.

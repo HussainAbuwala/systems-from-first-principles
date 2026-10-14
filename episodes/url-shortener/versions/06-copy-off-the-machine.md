@@ -1,11 +1,11 @@
-# Stage 06: Copy off the machine
+# Version 06: Copy off the machine
 
 Status: **done** (2026-10-05). E07 passes on attempt 3 (`e07-02`, `e07-03`, `e07-05`); every earlier event rerun.
 
 ## Trigger
 
 - **Event:** E07 (Failure): under E02 load the server and its disk are deleted for good. Rules: service back on a new machine within 1 hour; at most the last 5 minutes of acknowledged links lost.
-- **Failed run:** none. Stage 5 fails E07 by construction, so no run was paid for (checked through the Hetzner API on 2026-10-05):
+- **Failed run:** none. Version 5 fails E07 by construction, so no run was paid for (checked through the Hetzner API on 2026-10-05):
   - the only copy of `links.db` is on `sfp-app`'s own disk;
   - Hetzner backups are off (no backup window), and the account has no Volumes and no snapshots;
   - the server's IPv4 address is set to `auto_delete=true`, so it would be deleted with the server. Every short link handed out contains that address, so even a perfect copy of the data would leave all existing links pointing nowhere.
@@ -80,7 +80,7 @@ Two separate choices: what carries the copy (the courier) and where it lives (th
 
 **Attempt 2 (after `e07-01`):** `system/server.ts` confirms a new link or name only after asking Litestream to copy to the Volume and waiting for it (`POST /sync` with `wait` on Litestream's control socket, enabled in `system/litestream.yml`); Litestream's file copy flushes the file and its folder to disk before answering (checked in its source, v0.5.17). If the copy fails, the link or name is removed and the creator gets 503 "please try again"; nobody was told its code. Redirects and click counts do not wait. Litestream's docs say built-in synchronous replication "is on the roadmap but has not yet been implemented"; the command used is meant mainly for scripts and shutdowns, so this stretches the tool, said plainly. On the server itself a create took 12–20 ms; under E02 load (`spare-e02-01`, a check on a spare server) create p99 was 44.6 ms against 15.5 ms without waiting.
 
-**Attempt 3 (after `e07-04`, user's option A):** `system/recover.sh` asks for the stage's type (CX33) every minute for up to 20 minutes, then takes the first available of CPX32, CX43, CPX42 (x86 only, because `deploy.sh` installs the x86 Litestream package) and says to move back later. User's rule: tests run only on the stage's own type, so after `e07-04` `sfp-app` was moved back from the emergency CPX32 to a CX33 (deleted and rebuilt with `recover.sh`, 2.5 minutes). In `e07-05` the first CX33 request failed and the second, a minute later, succeeded; the fallback branch itself has not yet run for real.
+**Attempt 3 (after `e07-04`, user's option A):** `system/recover.sh` asks for the version's type (CX33) every minute for up to 20 minutes, then takes the first available of CPX32, CX43, CPX42 (x86 only, because `deploy.sh` installs the x86 Litestream package) and says to move back later. User's rule: tests run only on the version's own type, so after `e07-04` `sfp-app` was moved back from the emergency CPX32 to a CX33 (deleted and rebuilt with `recover.sh`, 2.5 minutes). In `e07-05` the first CX33 request failed and the second, a minute later, succeeded; the fallback branch itself has not yet run for real.
 
 **Tooling corrected along the way (all in the open, earlier verdicts re-judged identically):** the loss is taken from visitors' view (the old server's last answer, 3–5 s after the delete command), not the command; a lost link (404) is allowed only if confirmed in the last 5 minutes, a wrong-page redirect never; an outage still open when the load stops is recognised; deploys stamp a version as dirty only for code changes (results files and a tracked Python cache had made rebuilt servers look dirty).
 
@@ -112,17 +112,17 @@ Every E07 rule passes in all three. Each run is recorded as FAIL only on the E05
 | E06 | `e06-05` | 9.9 ms | 0% | no confirmed link lost (1,840 checked); recovery 60 s | **PASS** except counts (accepted) |
 | E07 | `e07-02`, `e07-03`, `e07-05` | 10.4 / 9.3 / 10.3 ms | 0% | no confirmed link lost or reissued | **PASS** except counts (accepted) |
 
-**What waiting for the copy costs:** create p99 rose from 15–37 ms on stage 5 and attempt 1 to about 58–67 ms, inside the 300 ms rule; redirects did not slow down. E06 in WAL mode lost no confirmed link, as SQLite documents for `synchronous=FULL`/`EXTRA`.
+**What waiting for the copy costs:** create p99 rose from 15–37 ms on version 5 and attempt 1 to about 58–67 ms, inside the 300 ms rule; redirects did not slow down. E06 in WAL mode lost no confirmed link, as SQLite documents for `synchronous=FULL`/`EXTRA`.
 
 ## Accepted failure: counts through a machine loss
 
-**E05's count rule (within 1% per link) is accepted as failing through a machine loss, extending stage 5's power-cut acceptance (decided by the user, 2026-10-05).** Click counts are saved once a second and copied on Litestream's regular rounds without waiting, so losing the machine can lose up to about a second of counts (in E07 runs: 1–6 of 1,101 checked links outside 1%, all short by a few clicks). Exact counts would mean every redirect waiting for the copy.
+**E05's count rule (within 1% per link) is accepted as failing through a machine loss, extending version 5's power-cut acceptance (decided by the user, 2026-10-05).** Click counts are saved once a second and copied on Litestream's regular rounds without waiting, so losing the machine can lose up to about a second of counts (in E07 runs: 1–6 of 1,101 checked links outside 1%, all short by a few clicks). Exact counts would mean every redirect waiting for the copy.
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 06 | Stage 5 in WAL mode; every new link and name confirmed only once Litestream has copied it to a protected Volume; `/health` watched by Better Stack; one-command rebuild on a new server with the kept IP | E05 (viral spike with counting) and E07 (machine lost: back 3.4–5.9 min after the loss, nothing confirmed lost) | 8.3 ms (E05) | 0% | 1.2 GB (copy on the Volume: 169 MB compressed, test data) | €8.49 + €0.50 IPv4 + €0.57 Volume = €9.56 (Better Stack free) | not yet broken; next is E08. Accepted: a power cut or machine loss can lose about 1 s of click counts |
+| 06 | Version 5 in WAL mode; every new link and name confirmed only once Litestream has copied it to a protected Volume; `/health` watched by Better Stack; one-command rebuild on a new server with the kept IP | E05 (viral spike with counting) and E07 (machine lost: back 3.4–5.9 min after the loss, nothing confirmed lost) | 8.3 ms (E05) | 0% | 1.2 GB (copy on the Volume: 169 MB compressed, test data) | €8.49 + €0.50 IPv4 + €0.57 Volume = €9.56 (Better Stack free) | not yet broken; next is E08. Accepted: a power cut or machine loss can lose about 1 s of click counts |
 
 ## Interview line
 

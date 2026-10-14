@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Rebuild the shortener on a new server after the old one is lost (E07, from
-# stage 6). The new server gets the kept IP addresses, so every short link
+# version 6). The new server gets the kept IP addresses, so every short link
 # already handed out keeps working, and the Volume holding Litestream's copy;
 # deploy.sh then restores the database from it. Prints how long each step took.
 #
@@ -12,7 +12,7 @@
 # available of FALLBACK_TYPES (default: cpx32 cx43 cpx42, the closest x86
 # types; deploy.sh installs the x86 Litestream package). The type used is
 # printed; move back to TYPE later, once it is available, so tests keep
-# running on the stage's own machine type.
+# running on the version's own machine type.
 #
 # Expects the kept resources to be named after the server: SERVER_NAME-ipv4,
 # SERVER_NAME-ipv6 (Primary IPs) and SERVER_NAME-copy (the Volume).

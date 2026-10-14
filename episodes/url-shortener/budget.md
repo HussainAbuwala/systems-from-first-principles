@@ -7,7 +7,7 @@ Planning estimates, not episode claims. The design at each level is unknown unti
 | Item | Spec | Price |
 | --- | --- | --- |
 | CX23 | 2 shared vCPU, 4 GB, 40 GB disk | €0.0088/hour (€5.49/month) |
-| CX33 | 4 shared vCPU, 8 GB, 80 GB disk (spec from the Hetzner API 2026-10-11; used from stage 3) | about €0.0136/hour (€8.49/month) |
+| CX33 | 4 shared vCPU, 8 GB, 80 GB disk (spec from the Hetzner API 2026-10-11; used from version 3) | about €0.0136/hour (€8.49/month) |
 | CAX41 | 16 shared ARM vCPU, 32 GB | €0.0657/hour |
 | CAX31 | 8 shared ARM vCPU, 16 GB | €0.0336/hour (€20.99/month) |
 | CCX33 | 8 dedicated vCPU, 32 GB (only if shared cores prove too noisy) | €0.2219/hour |
@@ -25,12 +25,12 @@ Hetzner allows this account at most **20 shared vCPUs and 8 dedicated vCPUs runn
 | Level | Load generator | System allowance | Extras | Estimate | Actual |
 | --- | --- | --- | --- | ---: | ---: |
 | Calibration (tools check) | CX23 × 1 h | trivial "OK" server, CX23 × 1 h | — | €0.02 |  |
-| 1 Friends | CX23 × 1 h | stage 0 server (below) | — | €0.01 |  |
-| 2 1% of Bitly | CX23 × 3 h | stage 0 server | filling 10 M links: minutes | €0.05 |  |
-| 3 Custom names | CX23 × 2 h | stage 0 server | — | €0.02 |  |
-| 4 Viral spike | CAX41 × 3 h (16 + stage 0's 2 = 18 of 20 shared vCPUs) | stage 0 server | — | €0.20 |  |
-| 5 Click counts | CAX41 × 3 h | stage 0 server | — | €0.20 |  |
-| 6 Power cut | CX23 × 2 h | stage 0 server | — | €0.02 |  |
+| 1 Friends | CX23 × 1 h | version 0 server (below) | — | €0.01 |  |
+| 2 1% of Bitly | CX23 × 3 h | version 0 server | filling 10 M links: minutes | €0.05 |  |
+| 3 Custom names | CX23 × 2 h | version 0 server | — | €0.02 |  |
+| 4 Viral spike | CAX41 × 3 h (16 + version 0's 2 = 18 of 20 shared vCPUs) | version 0 server | — | €0.20 |  |
+| 5 Click counts | CAX41 × 3 h | version 0 server | — | €0.20 |  |
+| 6 Power cut | CX23 × 2 h | version 0 server | — | €0.02 |  |
 | 7 Machine lost | CX23 × 2 h | spare CX23 for the rebuild | backup storage | €1.10 |  |
 | 8 10% of Bitly | CAX31 × 6 h | up to 12 shared + 8 dedicated cores × 8 h | filling 100 M links | ≤ €1.45 |  |
 | 9 Takedowns | CAX31 × 3 h | same as level 8 × 3 h | — | ≤ €0.60 |  |
@@ -42,7 +42,7 @@ Hetzner allows this account at most **20 shared vCPUs and 8 dedicated vCPUs runn
 | --- | --- | ---: |
 | Re-runs of earlier levels | Every design change re-checks all earlier levels | ≈ €2 |
 | Mistakes and repeats | Failed setups, noisy runs, retakes for the video: double the test machines | ≈ €6 |
-| Stage 0 server kept online | So real friends can use it while the video is made; one month including its IPv4 address | ≈ €6 |
+| Version 0 server kept online | So real friends can use it while the video is made; one month including its IPv4 address | ≈ €6 |
 | Domain name | Optional, for a nice short address; outside the cap | ≈ €10 a year |
 
 ## Total
@@ -60,5 +60,5 @@ A 16-core machine left running by accident costs €40.99 for a month (Hetzner c
 ## Unknowns that could move the numbers
 
 - **How much load generator a fresh HTTPS connection per click needs.** The calibration run measures this before any level.
-- **How large the system has to get at E08.** 100 million links will not fit in the stage 0 server's memory. The allowance is whatever fits in the account limits beside the load generator; the old estimate (two 16-core machines) is kept as an upper bound on cost.
+- **How large the system has to get at E08.** 100 million links will not fit in the version 0 server's memory. The allowance is whatever fits in the account limits beside the load generator; the old estimate (two 16-core machines) is kept as an upper bound on cost.
 - **VAT** is not included; add it if it applies to you.

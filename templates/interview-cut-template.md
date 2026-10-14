@@ -14,7 +14,7 @@ One line per component.
 
 ## 3. Why each component exists
 
-| Component | Added at stage | The number that forced it | What we tried first |
+| Component | Added at version | The number that forced it | What we tried first |
 | --- | --- | --- | --- |
 |  |  |  |  |
 

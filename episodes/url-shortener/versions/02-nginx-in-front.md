@@ -1,9 +1,9 @@
-# Stage 02: nginx in front
+# Version 02: nginx in front
 
 ## Trigger
 
 - **Event:** E03 (custom names under E02 load).
-- **Failed runs:** `results/e03-02/`, `e03-03/`, `e03-04/` (stage 1); combined verdict `results/verdicts/E03-stage-01.json`.
+- **Failed runs:** `results/e03-02/`, `e03-03/`, `e03-04/` (version 1); combined verdict `results/verdicts/E03-stage-01.json`.
 - **What the user would notice:** while names were being claimed, about one normal click in eight took over 100 ms (redirect p99 170–180 ms against a 100 ms rule). Correctness was perfect: every round had exactly one winner.
 
 ## Diagnosis
@@ -22,7 +22,7 @@ Per-second CPU never reached the limit: the cause is sub-second bursts, visible 
 
 | Attempt | Why it was plausible | What failed (run ID) | Lesson |
 | --- | --- | --- | --- |
-| nginx with Ubuntu defaults and upstream keepalive, Node with its defaults (tag `url-shortener/stage-02-attempt-1`) | The textbook reverse-proxy setup | E03 in 3 of 3 runs (`e03-05`–`e03-07`): redirect p99 now 68–71 ms (passes), but 12–29 `POST /links` per run got 502 because nginx reused local connections Node had just closed | The proxy and the app must agree on idle timeouts: the app must keep idle connections open longer than the proxy does |
+| nginx with Ubuntu defaults and upstream keepalive, Node with its defaults (tag `url-shortener/version-02-attempt-1`) | The textbook reverse-proxy setup | E03 in 3 of 3 runs (`e03-05`–`e03-07`): redirect p99 now 68–71 ms (passes), but 12–29 `POST /links` per run got 502 because nginx reused local connections Node had just closed | The proxy and the app must agree on idle timeouts: the app must keep idle connections open longer than the proxy does |
 
 ## Options considered
 
@@ -55,9 +55,9 @@ Combined verdicts: `results/verdicts/E03-stage-02-attempt-1.json` (FAIL) and `re
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 02 | Stage 1 behind nginx (TLS on both vCPUs) | E03 (100 redirects/s + 2 creates/s + bursts of 50 name claims, 3 a second; 10 M links) | 69.2 ms (median of 3) | 0% | 1.2 GB | €5.49 + €0.50 IPv4 | not yet broken; next is E04 |
+| 02 | Version 1 behind nginx (TLS on both vCPUs) | E03 (100 redirects/s + 2 creates/s + bursts of 50 name claims, 3 a second; 10 M links) | 69.2 ms (median of 3) | 0% | 1.2 GB | €5.49 + €0.50 IPv4 | not yet broken; next is E04 |
 
 ## Interview line
 

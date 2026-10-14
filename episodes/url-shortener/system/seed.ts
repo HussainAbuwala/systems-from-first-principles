@@ -1,4 +1,4 @@
-// Fill the stage 0 database with N fake links before a run, then write a
+// Fill the version 0 database with N fake links before a run, then write a
 // sample of them (code and URL) for the load generator and checker.
 //
 //   node seed.ts DB_PATH N SAMPLE_OUT [SAMPLE_SIZE]

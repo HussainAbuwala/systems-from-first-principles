@@ -4,7 +4,7 @@
 #   create.sh NAME TYPE ROLE HOURS [USER_DATA_FILE] [-- HCLOUD_ARGS...]
 #
 # HOURS is the lifetime: the watchdog deletes the server after it. Use "keep"
-# for a server that must stay up (stage 0 while friends use it). Anything after
+# for a server that must stay up (version 0 while friends use it). Anything after
 # "--" goes to `hcloud server create` (e.g. --primary-ipv4, --volume).
 source "$(dirname "$0")/lib.sh"
 

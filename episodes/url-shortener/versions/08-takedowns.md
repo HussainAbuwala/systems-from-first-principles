@@ -1,16 +1,16 @@
-# Stage 08: Takedowns
+# Version 08: Takedowns
 
 Status: **done** (2026-10-08). E09 passes 3/3; every earlier event rerun; E07's latency on some hosts accepted (below).
 
 ## Trigger
 
 - **Event:** E09 (Requirement): under E08 load (1,000 redirects/s, 20 creates/s, 100 M links), 100 links are reported and taken down during the run. Rule: no taken-down link redirects more than 60 s after its takedown; no redirect may let a browser reuse it for more than 60 s.
-- **Failed run:** `results/e09-01/` (stage 7): 0 of 101 takedowns confirmed; there was no way to take a link down. Everything else passed (redirect p99 16.4 ms, counts exact).
+- **Failed run:** `results/e09-01/` (version 7): 0 of 101 takedowns confirmed; there was no way to take a link down. Everything else passed (redirect p99 16.4 ms, counts exact).
 - **What the user would notice:** a reported scam link keeps working; nothing an operator can do short of editing the database by hand.
 
 ## Diagnosis
 
-A missing feature, not an exhausted resource. The 60-second rule is aimed at caches (a CDN, browser caching, an in-memory link cache) that keep serving an old answer. Stage 7 has none: every click looks the link up in the database, and redirects already carry `Cache-Control: no-store` (since stage 4).
+A missing feature, not an exhausted resource. The 60-second rule is aimed at caches (a CDN, browser caching, an in-memory link cache) that keep serving an old answer. Version 7 has none: every click looks the link up in the database, and redirects already carry `Cache-Control: no-store` (since version 4).
 
 ## Options considered (decided with the user, 2026-10-07)
 
@@ -29,7 +29,7 @@ A missing feature, not an exhausted resource. The 60-second rule is aimed at cac
 
 **Hand check on `sfp-app` (2026-10-07):** no or wrong secret `401`; unknown code `404`; takedown `200` in 28 ms; afterwards `410` with `no-store`; repeating `200`; a taken-down name answers `410` and re-registering it gets `409`; other links unaffected.
 
-## E09 on stage 8
+## E09 on version 8
 
 | Run | Takedowns confirmed | Redirects after a takedown | 410 for live links | Redirect p99 | Create p99 | Errors | Counts |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |
@@ -53,7 +53,7 @@ A missing feature, not an exhausted resource. The 60-second rule is aimed at cac
 | E05 | `e05-09` | 6.4 ms (create 10.9 ms) | 0% | counts exact (1,355,475 = 1,355,475) | PASS |
 | E06 | `e06-07` | 7.8 ms | 0% | no confirmed link lost; back 55 s after the power cut; 8 of 1,101 links' counts short | **PASS** except counts (accepted) |
 | E07 | `e07-07`, `e07-08`, `e07-09` | 97.9 / **117.8** / **100.2** ms | 0% | E07's own rules pass in all three: back 236–367 s after the loss; 1–3 links lost from the old server's last moment (404, allowed), 0 to the wrong page; counter jump each time; counts short (accepted) | **FAIL** on redirect p99 in two of three runs: host network, see below; **accepted (won't fix)** |
-**E07's slow redirects come from some Hetzner hosts' network, not the design.** Splitting every redirect by phase: the server's answer stayed about 3 ms p99 in all runs; the tail is in **opening the TCP connection**, and it follows the machine. Servers built by `recover.sh` in `e07-07` (A) and `e07-08` (B) had TCP connect p99 53–61 ms, about 1.5% of connects taking an extra 50–60 ms, measured both under load and with a plain connect test against the idle server (no HTTP, no app). The servers built in `e07-06` and `e07-09` had 0.7–0.84 ms. So: `e07-07` fast before the loss, slow after (A); `e07-08` slow before (A) and after (B); `e07-09` slow before (B), fast after (C). Stage 8's change cannot touch TCP connects. Every other stage 8 run (E01–E06, E08, E09) happened to run on fast machines.
+**E07's slow redirects come from some Hetzner hosts' network, not the design.** Splitting every redirect by phase: the server's answer stayed about 3 ms p99 in all runs; the tail is in **opening the TCP connection**, and it follows the machine. Servers built by `recover.sh` in `e07-07` (A) and `e07-08` (B) had TCP connect p99 53–61 ms, about 1.5% of connects taking an extra 50–60 ms, measured both under load and with a plain connect test against the idle server (no HTTP, no app). The servers built in `e07-06` and `e07-09` had 0.7–0.84 ms. So: `e07-07` fast before the loss, slow after (A); `e07-08` slow before (A) and after (B); `e07-09` slow before (B), fast after (C). Version 8's change cannot touch TCP connects. Every other version 8 run (E01–E06, E08, E09) happened to run on fast machines.
 
 ## Accepted failure: slow connects on some Hetzner hosts
 
@@ -61,9 +61,9 @@ A missing feature, not an exhausted resource. The 60-second rule is aimed at cac
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| 08 | Stage 7 + operator takedowns (`410 Gone`, confirmed once in the copy) | E09 (E08 load + 100 takedowns) | 14.8 ms (median of 3; creates 26.2 ms) | 0% | 12 GB | €9.56 | not broken by the script; CPU closest to its limit (about 50% average). Accepted: on some Hetzner hosts slow TCP connects put redirect p99 at about 100–118 ms (E07) |
+| 08 | Version 7 + operator takedowns (`410 Gone`, confirmed once in the copy) | E09 (E08 load + 100 takedowns) | 14.8 ms (median of 3; creates 26.2 ms) | 0% | 12 GB | €9.56 | not broken by the script; CPU closest to its limit (about 50% average). Accepted: on some Hetzner hosts slow TCP connects put redirect p99 at about 100–118 ms (E07) |
 
 ## Interview line
 

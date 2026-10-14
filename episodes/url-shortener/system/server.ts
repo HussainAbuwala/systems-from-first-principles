@@ -1,24 +1,24 @@
-// Stage 8: takedowns (E09). POST /links/<code>/takedown with the operator
+// Version 8: takedowns (E09). POST /links/<code>/takedown with the operator
 // secret marks a link or name taken down; it answers 410 Gone at once, and the
 // operator is told "done" only once the takedown is in Litestream's copy, so it
 // survives losing the machine. A taken-down code or name is never reused.
-// Stage 7 attempt 2: the once-a-second save always happens, with a heartbeat
+// Version 7 attempt 2: the once-a-second save always happens, with a heartbeat
 // row, so Litestream always has a recent small change file. Otherwise, after a
 // fresh full copy and a quiet spell, its checkpoint scanned the whole copy for
 // about 30 s while holding the write lock, freezing the app (e08-03, e08-06).
-// Stage 7: a generated link is confirmed once it is on this machine's disk
+// Version 7: a generated link is confirmed once it is on this machine's disk
 // again; after a restore, deploy.sh inserts a placeholder (empty URL, see
 // jump.ts) a million numbers ahead, so a link lost in the machine's last moment
 // is never reissued. Custom names still wait for the copy: no counter protects
 // a lost name. (E08: waiting for every link reached 0.8 s while Litestream
 // rewrote its whole copy.)
-// Stage 6: stage 5 in WAL mode, copied off the machine by Litestream (E07),
+// Version 6: version 5 in WAL mode, copied off the machine by Litestream (E07),
 // plus GET /health for an outside monitor. A new link or name is confirmed only
 // once Litestream has copied it to the Volume (attempt 2: in e07-01 a link
 // confirmed in the last second was lost and its code issued again).
-// Stage 5: stage 4 with synchronous=EXTRA (E06), so a save confirmed just
+// Version 5: version 4 with synchronous=EXTRA (E06), so a save confirmed just
 // before a power cut is not rolled back on reboot.
-// Stage 4: stage 3 plus click counts (E05). Every redirect adds one to an
+// Version 4: version 3 plus click counts (E05). Every redirect adds one to an
 // in-memory tally for (link, day of the click); once a second all tallies are
 // saved to SQLite in a single transaction. A sudden power cut can lose up to
 // about a second of counts; links themselves are still saved immediately.
@@ -61,7 +61,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS names (
   created_at INTEGER NOT NULL
 )`);
 const insertLink = db.prepare("INSERT INTO links (url, created_at) VALUES (?, ?)");
-// Stage 8: when a link or name was taken down (empty while live). Adding a
+// Version 8: when a link or name was taken down (empty while live). Adding a
 // column with no default is instant in SQLite, even with 100 million rows.
 for (const table of ["links", "names"]) {
   const columns = db.prepare(`PRAGMA table_info(${table})`).all() as { name: string }[];
@@ -308,6 +308,6 @@ const syncMode = (db.prepare("PRAGMA synchronous").get() as { synchronous: numbe
 const journalMode = (db.prepare("PRAGMA journal_mode").get() as { journal_mode: string }).journal_mode;
 server.listen(PORT, HOST, () =>
   console.log(
-    `shortener stage 8 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
+    `shortener version 8 listening on ${HOST}:${PORT}, database ${DB_PATH}, journal_mode=${journalMode}, synchronous=${syncMode} (3 = EXTRA)`,
   ),
 );

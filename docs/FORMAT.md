@@ -2,21 +2,25 @@
 
 Every episode takes one confined problem from the cheapest design that works to a design that serves real scale. The design is never planned in advance. It changes only when an event on the script breaks it.
 
+## Terminology
+
+Each design the system goes through is a **version**: version 0, version 1, and so on (v0, v1 in tables, diagrams and git tags such as `url-shortener/version-03`). Use "version" in scripts, slides, narration, file names, and tags. Do not use "stage".
+
 ## The arc
 
 1. **The problem in one sentence**, shown as a user moment, before any technology is named.
-2. **Stage 0:** the simplest thing that works, deployed for real, free or close to it.
+2. **Version 0:** the simplest thing that works, deployed for real, free or close to it.
 3. **Events, in order.** Each one is a traffic step, a new requirement, or a failure. For each event:
    - run it against the current design;
    - **survived:** say so, show the numbers, move on. No change;
    - **broke:** show the break on a real graph, name the resource that ran out, consider at least two fixes, make the smallest one that passes, and rerun.
-4. **The scoreboard**, filled one row per stage as the episode goes.
+4. **The scoreboard**, filled one row per version as the episode goes.
 5. **The final claim:** what the system handles, at what latency, for what monthly cost, and which resource is closest to its limit.
 6. **The interview cut:** the same system told in interview order, in two or three minutes. See [below](#the-interview-cut).
 
 ## The event script
 
-The event script is the list of everything that will happen to the system, written and locked **before stage 0 is built**.
+The event script is the list of everything that will happen to the system, written and locked **before version 0 is built**.
 
 Why lock it first: if the events are chosen while building, it is too easy to invent the event that justifies the component you already wanted to teach ("now we need Kafka"). A locked script means the design has to answer to events it did not get to pick. It also keeps the series promise that the answer is not known at the start.
 
@@ -44,11 +48,11 @@ Failures are the best teaching moments, but only honest ones. Before any design 
 
 A choice made *because* it will fail teaches nothing: the fix looks clever only because the starting point was silly, and experienced viewers will notice.
 
-Plausible choices that later fail are welcome, and often the most useful lessons in the episode. Some will fail even before stage 0 passes E01. Those **attempts** are shown too, with what they taught, before the first design that passes.
+Plausible choices that later fail are welcome, and often the most useful lessons in the episode. Some will fail even before version 0 passes E01. Those **attempts** are shown too, with what they taught, before the first design that passes.
 
 ## Changing the design
 
-A change is allowed only when the current event fails. For each change, record in the [stage log](../templates/stage-template.md):
+A change is allowed only when the current event fails. For each change, record in the [version log](../templates/version-template.md):
 
 - the run that failed and the graph showing it;
 - the saturated resource (CPU, memory, disk I/O, connections, locks, network, a provider limit) with the measurement that proves it;
@@ -61,7 +65,7 @@ Rejected options matter as much as the chosen one. "We did not add a cache here,
 
 Sometimes the honest choice is not to fix a failing rule, because the fix costs far more than the failure. That is allowed only in the open:
 
-- The run stays recorded as **FAIL**, with the rule unchanged; the stage log marks it **accepted (won't fix)** with the reason and what the fix would have cost.
+- The run stays recorded as **FAIL**, with the rule unchanged; the version log marks it **accepted (won't fix)** with the reason and what the fix would have cost.
 - The scoreboard and the final claim state the limitation in plain words.
 - The video shows the alternative and its price, so the viewer can disagree.
 
@@ -69,9 +73,9 @@ A correctness failure that loses or corrupts what users were promised (a confirm
 
 ## The scoreboard
 
-One row per stage. Every cell is either measured or derived from measured numbers.
+One row per version. Every cell is either measured or derived from measured numbers.
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 |---|---|---|---|---|---|---|---|
 
 The final row turns into the claim: "This design handles N clicks a month (derived from M req/s measured at peak, using the traffic model), p99 X ms, for $Y a month. The resource closest to its limit in the largest run was Z, at W% utilisation, so that is what breaks next."
@@ -82,11 +86,11 @@ A short closing segment, also kept as a written page in the episode folder. It r
 
 1. Requirements and the numbers behind them (from the traffic model).
 2. The final design, one component at a time.
-3. For each component, the stage where it appeared and the number that forced it.
+3. For each component, the version where it appeared and the number that forced it.
 4. What runs out next (the resource closest to its limit in the largest run) and the next move.
 
-Interviews start with the scale and design backwards. The series builds forwards. The interview cut is the bridge: knowing the breaking point of every stage is what answers the follow-up questions. Use the [interview cut template](../templates/interview-cut-template.md).
+Interviews start with the scale and design backwards. The series builds forwards. The interview cut is the bridge: knowing the breaking point of every version is what answers the follow-up questions. Use the [interview cut template](../templates/interview-cut-template.md).
 
 ## Length
 
-One problem is one long-form episode by default. If the honest story needs more than about eight stages, split it into parts at a natural scale boundary, with the scoreboard carried across.
+One problem is one long-form episode by default. If the honest story needs more than about eight versions, split it into parts at a natural scale boundary, with the scoreboard carried across.

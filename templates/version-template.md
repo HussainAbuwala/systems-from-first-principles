@@ -1,4 +1,4 @@
-# Stage NN: Short name
+# Version NN: Short name
 
 ## Trigger
 
@@ -16,7 +16,7 @@ The resource that ran out, and the measurement that shows it.
 
 ## Attempts that failed
 
-Plausible designs tried for this stage that did not pass, and what each one taught.
+Plausible designs tried for this version that did not pass, and what each one taught.
 
 | Attempt | Why it was plausible | What failed (run ID) | Lesson |
 | --- | --- | --- | --- |
@@ -40,10 +40,10 @@ The smallest change that passes, in a few lines. Link the commit.
 
 ## Scoreboard row
 
-| Stage | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
+| Version | Design in one line | Peak load passed | p99 | Errors | Data size | $/month | What broke it |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | NN |  |  |  |  |  |  |  |
 
 ## Interview line
 
-One sentence for the interview cut: "We added X at stage NN, because at N req/s, Y ran out."
+One sentence for the interview cut: "We added X at version NN, because at N req/s, Y ran out."

@@ -1,4 +1,4 @@
-// Investigation tool (E08, stage 7): runs ON the system server and records,
+// Investigation tool (E08, version 7): runs ON the system server and records,
 // every 250 ms, whether the database's write lock is free, which step
 // Litestream reports it is in, per-disk I/O and Litestream's CPU. While the
 // lock has been held for over 500 ms it also saves Litestream's goroutine dump

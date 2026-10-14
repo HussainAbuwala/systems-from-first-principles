@@ -16,8 +16,8 @@ This series does the opposite. The simple design gets a fair chance, every break
 
 ## The rules
 
-1. **Start embarrassingly simple, but plausible.** Free or nearly free. If people laugh at stage 0, good. Every choice must be one a reasonable engineer could defend at that point; plausible choices that later fail are the best lessons. Choices made *because* they will fail are not allowed.
-2. **The event script is fixed before building.** The traffic steps and new requirements are written down and locked before stage 0 exists. See [format](docs/FORMAT.md#the-event-script).
+1. **Start embarrassingly simple, but plausible.** Free or nearly free. If people laugh at version 0, good. Every choice must be one a reasonable engineer could defend at that point; plausible choices that later fail are the best lessons. Choices made *because* they will fail are not allowed.
+2. **The event script is fixed before building.** The traffic steps and new requirements are written down and locked before version 0 exists. See [format](docs/FORMAT.md#the-event-script).
 3. **Change the design only for a reason on the script.** A load step broke it, or a requirement cannot be met. "It would be best practice" is not a reason.
 4. **Surviving counts.** When an event passes without changes, the video says so. That is the point.
 5. **Everything is measured.** Capacity, latency, errors and cost come from real runs. Anything derived is arithmetic on measured numbers with the formula shown. See [measurement standard](docs/MEASUREMENT.md).
@@ -27,7 +27,7 @@ This series does the opposite. The simple design gets a fair chance, every break
 
 | Episode | Status | Central question |
 | --- | --- | --- |
-| [URL shortener](episodes/url-shortener/README.md) | Event script locked; building tools and stage 0 | How far does one file on a €5 server get you, and what does it take to handle almost a billion clicks a month? |
+| [URL shortener](episodes/url-shortener/README.md) | Event script locked; building tools and version 0 | How far does one file on a €5 server get you, and what does it take to handle almost a billion clicks a month? |
 
 Earlier episodes used a different format (reconstructing a company's system from its engineering posts). They live in [archive](archive/README.md).
 
@@ -35,8 +35,8 @@ Earlier episodes used a different format (reconstructing a company's system from
 
 ```text
 docs/        Format, measurement standard, topic selection, production guide, visual language
-templates/   Event script, stage log, interview cut, script and storyboard
-episodes/    One folder per problem: event script, stages, results, script
+templates/   Event script, version log, interview cut, script and storyboard
+episodes/    One folder per problem: event script, versions, results, script
 archive/     Earlier-format episodes, their animation workspace and lab
 ```
 

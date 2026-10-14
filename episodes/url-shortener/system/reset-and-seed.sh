@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Empty the database (and, from stage 6, its copy), fill it with N fake links,
+# Empty the database (and, from version 6, its copy), fill it with N fake links,
 # restart the services, and copy the sample of stored links back for the load
 # generator and checker.
 #   reset-and-seed.sh SERVER_NAME N SAMPLE_OUT [SAMPLE_SIZE]   (sample defaults to 100,000)
@@ -8,7 +8,7 @@ source "$(dirname "$0")/../../../tools/cloud/lib.sh"
 name="$1" n="$2" sample_out="$3" sample_size="${4:-100000}"
 ip="$(sfp_ip "$name")"
 
-# Stage 6: the copy on the Volume must start again with the new database, so
+# Version 6: the copy on the Volume must start again with the new database, so
 # Litestream is stopped and its copy and bookkeeping removed too.
 sfp_ssh "$ip" "mountpoint -q /mnt/copy && systemctl stop litestream shortener && \
   rm -rf /var/lib/shortener/links.db* /var/lib/shortener/.links.db-litestream /mnt/copy/links && \

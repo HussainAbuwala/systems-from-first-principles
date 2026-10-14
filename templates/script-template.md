@@ -26,7 +26,7 @@ By the end of this episode, the viewer will understand...
 
 **Run IDs:**
 
-### Stage 0 — Simplest thing that works
+### Version 0 — Simplest thing that works
 
 **Narration:**
 

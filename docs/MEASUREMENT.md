@@ -39,11 +39,11 @@ Load steps in the event script are expressed in req/s and data size. User and mo
 
 ## Repeats
 
-Shared vCPUs are slower when the host's other customers are busy (measured as CPU steal), so one run can be unlucky. Measured run-to-run spread so far: about 5% on redirect p99 (E03 on stages 1 and 2, three runs each, steal 0%). Each run starts from the same state (database reseeded).
+Shared vCPUs are slower when the host's other customers are busy (measured as CPU steal), so one run can be unlucky. Measured run-to-run spread so far: about 5% on redirect p99 (E03 on versions 1 and 2, three runs each, steal 0%). Each run starts from the same state (database reseeded).
 
 | Run | How many | Exception |
 | --- | --- | --- |
-| **The new event** being played against a stage | **3** | **1** if the first run is far past a limit (more than 1.5 times it, e.g. p99 in seconds): more runs cannot change the verdict |
+| **The new event** being played against a version | **3** | **1** if the first run is far past a limit (more than 1.5 times it, e.g. p99 in seconds): more runs cannot change the verdict |
 | **Earlier events** re-run after a design change (regression checks) | **1** | **3** if any judged measure lands within 25% of its limit |
 | Any run with **CPU steal** above about 2%, or INVALID windows | repeat it | — |
 
@@ -74,7 +74,7 @@ A free-tier limit is a real break. Hitting it is a legitimate event.
 
 ## Where to run
 
-Prefer machines and containers where the bottleneck is visible and attributable: a VM, a process, a database you can watch. Managed or serverless platforms are fine when buying them is the stage's decision; then their limits and bill are what we measure. Do not start on a platform that hides the breaks the episode is meant to show.
+Prefer machines and containers where the bottleneck is visible and attributable: a VM, a process, a database you can watch. Managed or serverless platforms are fine when buying them is the version's decision; then their limits and bill are what we measure. Do not start on a platform that hides the breaks the episode is meant to show.
 
 ## Recording a run
 

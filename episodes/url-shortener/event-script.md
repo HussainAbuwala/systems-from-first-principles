@@ -1,6 +1,6 @@
 # Event script: URL shortener
 
-**Status:** Locked 2026-10-03, before stage 0 was built.
+**Status:** Locked 2026-10-03, before version 0 was built.
 
 Once locked, events are not reordered, removed, or made easier. New events may only be appended, with a reason in the changelog. See [format](../../docs/FORMAT.md#the-event-script).
 
@@ -61,9 +61,9 @@ Why these numbers:
 
 ## Test budget and where tests run
 
-- **Stage 0 runs on the cheapest real server** we can find, not a free tier (see the episode README for why). Its monthly price is part of the story.
+- **Version 0 runs on the cheapest real server** we can find, not a free tier (see the episode README for why). Its monthly price is part of the story.
 - **Bigger test runs rent machines by the hour** and delete them afterwards. Level-by-level estimate in [budget.md](budget.md).
-- **Budget cap:** €25 for the whole episode, including keeping stage 0 online for a month. Actual spend is measured and reported at the end.
+- **Budget cap:** €25 for the whole episode, including keeping version 0 online for a month. Actual spend is measured and reported at the end.
 - **Spending safety:** a separate Hetzner project with cost alerts, every test machine labelled and deleted by script at the end of each run, and a watchdog that deletes any test machine older than its allowed lifetime. Hetzner bills switched-off servers, so machines are always deleted, never just stopped.
 - Before E08, confirm with Hetzner support that load testing our own servers at that rate is fine.
 
@@ -132,7 +132,7 @@ Drafted with the script and set aside. Any of them could seed a later episode, s
 | F2 | Requirement | **Three continents.** Load split across generators in North America, Europe and Asia-Pacific. | Redirect p99 under 100 ms measured on every continent |
 | F3 | Failure | **Region loss.** One region is cut off completely. | Redirects work from the remaining regions within 5 minutes; creates may be refused during failover, but no acknowledged link is lost |
 
-Stage 0's design is deliberately not decided here. The script says what happens to the system, not what the system is.
+Version 0's design is deliberately not decided here. The script says what happens to the system, not what the system is.
 
 ## Changelog
 
